@@ -1,6 +1,22 @@
+/**
+ * Copyright 2011-2017 Green Energy Corp.
+ *
+ * Licensed to Green Energy Corp (www.greenenergycorp.com) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. Green Energy
+ * Corp licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package io.greenbus.edge.tag
-
-
 
 sealed trait Element
 
@@ -9,7 +25,6 @@ sealed trait Value extends ValueElement
 case class TaggedValue(tag: String, value: Value) extends ValueElement
 
 case class TaggedField(name: String, value: ValueElement) extends Element
-
 
 sealed trait PrimitiveValue extends Value
 case class VByte(value: Byte) extends PrimitiveValue
@@ -48,7 +63,6 @@ case class VDouble(value: Double) extends FloatingPointValue {
   def toFloat: Float = value.toFloat
   def toDouble: Double = value
 }
-
 
 sealed trait BasicValue extends Value
 case class VArrayByte(value: Array[Byte]) extends BasicValue
@@ -113,7 +127,6 @@ case class VTExtType(tag: String, reprType: VType) extends VType
 
 // ===============================
 
-
 sealed trait SchemaReadError
 trait VSchemaReader[A] {
   //def expectingTag: String
@@ -122,19 +135,15 @@ trait VSchemaReader[A] {
   def read(elem: Element): Either[SchemaReadError, A]
 }
 
-
-
 object SchemalessReader extends VSchemaReader[Element] {
   def read(elem: Element): Either[SchemaReadError, Element] = {
     Right(elem)
   }
 }
 
-
 trait VReader {
   //def read[A](element: Element, schema: VSchema[A]): Either[VReadError, A]
 }
-
 
 /*
 
@@ -147,7 +156,6 @@ Field (symbol -> element type) : VStruct, arity 2
 Struct (ordered? list of fields) : VMap or VStruct of fields??
 
  */
-
 
 /*
 
@@ -258,7 +266,6 @@ object
 
 
  */
-
 
 //sealed trait
 

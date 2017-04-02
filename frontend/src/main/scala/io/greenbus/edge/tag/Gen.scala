@@ -1,4 +1,26 @@
+/**
+ * Copyright 2011-2017 Green Energy Corp.
+ *
+ * Licensed to Green Energy Corp (www.greenenergycorp.com) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. Green Energy
+ * Corp licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package io.greenbus.edge.tag
+
+import java.io.{ File, FileOutputStream, PrintWriter }
+
+import io.greenbus.edge.util.EitherUtil
 
 object TestSchema {
 
@@ -9,36 +31,31 @@ object TestSchema {
       FieldDef("remoteAddress", VTUInt32),
       FieldDef("userConfirmations", VTBool),
       FieldDef("userConfirmations", VTUInt64),
-      FieldDef("numRetries", VTUInt32)
-    )))
+      FieldDef("numRetries", VTUInt32))))
   }
   val appLayer: VTExtType = {
     VTExtType("AppLayer", VTTuple(Vector(
       FieldDef("timeoutMs", VTUInt64),
       FieldDef("maxFragSize", VTUInt32),
-      FieldDef("numRetries", VTUInt32)
-    )))
+      FieldDef("numRetries", VTUInt32))))
   }
   val stackConfig: VTExtType = {
     VTExtType("AppLayer", VTTuple(Vector(
       FieldDef("linkLayer", linkLayer),
-      FieldDef("appLayer", appLayer)
-    )))
+      FieldDef("appLayer", appLayer))))
   }
   val masterSettings: VTExtType = {
     VTExtType("MasterSettings", VTTuple(Vector(
       FieldDef("allowTimeSync", VTBool),
       FieldDef("taskRetryMs", VTUInt64),
-      FieldDef("integrityPeriodMs", VTUInt64)
-    )))
+      FieldDef("integrityPeriodMs", VTUInt64))))
   }
   val scan: VTExtType = {
     VTExtType("Scan", VTTuple(Vector(
       FieldDef("enableClass1", VTBool),
       FieldDef("enableClass2", VTBool),
       FieldDef("enableClass3", VTBool),
-      FieldDef("periodMs", VTUInt64)
-    )))
+      FieldDef("periodMs", VTUInt64))))
   }
   val unsol: VTExtType = {
     VTExtType("Unsol", VTTuple(Vector(
@@ -46,8 +63,7 @@ object TestSchema {
       FieldDef("enable", VTBool),
       FieldDef("enableClass1", VTBool),
       FieldDef("enableClass2", VTBool),
-      FieldDef("enableClass3", VTBool)
-    )))
+      FieldDef("enableClass3", VTBool))))
   }
 
   val master: VTExtType = {
@@ -55,8 +71,7 @@ object TestSchema {
       FieldDef("stack", stackConfig),
       FieldDef("masterSettings", masterSettings),
       FieldDef("scanList", VTList(scan)),
-      FieldDef("unsol", unsol)
-    )))
+      FieldDef("unsol", unsol))))
   }
 
   /*
@@ -66,7 +81,6 @@ object TestSchema {
    */
 
 }
-
 
 trait ReaderContext {
   def context: String
@@ -113,6 +127,13 @@ object MappingLibrary {
     }
   }
 
+  def readListField[A](fieldName: String, map: Map[String, ValueElement], read: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, Seq[A]] = {
+    map.get(fieldName) match {
+      case None => Left(s"${ctx.context} error: expected field '$fieldName'")
+      case Some(elem) => readList(elem, read, ctx.field(fieldName))
+    }
+  }
+
   def readBool(elem: ValueElement, ctx: ReaderContext): Either[String, Boolean] = {
     elem match {
       case v: VBool => Right(v.value)
@@ -155,20 +176,27 @@ object MappingLibrary {
       case _ => Left(s"${ctx.context} error: expected string value, saw: ${descName(elem)}")
     }
   }
+
+  def readList[A](elem: ValueElement, readContained: (Value, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, Seq[A]] = {
+    elem match {
+      case v: VList =>
+        EitherUtil.rightSequence(v.value.map(readContained(_, ctx)))
+      case _ => Left(s"${ctx.context} error: expected string value, saw: ${descName(elem)}")
+    }
+  }
 }
 
 object TestGenerated {
 
   case class LinkLayerConfig(
-                              isMaster: Boolean,
-                              localAddress: Int,
-                              remoteAddress: Int,
-                              userConfirmations: Boolean,
-                              ackTimeoutMs: Int,
-                              numRetries: Int)
+    isMaster: Boolean,
+    localAddress: Int,
+    remoteAddress: Int,
+    userConfirmations: Boolean,
+    ackTimeoutMs: Int,
+    numRetries: Int)
 
-
-  def readLinkLayerConfig(data: VTuple, ctx: ReaderContext): Either[String, LinkLayerConfig] = {
+  /* def readLinkLayerConfig(data: VTuple, ctx: ReaderContext): Either[String, LinkLayerConfig] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val isMaster = MappingLibrary.readField("isMaster", fieldMap, MappingLibrary.readBool, ctx)
@@ -177,38 +205,200 @@ object TestGenerated {
     if (isMaster.isRight && localAddress.isRight) {
       LinkLayerConfig(
         isMaster.right.get,
-        localAddress.right.get
-      )
+        localAddress.right.get)
     } else {
       Left(Seq(isMaster.left.toOption, localAddress.left.toOption).flatten.mkString(", "))
     }
-
-    /*val fieldMap = ValueUtils.toFieldMap(data)
-
-    for {
-      isMaster <- readField(LinkConfig.isMaster.fieldName, fieldMap, readBool, ctx)
-      localAddress <- readField(LinkConfig.isMaster.fieldName, fieldMap, readInt, ctx)
-      remoteAddress <- readField(LinkConfig.isMaster.fieldName, fieldMap, readInt, ctx)
-      userConfirmations <- readField(LinkConfig.isMaster.fieldName, fieldMap, readBool, ctx)
-      ackTimeoutMs <- readField(LinkConfig.isMaster.fieldName, fieldMap, readLong, ctx)
-      numRetries <- readField(LinkConfig.isMaster.fieldName, fieldMap, readInt, ctx)
-    } yield {
-      val cfg = new LinkConfig(isMaster, userConfirmations)
-      cfg.setLocalAddr(localAddress)
-      cfg.setRemoteAddr(remoteAddress)
-      cfg.setTimeout(ackTimeoutMs)
-      cfg.setNumRetry(numRetries)
-      cfg
-    }*/
   }
+    */
+
 }
 
 object Gen {
 
   case class TypeDefFrag(code: String)
 
-  def gen(typ: VTExtType) = {
+  sealed trait FieldTypeDef
+  case class SimpleTypeDef(typ: VType) extends FieldTypeDef
+  case class ParamTypeDef(typ: VType) extends FieldTypeDef
+  case class TagTypeDef(tag: String) extends FieldTypeDef
+
+  //case class FieldTypeDef()
+  case class FieldDef(name: String, typ: FieldTypeDef)
+  case class ObjDef(fields: Seq[FieldDef])
+
+  def collectTypes(typ: VTExtType, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
+
+    var collected: Map[String, ObjDef] = seen
+
+    val objDef = typ.reprType match {
+      case tup: VTTuple => {
+        val fieldDefs = tup.elementTypes.map { fd =>
+          val name = fd.fieldName
+          val typ = fd.fieldType
+          val typDef = typ match {
+            case t: VTExtType => {
+              if (!collected.contains(t.tag)) {
+                val added = collectTypes(t, collected)
+                collected ++= added
+              }
+              TagTypeDef(t.tag)
+            }
+            case t: VTList => ParamTypeDef(t)
+            case t => SimpleTypeDef(t)
+          }
+          FieldDef(name, typDef)
+        }
+        ObjDef(fieldDefs)
+      }
+      case other => throw new IllegalArgumentException(s"No support for $other")
+    }
+
+    collected + (typ.tag -> objDef)
+  }
+
+  def output(pkg: String, objs: Map[String, ObjDef], pw: PrintWriter): Unit = {
+
+    pw.println(s"import $pkg")
+    pw.println()
+
+    objs.foreach {
+      case (tag, obj) => writeStatic(tag, obj, pw)
+    }
+
+    pw.println()
+  }
+
+  val utilKlass = "MappingLibrary"
+
+  def readFuncForTypeParam(typ: VType): String = {
+    typ match {
+      //case t: VTTuple =>
+      case t: VTExtType => s"${t.tag}.read"
+      case t => readFuncForSimpleTyp(t)
+    }
+  }
+
+  def signatureFor(ftd: FieldTypeDef): String = {
+    ftd match {
+      case td: SimpleTypeDef => fieldSignatureFor(td.typ)
+      case td: ParamTypeDef => fieldSignatureFor(td.typ)
+      case td: TagTypeDef => td.tag
+    }
+  }
+
+  def fieldSignatureFor(typ: VType): String = {
+    typ match {
+      case VTBool => "Boolean"
+      case VTInt32 => "Int"
+      case VTUInt32 => "Int"
+      case VTInt64 => "Long"
+      case VTUInt64 => "Long"
+      case VTFloat => "Float"
+      case VTDouble => "Double"
+      case VTString => "String"
+      case t: VTList => s"Seq[${fieldSignatureFor(t.paramType)}]"
+      case t: VTExtType => t.tag
+      case t => throw new IllegalArgumentException(s"Type signature unhandled: $t")
+    }
+  }
+
+  def readFuncForSimpleTyp(typ: VType): String = {
+    typ match {
+      case VTBool => "MappingLibrary.readBool"
+      case VTInt32 => "MappingLibrary.readInt"
+      case VTUInt32 => "MappingLibrary.readInt"
+      case VTInt64 => "MappingLibrary.readLong"
+      case VTUInt64 => "MappingLibrary.readLong"
+      case VTFloat => "MappingLibrary.readFloat"
+      case VTDouble => "MappingLibrary.readDouble"
+      case VTString => "MappingLibrary.readString"
+      case t => throw new IllegalArgumentException(s"Simple type unhandled: $t")
+    }
+  }
+
+  def tab(n: Int): String = Range(0, n).map(_ => "  ").mkString("")
+  //val tab = "  "
+
+  def writeStatic(name: String, objDef: ObjDef, pw: PrintWriter): Unit = {
+    pw.println(s"object $name {")
+    pw.println()
+
+    pw.println(tab(1) + s"def read(data: VTuple, ctx: ReaderContext): Either[String, $name] = {")
+    pw.println(tab(2) + s"val fieldMap = MappingLibrary.toFieldMap(data)")
+    pw.println()
+    objDef.fields.foreach { fd =>
+      val name = fd.name
+      fd.typ match {
+        case std: SimpleTypeDef => {
+          val readFun = readFuncForSimpleTyp(std.typ)
+          pw.println(tab(2) + "" + s"""val $name = MappingLibrary.readField("${name}", fieldMap, MappingLibrary.$readFun, ctx)""")
+        }
+        case ptd: ParamTypeDef => {
+          ptd.typ match {
+            case typ: VTList => {
+              val paramRead = readFuncForTypeParam(typ.paramType)
+              pw.println(tab(2) + s"""val $name = MappingLibrary.readList("$name", fieldMap, $paramRead, ctx)""")
+            }
+            case other => throw new IllegalArgumentException(s"Parameterized type not handled: $other")
+          }
+        }
+        case ttd: TagTypeDef => {
+          val tagName = ttd.tag
+          pw.println(tab(2) + s"""val $name = MappingLibrary.readFieldSubStruct("${name}", fieldMap, "$tagName", $tagName.read, ctx)""")
+        }
+      }
+    }
+    pw.println()
+
+    val isRightJoin = objDef.fields.map(_.name).mkString(" && ")
+    pw.println(tab(2) + s"if ($isRightJoin) {")
+    val rightGetJoin = objDef.fields.map(_.name + ".right.get").mkString(", ")
+    pw.println(tab(3) + s"$name($rightGetJoin)")
+    pw.println(tab(2) + "} else {")
+    val leftJoin = objDef.fields.map(_.name + ".left.toOption").mkString(", ")
+    pw.println(tab(3) + s"""Left(Seq($leftJoin).flatten.mkString(", "))""")
+    pw.println(tab(2) + "}")
+    pw.println()
+    pw.println(tab(1) + "}")
+    pw.println()
+    pw.println("}")
+
+    val fieldDescs = objDef.fields.map(fd => s"${fd.name}: ${signatureFor(fd.typ)}")
+
+    pw.println(s"""case class $name(${fieldDescs.mkString(", ")})""")
+    pw.println()
 
   }
 
+  /* def readLinkLayerConfig(data: VTuple, ctx: ReaderContext): Either[String, LinkLayerConfig] = {
+     val fieldMap = MappingLibrary.toFieldMap(data)
+
+     val isMaster = MappingLibrary.readField("isMaster", fieldMap, MappingLibrary.readBool, ctx)
+     val localAddress = MappingLibrary.readField("localAddress", fieldMap, MappingLibrary.readInt, ctx)
+
+     if (isMaster.isRight && localAddress.isRight) {
+       LinkLayerConfig(
+         isMaster.right.get,
+         localAddress.right.get)
+     } else {
+       Left(Seq(isMaster.left.toOption, localAddress.left.toOption).flatten.mkString(", "))
+     }
+   }
+
+   def readFieldSubStruct[A](fieldName: String, map: Map[String, ValueElement], tag: String, read: (VTuple, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
+
+     */
+  def main(args: Array[String]): Unit = {
+    val all = collectTypes(TestSchema.master, Map())
+    println(all.mkString("\n"))
+    println("")
+    /*val pw = new PrintWriter(System.out)
+    output("io.greenbus.edge.dnp3.config.model", all, pw)
+    pw.flush()*/
+
+    val fw = new PrintWriter("testfile.scala" /*new FileOutputStream(new File("testdir/testfile.scala"))*/ )
+    output("io.greenbus.edge.dnp3.config.model", all, fw)
+    fw.flush()
+  }
 }
