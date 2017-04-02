@@ -74,12 +74,6 @@ object TestSchema {
       FieldDef("unsol", unsol))))
   }
 
-  /*
-
-
-
-   */
-
 }
 
 trait ReaderContext {
@@ -184,6 +178,13 @@ object MappingLibrary {
       case _ => Left(s"${ctx.context} error: expected string value, saw: ${descName(elem)}")
     }
   }
+
+  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (VTuple, ReaderContext) => Either[String, A]): Either[String, A] = {
+    elem match {
+      case v: VTuple => read(v, ctx)
+      case _ => Left(s"${ctx.context} error: expected tuple value, saw ${descName(elem)}")
+    }
+  }
 }
 
 object TestGenerated {
@@ -196,22 +197,13 @@ object TestGenerated {
     ackTimeoutMs: Int,
     numRetries: Int)
 
-  /* def readLinkLayerConfig(data: VTuple, ctx: ReaderContext): Either[String, LinkLayerConfig] = {
-    val fieldMap = MappingLibrary.toFieldMap(data)
+  def write(obj: LinkLayerConfig): TaggedValue = {
 
-    val isMaster = MappingLibrary.readField("isMaster", fieldMap, MappingLibrary.readBool, ctx)
-    val localAddress = MappingLibrary.readField("localAddress", fieldMap, MappingLibrary.readInt, ctx)
+    val built = VTuple(Vector(
+      TaggedField("isMaster", VBool(obj.isMaster))))
 
-    if (isMaster.isRight && localAddress.isRight) {
-      LinkLayerConfig(
-        isMaster.right.get,
-        localAddress.right.get)
-    } else {
-      Left(Seq(isMaster.left.toOption, localAddress.left.toOption).flatten.mkString(", "))
-    }
+    TaggedValue("LinkLayerConfig", built)
   }
-    */
-
 }
 
 object Gen {
@@ -223,7 +215,6 @@ object Gen {
   case class ParamTypeDef(typ: VType) extends FieldTypeDef
   case class TagTypeDef(tag: String) extends FieldTypeDef
 
-  //case class FieldTypeDef()
   case class FieldDef(name: String, typ: FieldTypeDef)
   case class ObjDef(fields: Seq[FieldDef])
 
@@ -244,7 +235,18 @@ object Gen {
               }
               TagTypeDef(t.tag)
             }
-            case t: VTList => ParamTypeDef(t)
+            case t: VTList => {
+              t.paramType match {
+                case ext: VTExtType => {
+                  if (!collected.contains(ext.tag)) {
+                    val added = collectTypes(ext, collected)
+                    collected ++= added
+                  }
+                }
+                case _ =>
+              }
+              ParamTypeDef(t)
+            }
             case t => SimpleTypeDef(t)
           }
           FieldDef(name, typDef)
@@ -259,7 +261,9 @@ object Gen {
 
   def output(pkg: String, objs: Map[String, ObjDef], pw: PrintWriter): Unit = {
 
-    pw.println(s"import $pkg")
+    pw.println(s"package $pkg")
+    pw.println()
+    pw.println("import io.greenbus.edge.tag._")
     pw.println()
 
     objs.foreach {
@@ -305,14 +309,14 @@ object Gen {
 
   def readFuncForSimpleTyp(typ: VType): String = {
     typ match {
-      case VTBool => "MappingLibrary.readBool"
-      case VTInt32 => "MappingLibrary.readInt"
-      case VTUInt32 => "MappingLibrary.readInt"
-      case VTInt64 => "MappingLibrary.readLong"
-      case VTUInt64 => "MappingLibrary.readLong"
-      case VTFloat => "MappingLibrary.readFloat"
-      case VTDouble => "MappingLibrary.readDouble"
-      case VTString => "MappingLibrary.readString"
+      case VTBool => s"$utilKlass.readBool"
+      case VTInt32 => s"$utilKlass.readInt"
+      case VTUInt32 => s"$utilKlass.readInt"
+      case VTInt64 => s"$utilKlass.readLong"
+      case VTUInt64 => s"$utilKlass.readLong"
+      case VTFloat => s"$utilKlass.readFloat"
+      case VTDouble => s"$utilKlass.readDouble"
+      case VTString => s"$utilKlass.readString"
       case t => throw new IllegalArgumentException(s"Simple type unhandled: $t")
     }
   }
@@ -325,36 +329,37 @@ object Gen {
     pw.println()
 
     pw.println(tab(1) + s"def read(data: VTuple, ctx: ReaderContext): Either[String, $name] = {")
-    pw.println(tab(2) + s"val fieldMap = MappingLibrary.toFieldMap(data)")
+    pw.println(tab(2) + s"val fieldMap = $utilKlass.toFieldMap(data)")
     pw.println()
     objDef.fields.foreach { fd =>
       val name = fd.name
       fd.typ match {
         case std: SimpleTypeDef => {
           val readFun = readFuncForSimpleTyp(std.typ)
-          pw.println(tab(2) + "" + s"""val $name = MappingLibrary.readField("${name}", fieldMap, MappingLibrary.$readFun, ctx)""")
+          pw.println(tab(2) + "" + s"""val $name = $utilKlass.readField("${name}", fieldMap, $readFun, ctx)""")
         }
         case ptd: ParamTypeDef => {
           ptd.typ match {
             case typ: VTList => {
               val paramRead = readFuncForTypeParam(typ.paramType)
-              pw.println(tab(2) + s"""val $name = MappingLibrary.readList("$name", fieldMap, $paramRead, ctx)""")
+              val paramSig = fieldSignatureFor(typ.paramType)
+              pw.println(tab(2) + s"""val $name = $utilKlass.readListField[$paramSig]("$name", fieldMap, $utilKlass.readTup[$paramSig](_, _, $paramRead), ctx)""")
             }
             case other => throw new IllegalArgumentException(s"Parameterized type not handled: $other")
           }
         }
         case ttd: TagTypeDef => {
           val tagName = ttd.tag
-          pw.println(tab(2) + s"""val $name = MappingLibrary.readFieldSubStruct("${name}", fieldMap, "$tagName", $tagName.read, ctx)""")
+          pw.println(tab(2) + s"""val $name = $utilKlass.readFieldSubStruct("${name}", fieldMap, "$tagName", $tagName.read, ctx)""")
         }
       }
     }
     pw.println()
 
-    val isRightJoin = objDef.fields.map(_.name).mkString(" && ")
+    val isRightJoin = objDef.fields.map(f => f.name + ".isRight").mkString(" && ")
     pw.println(tab(2) + s"if ($isRightJoin) {")
     val rightGetJoin = objDef.fields.map(_.name + ".right.get").mkString(", ")
-    pw.println(tab(3) + s"$name($rightGetJoin)")
+    pw.println(tab(3) + s"Right($name($rightGetJoin))")
     pw.println(tab(2) + "} else {")
     val leftJoin = objDef.fields.map(_.name + ".left.toOption").mkString(", ")
     pw.println(tab(3) + s"""Left(Seq($leftJoin).flatten.mkString(", "))""")
@@ -371,31 +376,10 @@ object Gen {
 
   }
 
-  /* def readLinkLayerConfig(data: VTuple, ctx: ReaderContext): Either[String, LinkLayerConfig] = {
-     val fieldMap = MappingLibrary.toFieldMap(data)
-
-     val isMaster = MappingLibrary.readField("isMaster", fieldMap, MappingLibrary.readBool, ctx)
-     val localAddress = MappingLibrary.readField("localAddress", fieldMap, MappingLibrary.readInt, ctx)
-
-     if (isMaster.isRight && localAddress.isRight) {
-       LinkLayerConfig(
-         isMaster.right.get,
-         localAddress.right.get)
-     } else {
-       Left(Seq(isMaster.left.toOption, localAddress.left.toOption).flatten.mkString(", "))
-     }
-   }
-
-   def readFieldSubStruct[A](fieldName: String, map: Map[String, ValueElement], tag: String, read: (VTuple, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
-
-     */
   def main(args: Array[String]): Unit = {
     val all = collectTypes(TestSchema.master, Map())
     println(all.mkString("\n"))
     println("")
-    /*val pw = new PrintWriter(System.out)
-    output("io.greenbus.edge.dnp3.config.model", all, pw)
-    pw.flush()*/
 
     val fw = new PrintWriter("testfile.scala" /*new FileOutputStream(new File("testdir/testfile.scala"))*/ )
     output("io.greenbus.edge.dnp3.config.model", all, fw)
