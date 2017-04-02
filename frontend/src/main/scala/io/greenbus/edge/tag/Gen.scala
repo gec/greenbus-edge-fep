@@ -171,7 +171,7 @@ object MappingLibrary {
     }
   }
 
-  def readList[A](elem: ValueElement, readContained: (Value, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, Seq[A]] = {
+  def readList[A](elem: ValueElement, readContained: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, Seq[A]] = {
     elem match {
       case v: VList =>
         EitherUtil.rightSequence(v.value.map(readContained(_, ctx)))
@@ -184,6 +184,10 @@ object MappingLibrary {
       case v: VTuple => read(v, ctx)
       case _ => Left(s"${ctx.context} error: expected tuple value, saw ${descName(elem)}")
     }
+  }
+
+  def writeList[A](list: Seq[A], write: A => ValueElement): VList = {
+    VList(list.toIndexedSeq.map(write))
   }
 }
 
@@ -320,6 +324,57 @@ object Gen {
       case t => throw new IllegalArgumentException(s"Simple type unhandled: $t")
     }
   }
+  /*
+
+  case class SimpleTypeDef(typ: VType) extends FieldTypeDef
+  case class ParamTypeDef(typ: VType) extends FieldTypeDef
+  case class TagTypeDef(tag: String) extends FieldTypeDef
+   */
+
+  def writeCallFor(ftd: FieldTypeDef, paramDeref: String): String = {
+    ftd match {
+      case SimpleTypeDef(t) => writeFuncFor(t) + s"($paramDeref)"
+      case ParamTypeDef(t) => {
+        t match {
+          case list: VTList => {
+            s"$utilKlass.writeList($paramDeref, ${writeFuncFor(list.paramType)})"
+          }
+          case _ => throw new IllegalArgumentException(s"Unhandled parameterized type def")
+        }
+      }
+      case TagTypeDef(tag) => s"$tag.write($paramDeref)"
+    }
+  }
+
+  def writeFuncFor(ftd: FieldTypeDef): String = {
+    ftd match {
+      case SimpleTypeDef(t) => writeFuncFor(t)
+      case ParamTypeDef(t) => writeFuncFor(t)
+      case TagTypeDef(tag) => s"$tag.write"
+    }
+  }
+
+  def writeFuncFor(typ: VType): String = {
+    typ match {
+      case t: VTExtType => s"${t.tag}.write"
+      /* case t: VTList => {
+        s"$utilKlass.writeList"
+      }*/
+      case t =>
+        typ match {
+          case VTBool => "VBool"
+          case VTInt32 => "VInt32"
+          case VTUInt32 => "VUInt32"
+          case VTInt64 => "VInt64"
+          case VTUInt64 => "VUInt64"
+          case VTFloat => "VFloat"
+          case VTDouble => "VDouble"
+          case VTString => "VString"
+          case _ => throw new IllegalArgumentException(s"Type unhandled: $typ")
+        }
+      //s"$method($paramDeref)"
+    }
+  }
 
   def tab(n: Int): String = Range(0, n).map(_ => "  ").mkString("")
   //val tab = "  "
@@ -367,6 +422,31 @@ object Gen {
     pw.println()
     pw.println(tab(1) + "}")
     pw.println()
+
+    /*
+
+  def write(obj: LinkLayerConfig): TaggedValue = {
+
+    val built = VTuple(Vector(
+      TaggedField("isMaster", VBool(obj.isMaster))))
+
+    TaggedValue("LinkLayerConfig", built)
+  }
+     */
+
+    pw.println(tab(1) + s"def write(obj: $name): TaggedValue = {")
+    pw.println(tab(2) + "val built = VTuple(Vector(")
+    val buildList = objDef.fields.map { d =>
+      //s"""TaggedField("${d.name}", ${writeFuncFor(d.typ)}(obj.${d.name}))"""
+      s"""TaggedField("${d.name}", ${writeCallFor(d.typ, s"obj.${d.name}")})"""
+      //pw.println(tab(3) + s"""TaggedValue("${d.name}", ${writeFuncFor(d.typ)}(obj.${d.name}))""")
+    }.mkString(tab(3), ",\n" + tab(3), "")
+    pw.println(buildList)
+    pw.println(tab(2) + "))")
+    pw.println()
+    pw.println(tab(2) + s"""TaggedValue("$name", built)""")
+    pw.println(tab(1) + "}")
+
     pw.println("}")
 
     val fieldDescs = objDef.fields.map(fd => s"${fd.name}: ${signatureFor(fd.typ)}")

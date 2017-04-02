@@ -84,13 +84,13 @@ case class VString(value: String) extends Value
 
 case class VTuple(value: IndexedSeq[Element]) extends BasicValue // ???
 
-sealed trait StructuralValue
+sealed trait StructuralValue extends Value
 
 case object VNone extends StructuralValue
 
 //case class VTuple(value: IndexedSeq[Element]) extends StructuralValue // ???
-case class VList(value: IndexedSeq[Value]) extends StructuralValue
-case class VMap(value: Map[Value, Value]) extends StructuralValue
+case class VList(value: IndexedSeq[ValueElement]) extends StructuralValue
+case class VMap(value: Map[ValueElement, ValueElement]) extends StructuralValue
 
 // ==============================
 
