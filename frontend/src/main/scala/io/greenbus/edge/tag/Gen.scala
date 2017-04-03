@@ -324,12 +324,6 @@ object Gen {
       case t => throw new IllegalArgumentException(s"Simple type unhandled: $t")
     }
   }
-  /*
-
-  case class SimpleTypeDef(typ: VType) extends FieldTypeDef
-  case class ParamTypeDef(typ: VType) extends FieldTypeDef
-  case class TagTypeDef(tag: String) extends FieldTypeDef
-   */
 
   def writeCallFor(ftd: FieldTypeDef, paramDeref: String): String = {
     ftd match {
@@ -357,9 +351,6 @@ object Gen {
   def writeFuncFor(typ: VType): String = {
     typ match {
       case t: VTExtType => s"${t.tag}.write"
-      /* case t: VTList => {
-        s"$utilKlass.writeList"
-      }*/
       case t =>
         typ match {
           case VTBool => "VBool"
@@ -372,12 +363,10 @@ object Gen {
           case VTString => "VString"
           case _ => throw new IllegalArgumentException(s"Type unhandled: $typ")
         }
-      //s"$method($paramDeref)"
     }
   }
 
   def tab(n: Int): String = Range(0, n).map(_ => "  ").mkString("")
-  //val tab = "  "
 
   def writeStatic(name: String, objDef: ObjDef, pw: PrintWriter): Unit = {
     pw.println(s"object $name {")
@@ -423,23 +412,10 @@ object Gen {
     pw.println(tab(1) + "}")
     pw.println()
 
-    /*
-
-  def write(obj: LinkLayerConfig): TaggedValue = {
-
-    val built = VTuple(Vector(
-      TaggedField("isMaster", VBool(obj.isMaster))))
-
-    TaggedValue("LinkLayerConfig", built)
-  }
-     */
-
     pw.println(tab(1) + s"def write(obj: $name): TaggedValue = {")
     pw.println(tab(2) + "val built = VTuple(Vector(")
     val buildList = objDef.fields.map { d =>
-      //s"""TaggedField("${d.name}", ${writeFuncFor(d.typ)}(obj.${d.name}))"""
       s"""TaggedField("${d.name}", ${writeCallFor(d.typ, s"obj.${d.name}")})"""
-      //pw.println(tab(3) + s"""TaggedValue("${d.name}", ${writeFuncFor(d.typ)}(obj.${d.name}))""")
     }.mkString(tab(3), ",\n" + tab(3), "")
     pw.println(buildList)
     pw.println(tab(2) + "))")
@@ -453,16 +429,6 @@ object Gen {
 
     pw.println(s"""case class $name(${fieldDescs.mkString(", ")})""")
     pw.println()
-
   }
 
-  def main(args: Array[String]): Unit = {
-    val all = collectTypes(TestSchema.master, Map())
-    println(all.mkString("\n"))
-    println("")
-
-    val fw = new PrintWriter("testfile.scala" /*new FileOutputStream(new File("testdir/testfile.scala"))*/ )
-    output("io.greenbus.edge.dnp3.config.model", all, fw)
-    fw.flush()
-  }
 }

@@ -77,6 +77,35 @@ object Schema {
 
 }
 
+object Example {
+  import io.greenbus.edge.dnp3.config.model._
+
+  def build: Master = {
+
+    Master(
+      StackConfig(
+        LinkLayer(isMaster = true, localAddress = 1, remoteAddress = 100, userConfirmations = false, ackTimeoutMs = 1000, numRetries = 3),
+        AppLayer(timeoutMs = 5000, maxFragSize = 2048, numRetries = 0)
+      ),
+      MasterSettings(allowTimeSync = true, integrityPeriodMs = 300000, taskRetryMs = 5000),
+      Seq(Scan(
+        enableClass1 = true,
+        enableClass2 = true,
+        enableClass3 = true,
+        periodMs = 2000
+      )),
+      Unsol(doTask = true, enable = true, enableClass1 = true, enableClass2 = true, enableClass3 = true)
+    )
+  }
+
+  def main(args: Array[String]): Unit = {
+
+    val example = build
+    println(Master.write(example))
+  }
+
+}
+
 object Builder {
 
   def main(args: Array[String]): Unit = {

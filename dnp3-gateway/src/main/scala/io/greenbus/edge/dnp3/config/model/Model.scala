@@ -1,21 +1,3 @@
-/**
- * Copyright 2011-2017 Green Energy Corp.
- *
- * Licensed to Green Energy Corp (www.greenenergycorp.com) under one or more
- * contributor license agreements. See the NOTICE file distributed with this
- * work for additional information regarding copyright ownership. Green Energy
- * Corp licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package io.greenbus.edge.dnp3.config.model
 
 import io.greenbus.edge.tag._
@@ -47,7 +29,8 @@ object LinkLayer {
       TaggedField("remoteAddress", VUInt32(obj.remoteAddress)),
       TaggedField("userConfirmations", VBool(obj.userConfirmations)),
       TaggedField("ackTimeoutMs", VUInt64(obj.ackTimeoutMs)),
-      TaggedField("numRetries", VUInt32(obj.numRetries))))
+      TaggedField("numRetries", VUInt32(obj.numRetries))
+    ))
 
     TaggedValue("LinkLayer", built)
   }
@@ -77,7 +60,8 @@ object Master {
       TaggedField("stack", StackConfig.write(obj.stack)),
       TaggedField("masterSettings", MasterSettings.write(obj.masterSettings)),
       TaggedField("scanList", MappingLibrary.writeList(obj.scanList, Scan.write)),
-      TaggedField("unsol", Unsol.write(obj.unsol))))
+      TaggedField("unsol", Unsol.write(obj.unsol))
+    ))
 
     TaggedValue("Master", built)
   }
@@ -105,7 +89,8 @@ object MasterSettings {
     val built = VTuple(Vector(
       TaggedField("allowTimeSync", VBool(obj.allowTimeSync)),
       TaggedField("taskRetryMs", VUInt64(obj.taskRetryMs)),
-      TaggedField("integrityPeriodMs", VUInt64(obj.integrityPeriodMs))))
+      TaggedField("integrityPeriodMs", VUInt64(obj.integrityPeriodMs))
+    ))
 
     TaggedValue("MasterSettings", built)
   }
@@ -137,7 +122,8 @@ object Unsol {
       TaggedField("enable", VBool(obj.enable)),
       TaggedField("enableClass1", VBool(obj.enableClass1)),
       TaggedField("enableClass2", VBool(obj.enableClass2)),
-      TaggedField("enableClass3", VBool(obj.enableClass3))))
+      TaggedField("enableClass3", VBool(obj.enableClass3))
+    ))
 
     TaggedValue("Unsol", built)
   }
@@ -163,7 +149,8 @@ object StackConfig {
   def write(obj: StackConfig): TaggedValue = {
     val built = VTuple(Vector(
       TaggedField("linkLayer", LinkLayer.write(obj.linkLayer)),
-      TaggedField("appLayer", AppLayer.write(obj.appLayer))))
+      TaggedField("appLayer", AppLayer.write(obj.appLayer))
+    ))
 
     TaggedValue("StackConfig", built)
   }
@@ -191,7 +178,8 @@ object AppLayer {
     val built = VTuple(Vector(
       TaggedField("timeoutMs", VUInt64(obj.timeoutMs)),
       TaggedField("maxFragSize", VUInt32(obj.maxFragSize)),
-      TaggedField("numRetries", VUInt32(obj.numRetries))))
+      TaggedField("numRetries", VUInt32(obj.numRetries))
+    ))
 
     TaggedValue("AppLayer", built)
   }
@@ -221,10 +209,12 @@ object Scan {
       TaggedField("enableClass1", VBool(obj.enableClass1)),
       TaggedField("enableClass2", VBool(obj.enableClass2)),
       TaggedField("enableClass3", VBool(obj.enableClass3)),
-      TaggedField("periodMs", VUInt64(obj.periodMs))))
+      TaggedField("periodMs", VUInt64(obj.periodMs))
+    ))
 
     TaggedValue("Scan", built)
   }
 }
 case class Scan(enableClass1: Boolean, enableClass2: Boolean, enableClass3: Boolean, periodMs: Long)
+
 
