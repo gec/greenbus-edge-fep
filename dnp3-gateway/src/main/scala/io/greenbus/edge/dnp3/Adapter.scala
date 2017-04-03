@@ -24,7 +24,7 @@ import org.totalgrid.dnp3._
 class Adapter {
 
 }
-
+/*
 case class Dnp3MasterConfig(stack: MasterStackConfig, logLevel: FilterLevel, address: String, port: Int, retryMs: Long)
 
 case class ConnectionOpts(address: String, port: Int, retryMs: Option[Long])
@@ -39,11 +39,11 @@ trait ReaderContext {
 
 object ValueUtils {
 
-  def descName(v: ValueElement): String = {
+  def descName(v: Element): String = {
     v.getClass.getSimpleName
   }
 
-  def toFieldMap(struct: VTuple): Map[String, ValueElement] = {
+  def toFieldMap(struct: VTuple): Map[String, Element] = {
     struct.value.flatMap {
       case field: TaggedField => Some(field.name, field.value)
       case _ => None
@@ -60,9 +60,9 @@ object ValueUtils {
     }
   }*/
 
-  def readFieldSubStruct[A](fieldName: String, map: Map[String, ValueElement], tag: String, read: (VTuple, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
+  def readFieldSubStruct[A](fieldName: String, map: Map[String, Element], tag: String, read: (VTuple, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
 
-    def matchV(elem: ValueElement): Either[String, A] = {
+    def matchV(elem: Element): Either[String, A] = {
       elem match {
         case v: VTuple => read(v, ctx.structField(tag, fieldName))
         case _ => Left(s"${ctx.context} error: expected boolean value, saw: ${descName(elem)}")
@@ -79,7 +79,7 @@ object ValueUtils {
     }
   }
 
-  def readField[A](fieldName: String, map: Map[String, ValueElement], read: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
+  def readField[A](fieldName: String, map: Map[String, Element], read: (Element, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
     map.get(fieldName) match {
       case None => Left(s"${ctx.context} error: expected field '$fieldName'")
       case Some(elem) => read(elem, ctx.field(fieldName))
@@ -92,19 +92,19 @@ object ValueUtils {
       case Some(elem) => readBool()
     }
   }*/
-  def readBool(elem: ValueElement, ctx: ReaderContext): Either[String, Boolean] = {
+  def readBool(elem: Element, ctx: ReaderContext): Either[String, Boolean] = {
     elem match {
       case v: VBool => Right(v.value)
       case _ => Left(s"${ctx.context} error: expected boolean value, saw: ${descName(elem)}")
     }
   }
-  def readInt(elem: ValueElement, ctx: ReaderContext): Either[String, Int] = {
+  def readInt(elem: Element, ctx: ReaderContext): Either[String, Int] = {
     elem match {
       case v: IntegerValue => Right(v.toInt)
       case _ => Left(s"{ctx.context} error: expected integer value, saw: ${descName(elem)}")
     }
   }
-  def readLong(elem: ValueElement, ctx: ReaderContext): Either[String, Long] = {
+  def readLong(elem: Element, ctx: ReaderContext): Either[String, Long] = {
     elem match {
       case v: IntegerValue => Right(v.toLong)
       case _ => Left(s"{ctx.context} error: expected integer value, saw: ${descName(elem)}")
@@ -244,8 +244,8 @@ object Configurer {
       config
     }
   }
-
-  /*
+*/
+/*
 
   private def configure(xml: Master, fragSize: Int): MasterConfig = {
     val cfg = new MasterConfig
@@ -291,7 +291,7 @@ object Configurer {
     cfg
   }
    */
-}
+//}
 
 /*case class LinkLayerConfig(
                           isMaster: Boolean,

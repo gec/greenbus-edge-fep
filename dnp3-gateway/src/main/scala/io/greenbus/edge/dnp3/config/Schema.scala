@@ -85,23 +85,38 @@ object Example {
     Master(
       StackConfig(
         LinkLayer(isMaster = true, localAddress = 1, remoteAddress = 100, userConfirmations = false, ackTimeoutMs = 1000, numRetries = 3),
-        AppLayer(timeoutMs = 5000, maxFragSize = 2048, numRetries = 0)
-      ),
+        AppLayer(timeoutMs = 5000, maxFragSize = 2048, numRetries = 0)),
       MasterSettings(allowTimeSync = true, integrityPeriodMs = 300000, taskRetryMs = 5000),
       Seq(Scan(
         enableClass1 = true,
         enableClass2 = true,
         enableClass3 = true,
-        periodMs = 2000
-      )),
-      Unsol(doTask = true, enable = true, enableClass1 = true, enableClass2 = true, enableClass3 = true)
-    )
+        periodMs = 2000)),
+      Unsol(doTask = true, enable = true, enableClass1 = true, enableClass2 = true, enableClass3 = true))
   }
 
   def main(args: Array[String]): Unit = {
 
     val example = build
-    println(Master.write(example))
+    val written = Master.write(example)
+    println(written)
+
+    val readEither = written match {
+      case t: TaggedValue =>
+        t.value match {
+          case tt: VTuple => Master.read(tt, SimpleReaderContext(Vector(RootCtx("Master"))))
+          case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
+        }
+      case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
+    }
+
+    readEither match {
+      case Left(err) => println("ERROR: " + err)
+      case Right(master) =>
+        println(master)
+        println(example == master)
+    }
+
   }
 
 }

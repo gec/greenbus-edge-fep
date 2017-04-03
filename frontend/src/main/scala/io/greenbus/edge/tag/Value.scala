@@ -18,13 +18,23 @@
  */
 package io.greenbus.edge.tag
 
-sealed trait Element
+/*
 
-sealed trait ValueElement extends Element
-sealed trait Value extends ValueElement
-case class TaggedValue(tag: String, value: Value) extends ValueElement
+  elem = tagged_value | value
+  value = none | prim | tuple | list | map
+  field = tagged_field | elem
+  tuple = { field }
+  list = { elem }
+  map = { elem, elem }
 
-case class TaggedField(name: String, value: ValueElement) extends Element
+ */
+sealed trait Field
+case class TaggedField(name: String, value: Element) extends Field
+
+//sealed trait ValueElement extends Element
+sealed trait Element extends Field
+sealed trait Value extends Element //ValueElement
+case class TaggedValue(tag: String, value: Value) extends Element //ValueElement
 
 sealed trait PrimitiveValue extends Value
 case class VByte(value: Byte) extends PrimitiveValue
@@ -82,15 +92,15 @@ case class Field extends Value()*/
 case class VString(value: String) extends Value
 //case class VSymbol(value: String) extends Value
 
-case class VTuple(value: IndexedSeq[Element]) extends BasicValue // ???
+case class VTuple(value: IndexedSeq[Field]) extends BasicValue // ???
 
 sealed trait StructuralValue extends Value
 
 case object VNone extends StructuralValue
 
 //case class VTuple(value: IndexedSeq[Element]) extends StructuralValue // ???
-case class VList(value: IndexedSeq[ValueElement]) extends StructuralValue
-case class VMap(value: Map[ValueElement, ValueElement]) extends StructuralValue
+case class VList(value: IndexedSeq[Element]) extends StructuralValue
+case class VMap(value: Map[Element, Element]) extends StructuralValue
 
 // ==============================
 
