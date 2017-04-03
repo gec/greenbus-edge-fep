@@ -29,52 +29,52 @@ object Schema {
 
   val linkLayer: VTExtType = {
     VTExtType("LinkLayer", VTTuple(Vector(
-      FieldDef("isMaster", VTBool),
-      FieldDef("localAddress", VTUInt32),
-      FieldDef("remoteAddress", VTUInt32),
-      FieldDef("userConfirmations", VTBool),
-      FieldDef("ackTimeoutMs", VTUInt64),
-      FieldDef("numRetries", VTUInt32))))
+      VTField("isMaster", VTBool),
+      VTField("localAddress", VTUInt32),
+      VTField("remoteAddress", VTUInt32),
+      VTField("userConfirmations", VTBool),
+      VTField("ackTimeoutMs", VTUInt64),
+      VTField("numRetries", VTUInt32))))
   }
   val appLayer: VTExtType = {
     VTExtType("AppLayer", VTTuple(Vector(
-      FieldDef("timeoutMs", VTUInt64),
-      FieldDef("maxFragSize", VTUInt32),
-      FieldDef("numRetries", VTUInt32))))
+      VTField("timeoutMs", VTUInt64),
+      VTField("maxFragSize", VTUInt32),
+      VTField("numRetries", VTUInt32))))
   }
   val stackConfig: VTExtType = {
     VTExtType("StackConfig", VTTuple(Vector(
-      FieldDef("linkLayer", linkLayer),
-      FieldDef("appLayer", appLayer))))
+      VTField("linkLayer", linkLayer),
+      VTField("appLayer", appLayer))))
   }
   val masterSettings: VTExtType = {
     VTExtType("MasterSettings", VTTuple(Vector(
-      FieldDef("allowTimeSync", VTBool),
-      FieldDef("taskRetryMs", VTUInt64),
-      FieldDef("integrityPeriodMs", VTUInt64))))
+      VTField("allowTimeSync", VTBool),
+      VTField("taskRetryMs", VTUInt64),
+      VTField("integrityPeriodMs", VTUInt64))))
   }
   val scan: VTExtType = {
     VTExtType("Scan", VTTuple(Vector(
-      FieldDef("enableClass1", VTBool),
-      FieldDef("enableClass2", VTBool),
-      FieldDef("enableClass3", VTBool),
-      FieldDef("periodMs", VTUInt64))))
+      VTField("enableClass1", VTBool),
+      VTField("enableClass2", VTBool),
+      VTField("enableClass3", VTBool),
+      VTField("periodMs", VTUInt64))))
   }
   val unsol: VTExtType = {
     VTExtType("Unsol", VTTuple(Vector(
-      FieldDef("doTask", VTBool),
-      FieldDef("enable", VTBool),
-      FieldDef("enableClass1", VTBool),
-      FieldDef("enableClass2", VTBool),
-      FieldDef("enableClass3", VTBool))))
+      VTField("doTask", VTBool),
+      VTField("enable", VTBool),
+      VTField("enableClass1", VTBool),
+      VTField("enableClass2", VTBool),
+      VTField("enableClass3", VTBool))))
   }
 
   val master: VTExtType = {
     VTExtType("Master", VTTuple(Vector(
-      FieldDef("stack", stackConfig),
-      FieldDef("masterSettings", masterSettings),
-      FieldDef("scanList", VTList(scan)),
-      FieldDef("unsol", unsol))))
+      VTField("stack", stackConfig),
+      VTField("masterSettings", masterSettings),
+      VTField("scanList", VTList(scan)),
+      VTField("unsol", unsol))))
   }
 
 }
@@ -136,11 +136,16 @@ object XmlWriterTester {
 
     Writer.write(obj, stringOut)
     val array = stringOut.toByteArray
-    println(stringOut.toString("UTF-8"))
 
     val in = new ByteArrayInputStream(array)
-    XmlReader.read(in, Schema.master)
+    val xmlRead = XmlReader.read(in, Schema.master)
 
+    println(stringOut.toString("UTF-8"))
+    println(obj)
+    println(xmlRead)
+
+    val theyMatch = obj == xmlRead
+    println("match? " + theyMatch)
   }
 }
 
