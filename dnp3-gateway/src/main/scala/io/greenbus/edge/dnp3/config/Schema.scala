@@ -18,10 +18,12 @@
  */
 package io.greenbus.edge.dnp3.config
 
-import java.io.{ File, FileOutputStream, PrintWriter }
+import java.io._
 
 import com.google.common.io.Files
+import io.greenbus.edge.dnp3.config.model.Master
 import io.greenbus.edge.tag._
+import io.greenbus.edge.tag.xml.{ Writer, XmlReader }
 
 object Schema {
 
@@ -119,6 +121,27 @@ object Example {
 
   }
 
+}
+
+object XmlWriterTester {
+
+  def main(args: Array[String]): Unit = {
+
+    //Writer.write(VBool(false), System.out)
+
+    val example = Example.build
+    val obj = Master.write(example)
+
+    val stringOut = new ByteArrayOutputStream()
+
+    Writer.write(obj, stringOut)
+    val array = stringOut.toByteArray
+    println(stringOut.toString("UTF-8"))
+
+    val in = new ByteArrayInputStream(array)
+    XmlReader.read(in, Schema.master)
+
+  }
 }
 
 object Builder {

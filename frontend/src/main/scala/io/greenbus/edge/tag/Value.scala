@@ -33,8 +33,8 @@ case class TaggedField(name: String, value: Element) extends Field
 
 //sealed trait ValueElement extends Element
 sealed trait Element extends Field
-sealed trait Value extends Element //ValueElement
 case class TaggedValue(tag: String, value: Value) extends Element //ValueElement
+sealed trait Value extends Element //ValueElement
 
 sealed trait PrimitiveValue extends Value
 case class VByte(value: Byte) extends PrimitiveValue
