@@ -76,14 +76,56 @@ object Schema {
       VTField("scanList", VTList(scan)),
       VTField("unsol", unsol))))
   }
+}
+
+object DnpGatewaySchema {
+
+  val tcpClient: VTExtType = {
+    VTExtType("TCPClient", VTTuple(Vector(
+      VTField("host", VTString),
+      VTField("port", VTUInt32))))
+  }
+  val selectIndex: VTExtType = {
+    VTExtType("IndexSelect", VTUInt32)
+  }
+  val selectRange: VTExtType = {
+    VTExtType("IndexRange", VTTuple(Vector(
+      VTField("start", VTUInt32),
+      VTField("count", VTUInt32))))
+  }
+  val indexSet: VTExtType = {
+    VTExtType("IndexSet", VTList(VTUnion(Set(selectIndex, selectRange))))
+  }
+
+  val inputModel: VTExtType = {
+    VTExtType("InputModel", VTTuple(Vector(
+      VTField("binaryInputs", indexSet),
+      VTField("analogInputs", indexSet),
+      VTField("counterInputs", indexSet),
+      VTField("binaryOutputs", indexSet),
+      VTField("analogOutputs", indexSet))))
+  }
+
+  val outputModel: VTExtType = {
+    VTExtType("InputModel", VTTuple(Vector(
+      VTField("binaries", indexSet),
+      VTField("setpoints", indexSet))))
+  }
+
+  val gateway: VTExtType = {
+    VTExtType("DNP3Gateway", VTTuple(Vector(
+      VTField("master", Schema.master),
+      VTField("client", tcpClient),
+      VTField("inputModel", inputModel),
+      VTField("outputModel", outputModel))))
+  }
 
 }
 
 object Example {
   import io.greenbus.edge.dnp3.config.model._
 
-  def build: Master = {
-
+  def buildMaster: Master = {
     Master(
       StackConfig(
         LinkLayer(isMaster = true, localAddress = 1, remoteAddress = 100, userConfirmations = false, ackTimeoutMs = 1000, numRetries = 3),
@@ -99,7 +141,7 @@ object Example {
 
   def main(args: Array[String]): Unit = {
 
-    val example = build
+    val example = buildMaster
     val written = Master.write(example)
     println(written)
 
@@ -129,7 +171,7 @@ object XmlWriterTester {
 
     //Writer.write(VBool(false), System.out)
 
-    val example = Example.build
+    val example = Example.buildMaster
     val obj = Master.write(example)
 
     val stringOut = new ByteArrayOutputStream()
@@ -152,7 +194,7 @@ object XmlWriterTester {
 object Builder {
 
   def main(args: Array[String]): Unit = {
-    val all = Gen.collectTypes(Schema.master, Map())
+    val all = Gen.collectTypes(DnpGatewaySchema.gateway, Map())
 
     val f = new File("dnp3-gateway/src/main/scala/io/greenbus/edge/dnp3/config/model/Model.scala")
     Files.createParentDirs(f)
