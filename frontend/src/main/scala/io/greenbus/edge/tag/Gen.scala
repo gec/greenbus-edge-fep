@@ -210,14 +210,14 @@ object Gen {
   case class TypeDefFrag(code: String)
 
   sealed trait FieldTypeDef
-  case class SimpleTypeDef(typ: VType) extends FieldTypeDef
-  case class ParamTypeDef(typ: VType) extends FieldTypeDef
+  case class SimpleTypeDef(typ: ValueType) extends FieldTypeDef
+  case class ParamTypeDef(typ: ValueType) extends FieldTypeDef
   case class TagTypeDef(tag: String) extends FieldTypeDef
 
   case class FieldDef(name: String, typ: FieldTypeDef)
   case class ObjDef(fields: Seq[FieldDef])
 
-  def collectTypes(typ: VTExtType, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
+  def collectTypes(typ: TExt, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
 
     var collected: Map[String, ObjDef] = seen
 
@@ -227,16 +227,16 @@ object Gen {
           val name = fd.fieldName
           val typ = fd.fieldType
           val typDef = typ match {
-            case t: VTExtType => {
+            case t: TExt => {
               if (!collected.contains(t.tag)) {
                 val added = collectTypes(t, collected)
                 collected ++= added
               }
               TagTypeDef(t.tag)
             }
-            case t: VTList => {
+            case t: TList => {
               t.paramType match {
-                case ext: VTExtType => {
+                case ext: TExt => {
                   if (!collected.contains(ext.tag)) {
                     val added = collectTypes(ext, collected)
                     collected ++= added
@@ -274,10 +274,10 @@ object Gen {
 
   val utilKlass = "MappingLibrary"
 
-  def readFuncForTypeParam(typ: VType): String = {
+  def readFuncForTypeParam(typ: ValueType): String = {
     typ match {
       //case t: VTTuple =>
-      case t: VTExtType => s"${t.tag}.read"
+      case t: TExt => s"${t.tag}.read"
       case t => readFuncForSimpleTyp(t)
     }
   }
@@ -290,32 +290,32 @@ object Gen {
     }
   }
 
-  def fieldSignatureFor(typ: VType): String = {
+  def fieldSignatureFor(typ: ValueType): String = {
     typ match {
-      case VTBool => "Boolean"
-      case VTInt32 => "Int"
-      case VTUInt32 => "Int"
-      case VTInt64 => "Long"
-      case VTUInt64 => "Long"
-      case VTFloat => "Float"
-      case VTDouble => "Double"
-      case VTString => "String"
-      case t: VTList => s"Seq[${fieldSignatureFor(t.paramType)}]"
-      case t: VTExtType => t.tag
+      case TBool => "Boolean"
+      case TInt32 => "Int"
+      case TUInt32 => "Int"
+      case TInt64 => "Long"
+      case TUInt64 => "Long"
+      case TFloat => "Float"
+      case TDouble => "Double"
+      case TString => "String"
+      case t: TList => s"Seq[${fieldSignatureFor(t.paramType)}]"
+      case t: TExt => t.tag
       case t => throw new IllegalArgumentException(s"Type signature unhandled: $t")
     }
   }
 
-  def readFuncForSimpleTyp(typ: VType): String = {
+  def readFuncForSimpleTyp(typ: ValueType): String = {
     typ match {
-      case VTBool => s"$utilKlass.readBool"
-      case VTInt32 => s"$utilKlass.readInt"
-      case VTUInt32 => s"$utilKlass.readInt"
-      case VTInt64 => s"$utilKlass.readLong"
-      case VTUInt64 => s"$utilKlass.readLong"
-      case VTFloat => s"$utilKlass.readFloat"
-      case VTDouble => s"$utilKlass.readDouble"
-      case VTString => s"$utilKlass.readString"
+      case TBool => s"$utilKlass.readBool"
+      case TInt32 => s"$utilKlass.readInt"
+      case TUInt32 => s"$utilKlass.readInt"
+      case TInt64 => s"$utilKlass.readLong"
+      case TUInt64 => s"$utilKlass.readLong"
+      case TFloat => s"$utilKlass.readFloat"
+      case TDouble => s"$utilKlass.readDouble"
+      case TString => s"$utilKlass.readString"
       case t => throw new IllegalArgumentException(s"Simple type unhandled: $t")
     }
   }
@@ -325,7 +325,7 @@ object Gen {
       case SimpleTypeDef(t) => writeFuncFor(t) + s"($paramDeref)"
       case ParamTypeDef(t) => {
         t match {
-          case list: VTList => {
+          case list: TList => {
             s"$utilKlass.writeList($paramDeref, ${writeFuncFor(list.paramType)})"
           }
           case _ => throw new IllegalArgumentException(s"Unhandled parameterized type def")
@@ -343,19 +343,19 @@ object Gen {
     }
   }
 
-  def writeFuncFor(typ: VType): String = {
+  def writeFuncFor(typ: ValueType): String = {
     typ match {
-      case t: VTExtType => s"${t.tag}.write"
+      case t: TExt => s"${t.tag}.write"
       case t =>
         typ match {
-          case VTBool => "VBool"
-          case VTInt32 => "VInt32"
-          case VTUInt32 => "VUInt32"
-          case VTInt64 => "VInt64"
-          case VTUInt64 => "VUInt64"
-          case VTFloat => "VFloat"
-          case VTDouble => "VDouble"
-          case VTString => "VString"
+          case TBool => "VBool"
+          case TInt32 => "VInt32"
+          case TUInt32 => "VUInt32"
+          case TInt64 => "VInt64"
+          case TUInt64 => "VUInt64"
+          case TFloat => "VFloat"
+          case TDouble => "VDouble"
+          case TString => "VString"
           case _ => throw new IllegalArgumentException(s"Type unhandled: $typ")
         }
     }
@@ -379,7 +379,7 @@ object Gen {
         }
         case ptd: ParamTypeDef => {
           ptd.typ match {
-            case typ: VTList => {
+            case typ: TList => {
               val paramRead = readFuncForTypeParam(typ.paramType)
               val paramSig = fieldSignatureFor(typ.paramType)
               pw.println(tab(2) + s"""val $name = $utilKlass.readListField[$paramSig]("$name", fieldMap, $utilKlass.readTup[$paramSig](_, _, $paramRead), ctx)""")

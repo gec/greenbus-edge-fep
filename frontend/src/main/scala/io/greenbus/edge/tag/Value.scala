@@ -104,36 +104,36 @@ case class VMap(value: Map[ValueElement, ValueElement]) extends StructuralValue
 
 // ==============================
 
-sealed trait VType
-case class VTField(fieldName: String, fieldType: VTValueElem) extends VType
+sealed trait ValueType
+case class VTField(fieldName: String, fieldType: VTValueElem) extends ValueType
 
-sealed trait VTValueElem extends VType
-case class VTExtType(tag: String, reprType: VTBasic) extends VTValueElem
+sealed trait VTValueElem extends ValueType
+case class TExt(tag: String, reprType: BasicValueType) extends VTValueElem
 
-sealed trait VTBasic extends VTValueElem
-sealed trait VTypePrimitive extends VTBasic
+sealed trait BasicValueType extends VTValueElem
+sealed trait PrimitiveValueType extends BasicValueType
 
-case object VTByte extends VTypePrimitive
-case object VTBool extends VTypePrimitive
-case object VTInt32 extends VTypePrimitive
-case object VTInt64 extends VTypePrimitive
-case object VTUInt32 extends VTypePrimitive
-case object VTUInt64 extends VTypePrimitive
-case object VTFloat extends VTypePrimitive
-case object VTDouble extends VTypePrimitive
+case object TByte extends PrimitiveValueType
+case object TBool extends PrimitiveValueType
+case object TInt32 extends PrimitiveValueType
+case object TInt64 extends PrimitiveValueType
+case object TUInt32 extends PrimitiveValueType
+case object TUInt64 extends PrimitiveValueType
+case object TFloat extends PrimitiveValueType
+case object TDouble extends PrimitiveValueType
 
-case object VTString extends VTBasic
+case object TString extends BasicValueType
 //case object VTSymbol extends VType
 
 //case object VTNone extends VType
-case class VTUnion(unionTypes: Set[VTValueElem]) extends VTBasic
-case class VTOption(paramType: VTValueElem) extends VTBasic
-case class VTEither(leftType: VTValueElem, rightType: VTValueElem) extends VTBasic
+case class TUnion(unionTypes: Set[VTValueElem]) extends BasicValueType
+case class TOption(paramType: VTValueElem) extends BasicValueType
+case class TEither(leftType: VTValueElem, rightType: VTValueElem) extends BasicValueType
 
-case class VTTuple(elementTypes: IndexedSeq[VTField]) extends VTBasic
+case class VTTuple(elementTypes: IndexedSeq[VTField]) extends BasicValueType
 //case class VTTuple(elementTypes: IndexedSeq[VType]) extends VType
-case class VTList(paramType: VTValueElem) extends VTBasic
-case class VTMap(keyType: VTValueElem, valueType: VTValueElem) extends VTBasic
+case class TList(paramType: VTValueElem) extends BasicValueType
+case class TMap(keyType: VTValueElem, valueType: VTValueElem) extends BasicValueType
 
 //case class TaggedType(tag: String, typ: VType)
 

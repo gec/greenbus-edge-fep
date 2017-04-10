@@ -27,78 +27,78 @@ import io.greenbus.edge.tag.xml.{ Writer, XmlReader }
 
 object Schema {
 
-  val linkLayer: VTExtType = {
-    VTExtType("LinkLayer", VTTuple(Vector(
-      VTField("isMaster", VTBool),
-      VTField("localAddress", VTUInt32),
-      VTField("remoteAddress", VTUInt32),
-      VTField("userConfirmations", VTBool),
-      VTField("ackTimeoutMs", VTUInt64),
-      VTField("numRetries", VTUInt32))))
+  val linkLayer: TExt = {
+    TExt("LinkLayer", VTTuple(Vector(
+      VTField("isMaster", TBool),
+      VTField("localAddress", TUInt32),
+      VTField("remoteAddress", TUInt32),
+      VTField("userConfirmations", TBool),
+      VTField("ackTimeoutMs", TUInt64),
+      VTField("numRetries", TUInt32))))
   }
-  val appLayer: VTExtType = {
-    VTExtType("AppLayer", VTTuple(Vector(
-      VTField("timeoutMs", VTUInt64),
-      VTField("maxFragSize", VTUInt32),
-      VTField("numRetries", VTUInt32))))
+  val appLayer: TExt = {
+    TExt("AppLayer", VTTuple(Vector(
+      VTField("timeoutMs", TUInt64),
+      VTField("maxFragSize", TUInt32),
+      VTField("numRetries", TUInt32))))
   }
-  val stackConfig: VTExtType = {
-    VTExtType("StackConfig", VTTuple(Vector(
+  val stackConfig: TExt = {
+    TExt("StackConfig", VTTuple(Vector(
       VTField("linkLayer", linkLayer),
       VTField("appLayer", appLayer))))
   }
-  val masterSettings: VTExtType = {
-    VTExtType("MasterSettings", VTTuple(Vector(
-      VTField("allowTimeSync", VTBool),
-      VTField("taskRetryMs", VTUInt64),
-      VTField("integrityPeriodMs", VTUInt64))))
+  val masterSettings: TExt = {
+    TExt("MasterSettings", VTTuple(Vector(
+      VTField("allowTimeSync", TBool),
+      VTField("taskRetryMs", TUInt64),
+      VTField("integrityPeriodMs", TUInt64))))
   }
-  val scan: VTExtType = {
-    VTExtType("Scan", VTTuple(Vector(
-      VTField("enableClass1", VTBool),
-      VTField("enableClass2", VTBool),
-      VTField("enableClass3", VTBool),
-      VTField("periodMs", VTUInt64))))
+  val scan: TExt = {
+    TExt("Scan", VTTuple(Vector(
+      VTField("enableClass1", TBool),
+      VTField("enableClass2", TBool),
+      VTField("enableClass3", TBool),
+      VTField("periodMs", TUInt64))))
   }
-  val unsol: VTExtType = {
-    VTExtType("Unsol", VTTuple(Vector(
-      VTField("doTask", VTBool),
-      VTField("enable", VTBool),
-      VTField("enableClass1", VTBool),
-      VTField("enableClass2", VTBool),
-      VTField("enableClass3", VTBool))))
+  val unsol: TExt = {
+    TExt("Unsol", VTTuple(Vector(
+      VTField("doTask", TBool),
+      VTField("enable", TBool),
+      VTField("enableClass1", TBool),
+      VTField("enableClass2", TBool),
+      VTField("enableClass3", TBool))))
   }
 
-  val master: VTExtType = {
-    VTExtType("Master", VTTuple(Vector(
+  val master: TExt = {
+    TExt("Master", VTTuple(Vector(
       VTField("stack", stackConfig),
       VTField("masterSettings", masterSettings),
-      VTField("scanList", VTList(scan)),
+      VTField("scanList", TList(scan)),
       VTField("unsol", unsol))))
   }
 }
 
 object DnpGatewaySchema {
 
-  val tcpClient: VTExtType = {
-    VTExtType("TCPClient", VTTuple(Vector(
-      VTField("host", VTString),
-      VTField("port", VTUInt32))))
+  val tcpClient: TExt = {
+    TExt("TCPClient", VTTuple(Vector(
+      VTField("host", TString),
+      VTField("port", TUInt32))))
   }
-  val selectIndex: VTExtType = {
-    VTExtType("IndexSelect", VTUInt32)
+  val selectIndex: TExt = {
+    TExt("IndexSelect", TUInt32)
   }
-  val selectRange: VTExtType = {
-    VTExtType("IndexRange", VTTuple(Vector(
-      VTField("start", VTUInt32),
-      VTField("count", VTUInt32))))
+  val selectRange: TExt = {
+    TExt("IndexRange", VTTuple(Vector(
+      VTField("start", TUInt32),
+      VTField("count", TUInt32))))
   }
-  val indexSet: VTExtType = {
-    VTExtType("IndexSet", VTList(VTUnion(Set(selectIndex, selectRange))))
+  val indexSet: TExt = {
+    TExt("IndexSet", TList(TUnion(Set(selectIndex, selectRange))))
   }
 
-  val inputModel: VTExtType = {
-    VTExtType("InputModel", VTTuple(Vector(
+  val inputModel: TExt = {
+    TExt("InputModel", VTTuple(Vector(
       VTField("binaryInputs", indexSet),
       VTField("analogInputs", indexSet),
       VTField("counterInputs", indexSet),
@@ -106,14 +106,14 @@ object DnpGatewaySchema {
       VTField("analogOutputs", indexSet))))
   }
 
-  val outputModel: VTExtType = {
-    VTExtType("InputModel", VTTuple(Vector(
+  val outputModel: TExt = {
+    TExt("InputModel", VTTuple(Vector(
       VTField("binaries", indexSet),
       VTField("setpoints", indexSet))))
   }
 
-  val gateway: VTExtType = {
-    VTExtType("DNP3Gateway", VTTuple(Vector(
+  val gateway: TExt = {
+    TExt("DNP3Gateway", VTTuple(Vector(
       VTField("master", Schema.master),
       VTField("client", tcpClient),
       VTField("inputModel", inputModel),

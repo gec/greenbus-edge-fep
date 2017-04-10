@@ -113,41 +113,41 @@ object Writer {
 object XmlReader {
   import scala.collection.mutable
 
-  def typeToName(t: VTBasic): String = {
+  def typeToName(t: BasicValueType): String = {
     t match {
       case _: VTTuple => "tuple"
-      case _: VTList => "list"
-      case _: VTMap => "map"
-      case VTBool => "bool"
-      case VTByte => "byte"
-      case VTInt32 => "int32"
-      case VTUInt32 => "uint32"
-      case VTInt64 => "int64"
-      case VTUInt64 => "uint64"
-      case VTFloat => "float"
-      case VTDouble => "double"
-      case VTString => "string"
+      case _: TList => "list"
+      case _: TMap => "map"
+      case TBool => "bool"
+      case TByte => "byte"
+      case TInt32 => "int32"
+      case TUInt32 => "uint32"
+      case TInt64 => "int64"
+      case TUInt64 => "uint64"
+      case TFloat => "float"
+      case TDouble => "double"
+      case TString => "string"
       case _ => throw new IllegalArgumentException(s"Type not handled: " + t)
     }
   }
 
-  def nameAndBasic(nodeType: VTValueElem): (String, VTBasic) = {
+  def nameAndBasic(nodeType: VTValueElem): (String, BasicValueType) = {
     nodeType match {
-      case t: VTExtType => (t.tag, t.reprType)
-      case t: VTBasic => (typeToName(t), t)
+      case t: TExt => (t.tag, t.reprType)
+      case t: BasicValueType => (typeToName(t), t)
     }
   }
 
-  case class ResultBuilder(typ: VType, attributes: Seq[(String, String)], sub: mutable.ArrayBuffer[Element])
+  case class ResultBuilder(typ: ValueType, attributes: Seq[(String, String)], sub: mutable.ArrayBuffer[Element])
 
   sealed trait Node {
-    def resultType: VType
+    def resultType: ValueType
   }
-  case class SingleNode(resultType: VType) extends Node
-  case class TupleNode(resultType: VType, queue: mutable.Queue[Node]) extends Node
-  case class SeqNode(resultType: VType, paramType: VTValueElem) extends Node
+  case class SingleNode(resultType: ValueType) extends Node
+  case class TupleNode(resultType: ValueType, queue: mutable.Queue[Node]) extends Node
+  case class SeqNode(resultType: ValueType, paramType: VTValueElem) extends Node
 
-  def nodeForType(t: VTBasic): Node = ???
+  def nodeForType(t: BasicValueType): Node = ???
 
   def read(is: InputStream, rootType: VTValueElem): Element = {
 
@@ -158,12 +158,12 @@ object XmlReader {
     var resultStack = List.empty[ResultBuilder]
     var resultOpt = Option.empty[Element]
 
-    def pushResultBuilder(resultType: VType): Unit = {
+    def pushResultBuilder(resultType: ValueType): Unit = {
       val attributes = readAttrs(doc)
       resultStack ::= ResultBuilder(resultType, attributes, mutable.ArrayBuffer.empty[Element])
     }
 
-    def nodeFor(basicType: VTBasic, matchType: VType): Node = {
+    def nodeFor(basicType: BasicValueType, matchType: ValueType): Node = {
       basicType match {
         case t: VTTuple => {
           val subNodes = mutable.Queue.empty[Node]
@@ -173,14 +173,14 @@ object XmlReader {
           }
           TupleNode(matchType, subNodes)
         }
-        case t: VTList => {
+        case t: TList => {
           SeqNode(matchType, t.paramType)
         }
         case t => SingleNode(matchType)
       }
     }
 
-    def expandBasic(basicType: VTBasic, matchType: VTValueElem): Unit = {
+    def expandBasic(basicType: BasicValueType, matchType: VTValueElem): Unit = {
       val node = nodeFor(basicType, matchType)
       schemaStack ::= node
     }
@@ -227,7 +227,7 @@ object XmlReader {
             }
           }
 
-          def process(nodeType: VType): Unit = {
+          def process(nodeType: ValueType): Unit = {
             val result = resultStack.head
             val built = build(nodeType, result.attributes, result.sub.toVector)
             popAndPushResult(built)
@@ -257,7 +257,7 @@ object XmlReader {
     resultOpt.getOrElse(throw new IllegalArgumentException("Did not produce result"))
   }
 
-  def build(typ: VType, attrs: Seq[(String, String)], subElements: Seq[Element]): Element = {
+  def build(typ: ValueType, attrs: Seq[(String, String)], subElements: Seq[Element]): Element = {
     typ match {
       case t: VTValueElem => buildValueType(t, attrs, subElements)
       case t: VTField => {
@@ -268,32 +268,32 @@ object XmlReader {
 
   def buildValueType(typ: VTValueElem, attrs: Seq[(String, String)], subElements: Seq[Element]): ValueElement = {
     typ match {
-      case t: VTExtType => TaggedValue(t.tag, buildBasic(t.reprType, attrs.toMap, subElements))
-      case t: VTBasic => buildBasic(t, attrs.toMap, subElements)
+      case t: TExt => TaggedValue(t.tag, buildBasic(t.reprType, attrs.toMap, subElements))
+      case t: BasicValueType => buildBasic(t, attrs.toMap, subElements)
     }
   }
 
-  def buildBasic(typ: VTBasic, attrs: Map[String, String], subElements: Seq[Element]): Value = {
+  def buildBasic(typ: BasicValueType, attrs: Map[String, String], subElements: Seq[Element]): Value = {
     typ match {
       case t: VTTuple => {
         VTuple(subElements.toIndexedSeq)
       }
-      case t: VTList => {
+      case t: TList => {
         val velems = subElements.map {
           case v: ValueElement => v
           case v => throw new IllegalArgumentException(s"Value element did not match for list $v")
         }
         VList(velems.toIndexedSeq)
       }
-      case VTBool => VBool(readAttr(attrs, "value", java.lang.Boolean.parseBoolean))
-      case VTByte => VByte(readAttr(attrs, "value", java.lang.Byte.parseByte))
-      case VTUInt32 => VUInt32(readAttr(attrs, "value", java.lang.Integer.parseUnsignedInt))
-      case VTInt32 => VInt32(readAttr(attrs, "value", java.lang.Integer.parseInt))
-      case VTUInt64 => VUInt64(readAttr(attrs, "value", java.lang.Long.parseUnsignedLong))
-      case VTInt64 => VInt64(readAttr(attrs, "value", java.lang.Long.parseLong))
-      case VTFloat => VFloat(readAttr(attrs, "value", java.lang.Float.parseFloat))
-      case VTDouble => VDouble(readAttr(attrs, "value", java.lang.Double.parseDouble))
-      case VTString => VString(readAttr(attrs, "value", a => a))
+      case TBool => VBool(readAttr(attrs, "value", java.lang.Boolean.parseBoolean))
+      case TByte => VByte(readAttr(attrs, "value", java.lang.Byte.parseByte))
+      case TUInt32 => VUInt32(readAttr(attrs, "value", java.lang.Integer.parseUnsignedInt))
+      case TInt32 => VInt32(readAttr(attrs, "value", java.lang.Integer.parseInt))
+      case TUInt64 => VUInt64(readAttr(attrs, "value", java.lang.Long.parseUnsignedLong))
+      case TInt64 => VInt64(readAttr(attrs, "value", java.lang.Long.parseLong))
+      case TFloat => VFloat(readAttr(attrs, "value", java.lang.Float.parseFloat))
+      case TDouble => VDouble(readAttr(attrs, "value", java.lang.Double.parseDouble))
+      case TString => VString(readAttr(attrs, "value", a => a))
       case _ => throw new IllegalArgumentException(s"Type not handled: " + typ)
     }
   }
