@@ -28,96 +28,96 @@ import io.greenbus.edge.tag.xml.{ Writer, XmlReader }
 object Schema {
 
   val linkLayer: TExt = {
-    TExt("LinkLayer", VTTuple(Vector(
-      VTField("isMaster", TBool),
-      VTField("localAddress", TUInt32),
-      VTField("remoteAddress", TUInt32),
-      VTField("userConfirmations", TBool),
-      VTField("ackTimeoutMs", TUInt64),
-      VTField("numRetries", TUInt32))))
+    TExt("LinkLayer", TStruct(Vector(
+      StructFieldDef("isMaster", TBool, 0),
+      StructFieldDef("localAddress", TUInt32, 1),
+      StructFieldDef("remoteAddress", TUInt32, 2),
+      StructFieldDef("userConfirmations", TBool, 3),
+      StructFieldDef("ackTimeoutMs", TUInt64, 4),
+      StructFieldDef("numRetries", TUInt32, 5))))
   }
   val appLayer: TExt = {
-    TExt("AppLayer", VTTuple(Vector(
-      VTField("timeoutMs", TUInt64),
-      VTField("maxFragSize", TUInt32),
-      VTField("numRetries", TUInt32))))
+    TExt("AppLayer", TStruct(Vector(
+      StructFieldDef("timeoutMs", TUInt64, 0),
+      StructFieldDef("maxFragSize", TUInt32, 1),
+      StructFieldDef("numRetries", TUInt32, 2))))
   }
   val stackConfig: TExt = {
-    TExt("StackConfig", VTTuple(Vector(
-      VTField("linkLayer", linkLayer),
-      VTField("appLayer", appLayer))))
+    TExt("StackConfig", TStruct(Vector(
+      StructFieldDef("linkLayer", linkLayer, 0),
+      StructFieldDef("appLayer", appLayer, 1))))
   }
   val masterSettings: TExt = {
-    TExt("MasterSettings", VTTuple(Vector(
-      VTField("allowTimeSync", TBool),
-      VTField("taskRetryMs", TUInt64),
-      VTField("integrityPeriodMs", TUInt64))))
+    TExt("MasterSettings", TStruct(Vector(
+      StructFieldDef("allowTimeSync", TBool, 0),
+      StructFieldDef("taskRetryMs", TUInt64, 1),
+      StructFieldDef("integrityPeriodMs", TUInt64, 2))))
   }
   val scan: TExt = {
-    TExt("Scan", VTTuple(Vector(
-      VTField("enableClass1", TBool),
-      VTField("enableClass2", TBool),
-      VTField("enableClass3", TBool),
-      VTField("periodMs", TUInt64))))
+    TExt("Scan", TStruct(Vector(
+      StructFieldDef("enableClass1", TBool, 0),
+      StructFieldDef("enableClass2", TBool, 1),
+      StructFieldDef("enableClass3", TBool, 2),
+      StructFieldDef("periodMs", TUInt64, 3))))
   }
   val unsol: TExt = {
-    TExt("Unsol", VTTuple(Vector(
-      VTField("doTask", TBool),
-      VTField("enable", TBool),
-      VTField("enableClass1", TBool),
-      VTField("enableClass2", TBool),
-      VTField("enableClass3", TBool))))
+    TExt("Unsol", TStruct(Vector(
+      StructFieldDef("doTask", TBool, 0),
+      StructFieldDef("enable", TBool, 1),
+      StructFieldDef("enableClass1", TBool, 2),
+      StructFieldDef("enableClass2", TBool, 3),
+      StructFieldDef("enableClass3", TBool, 4))))
   }
 
   val master: TExt = {
-    TExt("Master", VTTuple(Vector(
-      VTField("stack", stackConfig),
-      VTField("masterSettings", masterSettings),
-      VTField("scanList", TList(scan)),
-      VTField("unsol", unsol))))
+    TExt("Master", TStruct(Vector(
+      StructFieldDef("stack", stackConfig, 0),
+      StructFieldDef("masterSettings", masterSettings, 1),
+      StructFieldDef("scanList", TList(scan), 2),
+      StructFieldDef("unsol", unsol, 3))))
   }
 }
 
 object DnpGatewaySchema {
 
   val tcpClient: TExt = {
-    TExt("TCPClient", VTTuple(Vector(
-      VTField("host", TString),
-      VTField("port", TUInt32))))
+    TExt("TCPClient", TStruct(Vector(
+      StructFieldDef("host", TString, 0),
+      StructFieldDef("port", TUInt32, 1))))
   }
   val selectIndex: TExt = {
     TExt("IndexSelect", TUInt32)
   }
   val selectRange: TExt = {
-    TExt("IndexRange", VTTuple(Vector(
-      VTField("start", TUInt32),
-      VTField("count", TUInt32))))
+    TExt("IndexRange", TStruct(Vector(
+      StructFieldDef("start", TUInt32, 0),
+      StructFieldDef("count", TUInt32, 1))))
   }
   val indexSet: TExt = {
     TExt("IndexSet", TList(TUnion(Set(selectIndex, selectRange))))
   }
 
   val inputModel: TExt = {
-    TExt("InputModel", VTTuple(Vector(
-      VTField("binaryInputs", indexSet),
-      VTField("analogInputs", indexSet),
-      VTField("counterInputs", indexSet),
-      VTField("binaryOutputs", indexSet),
-      VTField("analogOutputs", indexSet))))
+    TExt("InputModel", TStruct(Vector(
+      StructFieldDef("binaryInputs", indexSet, 0),
+      StructFieldDef("analogInputs", indexSet, 1),
+      StructFieldDef("counterInputs", indexSet, 2),
+      StructFieldDef("binaryOutputs", indexSet, 3),
+      StructFieldDef("analogOutputs", indexSet, 4))))
   }
 
   val outputModel: TExt = {
-    TExt("InputModel", VTTuple(Vector(
-      VTField("binaries", indexSet),
-      VTField("setpoints", indexSet))))
+    TExt("InputModel", TStruct(Vector(
+      StructFieldDef("binaries", indexSet, 0),
+      StructFieldDef("setpoints", indexSet, 1))))
   }
 
   val gateway: TExt = {
-    TExt("DNP3Gateway", VTTuple(Vector(
-      VTField("master", Schema.master),
-      VTField("client", tcpClient),
-      VTField("inputModel", inputModel),
-      VTField("outputModel", outputModel))))
+    TExt("DNP3Gateway", TStruct(Vector(
+      StructFieldDef("master", Schema.master, 0),
+      StructFieldDef("client", tcpClient, 1),
+      StructFieldDef("inputModel", inputModel, 2),
+      StructFieldDef("outputModel", outputModel, 3))))
   }
 
 }
@@ -148,7 +148,7 @@ object Example {
     val readEither = written match {
       case t: TaggedValue =>
         t.value match {
-          case tt: VTuple => Master.read(tt, SimpleReaderContext(Vector(RootCtx("Master"))))
+          case tt: VStruct => Master.read(tt, SimpleReaderContext(Vector(RootCtx("Master"))))
           case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
         }
       case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")

@@ -22,7 +22,7 @@ import io.greenbus.edge.tag._
 
 object LinkLayer {
 
-  def read(data: VTuple, ctx: ReaderContext): Either[String, LinkLayer] = {
+  def read(data: VStruct, ctx: ReaderContext): Either[String, LinkLayer] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val isMaster = MappingLibrary.readField("isMaster", fieldMap, MappingLibrary.readBool, ctx)
@@ -41,7 +41,7 @@ object LinkLayer {
   }
 
   def write(obj: LinkLayer): TaggedValue = {
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("isMaster", VBool(obj.isMaster)),
       TaggedField("localAddress", VUInt32(obj.localAddress)),
       TaggedField("remoteAddress", VUInt32(obj.remoteAddress)),
@@ -56,7 +56,7 @@ case class LinkLayer(isMaster: Boolean, localAddress: Int, remoteAddress: Int, u
 
 object Master {
 
-  def read(data: VTuple, ctx: ReaderContext): Either[String, Master] = {
+  def read(data: VStruct, ctx: ReaderContext): Either[String, Master] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val stack = MappingLibrary.readFieldSubStruct("stack", fieldMap, "StackConfig", StackConfig.read, ctx)
@@ -73,7 +73,7 @@ object Master {
   }
 
   def write(obj: Master): TaggedValue = {
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("stack", StackConfig.write(obj.stack)),
       TaggedField("masterSettings", MasterSettings.write(obj.masterSettings)),
       TaggedField("scanList", MappingLibrary.writeList(obj.scanList, Scan.write)),
@@ -86,7 +86,7 @@ case class Master(stack: StackConfig, masterSettings: MasterSettings, scanList: 
 
 object MasterSettings {
 
-  def read(data: VTuple, ctx: ReaderContext): Either[String, MasterSettings] = {
+  def read(data: VStruct, ctx: ReaderContext): Either[String, MasterSettings] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val allowTimeSync = MappingLibrary.readField("allowTimeSync", fieldMap, MappingLibrary.readBool, ctx)
@@ -102,7 +102,7 @@ object MasterSettings {
   }
 
   def write(obj: MasterSettings): TaggedValue = {
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("allowTimeSync", VBool(obj.allowTimeSync)),
       TaggedField("taskRetryMs", VUInt64(obj.taskRetryMs)),
       TaggedField("integrityPeriodMs", VUInt64(obj.integrityPeriodMs))))
@@ -114,7 +114,7 @@ case class MasterSettings(allowTimeSync: Boolean, taskRetryMs: Long, integrityPe
 
 object Unsol {
 
-  def read(data: VTuple, ctx: ReaderContext): Either[String, Unsol] = {
+  def read(data: VStruct, ctx: ReaderContext): Either[String, Unsol] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val doTask = MappingLibrary.readField("doTask", fieldMap, MappingLibrary.readBool, ctx)
@@ -132,7 +132,7 @@ object Unsol {
   }
 
   def write(obj: Unsol): TaggedValue = {
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("doTask", VBool(obj.doTask)),
       TaggedField("enable", VBool(obj.enable)),
       TaggedField("enableClass1", VBool(obj.enableClass1)),
@@ -146,7 +146,7 @@ case class Unsol(doTask: Boolean, enable: Boolean, enableClass1: Boolean, enable
 
 object StackConfig {
 
-  def read(data: VTuple, ctx: ReaderContext): Either[String, StackConfig] = {
+  def read(data: VStruct, ctx: ReaderContext): Either[String, StackConfig] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val linkLayer = MappingLibrary.readFieldSubStruct("linkLayer", fieldMap, "LinkLayer", LinkLayer.read, ctx)
@@ -161,7 +161,7 @@ object StackConfig {
   }
 
   def write(obj: StackConfig): TaggedValue = {
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("linkLayer", LinkLayer.write(obj.linkLayer)),
       TaggedField("appLayer", AppLayer.write(obj.appLayer))))
 
@@ -172,7 +172,7 @@ case class StackConfig(linkLayer: LinkLayer, appLayer: AppLayer)
 
 object AppLayer {
 
-  def read(data: VTuple, ctx: ReaderContext): Either[String, AppLayer] = {
+  def read(data: VStruct, ctx: ReaderContext): Either[String, AppLayer] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val timeoutMs = MappingLibrary.readField("timeoutMs", fieldMap, MappingLibrary.readLong, ctx)
@@ -188,7 +188,7 @@ object AppLayer {
   }
 
   def write(obj: AppLayer): TaggedValue = {
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("timeoutMs", VUInt64(obj.timeoutMs)),
       TaggedField("maxFragSize", VUInt32(obj.maxFragSize)),
       TaggedField("numRetries", VUInt32(obj.numRetries))))
@@ -200,7 +200,7 @@ case class AppLayer(timeoutMs: Long, maxFragSize: Int, numRetries: Int)
 
 object Scan {
 
-  def read(data: VTuple, ctx: ReaderContext): Either[String, Scan] = {
+  def read(data: VStruct, ctx: ReaderContext): Either[String, Scan] = {
     val fieldMap = MappingLibrary.toFieldMap(data)
 
     val enableClass1 = MappingLibrary.readField("enableClass1", fieldMap, MappingLibrary.readBool, ctx)
@@ -217,7 +217,7 @@ object Scan {
   }
 
   def write(obj: Scan): TaggedValue = {
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("enableClass1", VBool(obj.enableClass1)),
       TaggedField("enableClass2", VBool(obj.enableClass2)),
       TaggedField("enableClass3", VBool(obj.enableClass3)),

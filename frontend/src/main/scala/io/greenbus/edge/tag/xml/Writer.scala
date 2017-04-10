@@ -60,7 +60,7 @@ object Writer {
 
   def writeValue(value: Value, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
     value match {
-      case v: VTuple => {
+      case v: VStruct => {
         w.writeStartElement(ctxName.getOrElse("tuple"))
         v.value.foreach(f => writeField(f, w))
         w.writeEndElement()
@@ -115,7 +115,7 @@ object XmlReader {
 
   def typeToName(t: BasicValueType): String = {
     t match {
-      case _: VTTuple => "tuple"
+      case _: TStruct => "tuple"
       case _: TList => "list"
       case _: TMap => "map"
       case TBool => "bool"
@@ -165,11 +165,11 @@ object XmlReader {
 
     def nodeFor(basicType: BasicValueType, matchType: ValueType): Node = {
       basicType match {
-        case t: VTTuple => {
+        case t: TStruct => {
           val subNodes = mutable.Queue.empty[Node]
-          t.elementTypes.foreach { fd =>
-            val (_, subBasic) = nameAndBasic(fd.fieldType)
-            subNodes += nodeFor(subBasic, fd)
+          t.fields.foreach { fd =>
+            val (_, subBasic) = nameAndBasic(fd.typ)
+            subNodes += nodeFor(subBasic, fd.typ)
           }
           TupleNode(matchType, subNodes)
         }
@@ -275,8 +275,9 @@ object XmlReader {
 
   def buildBasic(typ: BasicValueType, attrs: Map[String, String], subElements: Seq[Element]): Value = {
     typ match {
-      case t: VTTuple => {
-        VTuple(subElements.toIndexedSeq)
+      case t: TStruct => {
+        ???
+        //VStruct(subElements.toIndexedSeq)
       }
       case t: TList => {
         val velems = subElements.map {

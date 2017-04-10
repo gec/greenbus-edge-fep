@@ -92,7 +92,7 @@ case class Field extends Value()*/
 case class VString(value: String) extends Value
 //case class VSymbol(value: String) extends Value
 
-case class VTuple(value: IndexedSeq[Element]) extends BasicValue // ???
+case class VStruct(value: Seq[TaggedField]) extends BasicValue // ???
 
 sealed trait StructuralValue extends Value
 
@@ -130,7 +130,8 @@ case class TUnion(unionTypes: Set[VTValueElem]) extends BasicValueType
 case class TOption(paramType: VTValueElem) extends BasicValueType
 case class TEither(leftType: VTValueElem, rightType: VTValueElem) extends BasicValueType
 
-case class VTTuple(elementTypes: IndexedSeq[VTField]) extends BasicValueType
+case class StructFieldDef(name: String, typ: VTValueElem, number: Int)
+case class TStruct(fields: Seq[StructFieldDef]) extends BasicValueType
 //case class VTTuple(elementTypes: IndexedSeq[VType]) extends VType
 case class TList(paramType: VTValueElem) extends BasicValueType
 case class TMap(keyType: VTValueElem, valueType: VTValueElem) extends BasicValueType

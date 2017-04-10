@@ -82,18 +82,18 @@ object MappingLibrary {
     v.getClass.getSimpleName
   }
 
-  def toFieldMap(struct: VTuple): Map[String, ValueElement] = {
+  def toFieldMap(struct: VStruct): Map[String, ValueElement] = {
     struct.value.flatMap {
       case field: TaggedField => Some(field.name, field.value)
       case _ => None
     }.toMap
   }
 
-  def readFieldSubStruct[A](fieldName: String, map: Map[String, ValueElement], tag: String, read: (VTuple, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
+  def readFieldSubStruct[A](fieldName: String, map: Map[String, ValueElement], tag: String, read: (VStruct, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
 
     def matchV(elem: ValueElement): Either[String, A] = {
       elem match {
-        case v: VTuple => read(v, ctx.structField(tag, fieldName))
+        case v: VStruct => read(v, ctx.structField(tag, fieldName))
         case _ => Left(s"${ctx.context} error: expected boolean value, saw: ${descName(elem)}")
       }
     }
@@ -173,10 +173,10 @@ object MappingLibrary {
     }
   }
 
-  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (VTuple, ReaderContext) => Either[String, A]): Either[String, A] = {
+  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (VStruct, ReaderContext) => Either[String, A]): Either[String, A] = {
     elem match {
       case v: TaggedValue => readTup(v.value, ctx, read)
-      case v: VTuple => read(v, ctx)
+      case v: VStruct => read(v, ctx)
       case _ => Left(s"${ctx.context} error: expected tuple value, saw ${descName(elem)}")
     }
   }
@@ -196,13 +196,13 @@ object TestGenerated {
     ackTimeoutMs: Int,
     numRetries: Int)
 
-  def write(obj: LinkLayerConfig): TaggedValue = {
+  /*def write(obj: LinkLayerConfig): TaggedValue = {
 
-    val built = VTuple(Vector(
+    val built = VStruct(Vector(
       TaggedField("isMaster", VBool(obj.isMaster))))
 
     TaggedValue("LinkLayerConfig", built)
-  }
+  }*/
 }
 
 object Gen {
@@ -217,15 +217,58 @@ object Gen {
   case class FieldDef(name: String, typ: FieldTypeDef)
   case class ObjDef(fields: Seq[FieldDef])
 
+  def objDefForExtType(typ: TExt): ObjDef = {
+
+    def singleParam(typ: ValueType): Seq[FieldDef] = {
+      Seq(FieldDef("value", ParamTypeDef(typ)))
+    }
+
+    val fields = typ.reprType match {
+      case struct: TStruct => {
+        Seq()
+      }
+      case list: TList => singleParam(list)
+      case map: TMap => singleParam(map)
+      case union: TUnion => singleParam(union)
+      case either: TEither => singleParam(either)
+      case option: TOption => singleParam(option)
+      case basic => Seq(FieldDef("value", SimpleTypeDef(basic)))
+    }
+
+    ObjDef(fields)
+  }
+
+  def collectObjDefs(typ: VTValueElem, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
+    typ match {
+      case ext: TExt => {
+
+        collectObjDefs(ext.reprType, seen)
+      }
+      case struct: TStruct =>
+        struct.fields.foldLeft(seen) { (accum, fd) => collectObjDefs(fd.typ, accum) }
+      case list: TList =>
+        collectObjDefs(list.paramType, seen)
+      case map: TMap =>
+        collectObjDefs(map.keyType, seen) ++ collectObjDefs(map.valueType, seen)
+      case union: TUnion =>
+        union.unionTypes.foldLeft(seen) { (accum, t) => collectObjDefs(t, accum) }
+      case either: TEither =>
+        collectObjDefs(either.leftType, seen) ++ collectObjDefs(either.rightType, seen)
+      case option: TOption =>
+        collectObjDefs(option.paramType, seen)
+      case basic => seen
+    }
+  }
+
   def collectTypes(typ: TExt, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
 
     var collected: Map[String, ObjDef] = seen
 
     val objDef = typ.reprType match {
-      case tup: VTTuple => {
-        val fieldDefs = tup.elementTypes.map { fd =>
-          val name = fd.fieldName
-          val typ = fd.fieldType
+      case tup: TStruct => {
+        val fieldDefs = tup.fields.map { fd =>
+          val name = fd.name
+          val typ = fd.typ
           val typDef = typ match {
             case t: TExt => {
               if (!collected.contains(t.tag)) {
@@ -252,6 +295,10 @@ object Gen {
         }
         ObjDef(fieldDefs)
       }
+      /*case list: TList => {
+        ObjDef(Seq(FieldDef()))
+
+      }*/
       case other => throw new IllegalArgumentException(s"No support for $other")
     }
 
@@ -367,7 +414,7 @@ object Gen {
     pw.println(s"object $name {")
     pw.println()
 
-    pw.println(tab(1) + s"def read(data: VTuple, ctx: ReaderContext): Either[String, $name] = {")
+    pw.println(tab(1) + s"def read(data: VStruct, ctx: ReaderContext): Either[String, $name] = {")
     pw.println(tab(2) + s"val fieldMap = $utilKlass.toFieldMap(data)")
     pw.println()
     objDef.fields.foreach { fd =>
@@ -408,7 +455,7 @@ object Gen {
     pw.println()
 
     pw.println(tab(1) + s"def write(obj: $name): TaggedValue = {")
-    pw.println(tab(2) + "val built = VTuple(Vector(")
+    pw.println(tab(2) + "val built = VStruct(Vector(")
     val buildList = objDef.fields.map { d =>
       s"""TaggedField("${d.name}", ${writeCallFor(d.typ, s"obj.${d.name}")})"""
     }.mkString(tab(3), ",\n" + tab(3), "")
