@@ -149,7 +149,7 @@ object Example {
     val readEither = written match {
       case t: TaggedValue =>
         t.value match {
-          case tt: VStruct => Master.read(tt, SimpleReaderContext(Vector(RootCtx("Master"))))
+          case tt: VMap => Master.read(tt, SimpleReaderContext(Vector(RootCtx("Master"))))
           case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
         }
       case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")

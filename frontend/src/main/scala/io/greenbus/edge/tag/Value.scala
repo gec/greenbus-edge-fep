@@ -92,7 +92,7 @@ case class Field extends Value()*/
 case class VString(value: String) extends Value
 //case class VSymbol(value: String) extends Value
 
-case class VStruct(value: Seq[TaggedField]) extends BasicValue // ???
+//case class VStruct(value: Seq[TaggedField]) extends BasicValue // ???
 
 sealed trait StructuralValue extends Value
 

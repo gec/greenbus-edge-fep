@@ -22,103 +22,45 @@ import java.io.{ File, FileOutputStream, PrintWriter }
 
 import io.greenbus.edge.util.EitherUtil
 
-/*object TestSchema {
-
-  val linkLayer: VTExtType = {
-    VTExtType("LinkLayer", VTTuple(Vector(
-      FieldDef("isMaster", VTBool),
-      FieldDef("localAddress", VTUInt32),
-      FieldDef("remoteAddress", VTUInt32),
-      FieldDef("userConfirmations", VTBool),
-      FieldDef("userConfirmations", VTUInt64),
-      FieldDef("numRetries", VTUInt32))))
-  }
-  val appLayer: VTExtType = {
-    VTExtType("AppLayer", VTTuple(Vector(
-      FieldDef("timeoutMs", VTUInt64),
-      FieldDef("maxFragSize", VTUInt32),
-      FieldDef("numRetries", VTUInt32))))
-  }
-  val stackConfig: VTExtType = {
-    VTExtType("AppLayer", VTTuple(Vector(
-      FieldDef("linkLayer", linkLayer),
-      FieldDef("appLayer", appLayer))))
-  }
-  val masterSettings: VTExtType = {
-    VTExtType("MasterSettings", VTTuple(Vector(
-      FieldDef("allowTimeSync", VTBool),
-      FieldDef("taskRetryMs", VTUInt64),
-      FieldDef("integrityPeriodMs", VTUInt64))))
-  }
-  val scan: VTExtType = {
-    VTExtType("Scan", VTTuple(Vector(
-      FieldDef("enableClass1", VTBool),
-      FieldDef("enableClass2", VTBool),
-      FieldDef("enableClass3", VTBool),
-      FieldDef("periodMs", VTUInt64))))
-  }
-  val unsol: VTExtType = {
-    VTExtType("Unsol", VTTuple(Vector(
-      FieldDef("doTask", VTBool),
-      FieldDef("enable", VTBool),
-      FieldDef("enableClass1", VTBool),
-      FieldDef("enableClass2", VTBool),
-      FieldDef("enableClass3", VTBool))))
-  }
-
-  val master: VTExtType = {
-    VTExtType("Master", VTTuple(Vector(
-      FieldDef("stack", stackConfig),
-      FieldDef("masterSettings", masterSettings),
-      FieldDef("scanList", VTList(scan)),
-      FieldDef("unsol", unsol))))
-  }
-
-}*/
-
 object MappingLibrary {
 
   def descName(v: ValueElement): String = {
     v.getClass.getSimpleName
   }
 
-  def toFieldMap(struct: VStruct): Map[String, ValueElement] = {
-    struct.value.flatMap {
-      case field: TaggedField => Some(field.name, field.value)
-      case _ => None
-    }.toMap
+  def toFieldMap(map: VMap, typ: TStruct): Map[String, ValueElement] = {
+
+    val nameMap: Map[String, StructFieldDef] = {
+      typ.fields.map(sfd => (sfd.name, sfd)).toMap
+    }
+
+    map.value.flatMap {
+      case (keyElem, valueElem) =>
+        val nameOpt = keyElem match {
+          case VString(key) => nameMap.get(key)
+          case _ => None
+        }
+
+        nameOpt.map(fd => fd.name -> valueElem)
+    }
   }
 
-  def readFieldSubStruct[A](fieldName: String, map: Map[String, ValueElement], tag: String, read: (VStruct, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
+  def getMapField(name: String, map: VMap): Either[String, ValueElement] = {
+    map.value.get(VString(name)).map(r => Right(r)).getOrElse(Left(s"Struct map did not contain field $name"))
+  }
+
+  def readFieldSubStruct[A](fieldName: String, element: ValueElement, tag: String, read: (VMap, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
 
     def matchV(elem: ValueElement): Either[String, A] = {
       elem match {
-        case v: VStruct => read(v, ctx.structField(tag, fieldName))
-        case _ => Left(s"${ctx.context} error: expected boolean value, saw: ${descName(elem)}")
+        case v: VMap => read(v, ctx.structField(tag, fieldName))
+        case _ => Left(s"${ctx.context} error: expected map value, saw: ${descName(elem)}")
       }
     }
 
-    map.get(fieldName) match {
-      case None => Left(s"${ctx.context} error: expected field '$fieldName'")
-      case Some(elem) =>
-        elem match {
-          case v: TaggedValue => matchV(v.value)
-          case other => matchV(other)
-        }
-    }
-  }
-
-  def readField[A](fieldName: String, map: Map[String, ValueElement], read: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
-    map.get(fieldName) match {
-      case None => Left(s"${ctx.context} error: expected field '$fieldName'")
-      case Some(elem) => read(elem, ctx.field(fieldName))
-    }
-  }
-
-  def readListField[A](fieldName: String, map: Map[String, ValueElement], read: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, Seq[A]] = {
-    map.get(fieldName) match {
-      case None => Left(s"${ctx.context} error: expected field '$fieldName'")
-      case Some(elem) => readList(elem, read, ctx.field(fieldName))
+    element match {
+      case v: TaggedValue => matchV(v.value)
+      case other => matchV(other)
     }
   }
 
@@ -173,10 +115,10 @@ object MappingLibrary {
     }
   }
 
-  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (VStruct, ReaderContext) => Either[String, A]): Either[String, A] = {
+  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (VMap, ReaderContext) => Either[String, A]): Either[String, A] = {
     elem match {
       case v: TaggedValue => readTup(v.value, ctx, read)
-      case v: VStruct => read(v, ctx)
+      case v: VMap => read(v, ctx)
       case _ => Left(s"${ctx.context} error: expected tuple value, saw ${descName(elem)}")
     }
   }
@@ -184,25 +126,6 @@ object MappingLibrary {
   def writeList[A](list: Seq[A], write: A => ValueElement): VList = {
     VList(list.toIndexedSeq.map(write))
   }
-}
-
-object TestGenerated {
-
-  case class LinkLayerConfig(
-    isMaster: Boolean,
-    localAddress: Int,
-    remoteAddress: Int,
-    userConfirmations: Boolean,
-    ackTimeoutMs: Int,
-    numRetries: Int)
-
-  /*def write(obj: LinkLayerConfig): TaggedValue = {
-
-    val built = VStruct(Vector(
-      TaggedField("isMaster", VBool(obj.isMaster))))
-
-    TaggedValue("LinkLayerConfig", built)
-  }*/
 }
 
 object Gen {
@@ -270,51 +193,6 @@ object Gen {
         collectObjDefs(option.paramType, seen)
       case basic => seen
     }
-  }
-
-  def collectTypes(typ: TExt, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
-
-    var collected: Map[String, ObjDef] = seen
-
-    val objDef = typ.reprType match {
-      case tup: TStruct => {
-        val fieldDefs = tup.fields.map { fd =>
-          val name = fd.name
-          val typ = fd.typ
-          val typDef = typ match {
-            case t: TExt => {
-              if (!collected.contains(t.tag)) {
-                val added = collectTypes(t, collected)
-                collected ++= added
-              }
-              TagTypeDef(t.tag)
-            }
-            case t: TList => {
-              t.paramType match {
-                case ext: TExt => {
-                  if (!collected.contains(ext.tag)) {
-                    val added = collectTypes(ext, collected)
-                    collected ++= added
-                  }
-                }
-                case _ =>
-              }
-              ParamTypeDef(t)
-            }
-            case t => SimpleTypeDef(t)
-          }
-          FieldDef(name, typDef)
-        }
-        ObjDef(fieldDefs)
-      }
-      /*case list: TList => {
-        ObjDef(Seq(FieldDef()))
-
-      }*/
-      case other => throw new IllegalArgumentException(s"No support for $other")
-    }
-
-    collected + (typ.tag -> objDef)
   }
 
   def output(pkg: String, objs: Map[String, ObjDef], pw: PrintWriter): Unit = {
@@ -427,29 +305,28 @@ object Gen {
     pw.println(s"object $name {")
     pw.println()
 
-    pw.println(tab(1) + s"def read(data: VStruct, ctx: ReaderContext): Either[String, $name] = {")
-    pw.println(tab(2) + s"val fieldMap = $utilKlass.toFieldMap(data)")
+    pw.println(tab(1) + s"def read(data: VMap, ctx: ReaderContext): Either[String, $name] = {")
     pw.println()
     objDef.fields.foreach { fd =>
       val name = fd.name
       fd.typ match {
         case std: SimpleTypeDef => {
           val readFun = readFuncForSimpleTyp(std.typ)
-          pw.println(tab(2) + "" + s"""val $name = $utilKlass.readField("${name}", fieldMap, $readFun, ctx)""")
+          pw.println(tab(2) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $readFun(elem, ctx))""")
         }
         case ptd: ParamTypeDef => {
           ptd.typ match {
             case typ: TList => {
               val paramRead = readFuncForTypeParam(typ.paramType)
               val paramSig = fieldSignatureFor(typ.paramType)
-              pw.println(tab(2) + s"""val $name = $utilKlass.readListField[$paramSig]("$name", fieldMap, $utilKlass.readTup[$paramSig](_, _, $paramRead), ctx)""")
+              pw.println(tab(2) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $utilKlass.readList[$paramSig](elem, $utilKlass.readTup[$paramSig](_, _, $paramRead), ctx))""")
             }
             case other => throw new IllegalArgumentException(s"Parameterized type not handled: $other")
           }
         }
         case ttd: TagTypeDef => {
           val tagName = ttd.tag
-          pw.println(tab(2) + s"""val $name = $utilKlass.readFieldSubStruct("${name}", fieldMap, "$tagName", $tagName.read, ctx)""")
+          pw.println(tab(2) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $utilKlass.readFieldSubStruct("$name", elem, "$tagName", $tagName.read, ctx))""")
         }
       }
     }
@@ -468,9 +345,9 @@ object Gen {
     pw.println()
 
     pw.println(tab(1) + s"def write(obj: $name): TaggedValue = {")
-    pw.println(tab(2) + "val built = VStruct(Vector(")
+    pw.println(tab(2) + "val built = VMap(Map(")
     val buildList = objDef.fields.map { d =>
-      s"""TaggedField("${d.name}", ${writeCallFor(d.typ, s"obj.${d.name}")})"""
+      s"""(VString("${d.name}"), ${writeCallFor(d.typ, s"obj.${d.name}")})"""
     }.mkString(tab(3), ",\n" + tab(3), "")
     pw.println(buildList)
     pw.println(tab(2) + "))")

@@ -60,11 +60,11 @@ object Writer {
 
   def writeValue(value: Value, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
     value match {
-      case v: VStruct => {
+      /*case v: VStruct => {
         w.writeStartElement(ctxName.getOrElse("tuple"))
         v.value.foreach(f => writeField(f, w))
         w.writeEndElement()
-      }
+      }*/
       case v: VList => {
         w.writeStartElement(ctxName.getOrElse("list"))
         v.value.foreach(elem => writeElem(elem, w))
