@@ -60,18 +60,25 @@ object Writer {
 
   def writeValue(value: Value, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
     value match {
-      /*case v: VStruct => {
-        w.writeStartElement(ctxName.getOrElse("tuple"))
-        v.value.foreach(f => writeField(f, w))
-        w.writeEndElement()
-      }*/
       case v: VList => {
         w.writeStartElement(ctxName.getOrElse("list"))
         v.value.foreach(elem => writeElem(elem, w))
         w.writeEndElement()
       }
       case v: VMap => {
-        ???
+        w.writeStartElement(ctxName.getOrElse("map"))
+        v.value.foreach {
+          case (keyElem, valueElem) =>
+            w.writeStartElement("entry")
+            w.writeStartElement("key")
+            writeElem(keyElem, w)
+            w.writeEndElement()
+            w.writeStartElement("value")
+            writeElem(valueElem, w)
+            w.writeEndElement()
+            w.writeEndElement()
+        }
+        w.writeEndElement()
       }
       case v: VBool => writeSimple("bool", v.value.toString, w, ctxName)
       case v: VByte => writeSimple("byte", v.value.toString, w, ctxName)
@@ -89,7 +96,21 @@ object Writer {
   def writeElem(value: ValueElement, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
     value match {
       case tagged: TaggedValue => {
-        writeValue(tagged.value, w, Some(tagged.tag))
+        tagged.value match {
+          case v: VMap => {
+            w.writeStartElement(tagged.tag)
+            v.value.foreach {
+              case (keyV, valueV) =>
+                keyV match {
+                  case VString(name) =>
+                    writeElem(valueV, w, Some(name))
+                  case _ => throw new IllegalArgumentException(s"Tagged map did not have string key")
+                }
+            }
+            w.writeEndElement()
+          }
+          case v => writeValue(v, w, Some(tagged.tag))
+        }
       }
       case untagged: Value => {
         writeValue(untagged, w, ctxName)
@@ -98,8 +119,9 @@ object Writer {
   }
 
   def writeSimple(typName: String, value: String, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
-    w.writeEmptyElement(ctxName.getOrElse(typName))
-    w.writeAttribute("value", value)
+    w.writeStartElement(ctxName.getOrElse(typName))
+    w.writeCharacters(value)
+    w.writeEndElement()
   }
 
   def writeField(field: Element, w: XMLStreamWriter): Unit = {

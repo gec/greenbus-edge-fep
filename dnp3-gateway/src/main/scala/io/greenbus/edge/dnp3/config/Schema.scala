@@ -178,12 +178,13 @@ object XmlWriterTester {
     val stringOut = new ByteArrayOutputStream()
 
     Writer.write(obj, stringOut)
+    println(stringOut.toString("UTF-8"))
     val array = stringOut.toByteArray
 
     val in = new ByteArrayInputStream(array)
     val xmlRead = XmlReader.read(in, Schema.master)
 
-    println(stringOut.toString("UTF-8"))
+    //println(stringOut.toString("UTF-8"))
     println(obj)
     println(xmlRead)
 
