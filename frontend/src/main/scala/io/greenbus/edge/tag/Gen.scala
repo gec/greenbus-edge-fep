@@ -225,7 +225,19 @@ object Gen {
 
     val fields = typ.reprType match {
       case struct: TStruct => {
-        Seq()
+        struct.fields.map { fd =>
+          val ftd = fd.typ match {
+            case t: TExt => TagTypeDef(t.tag)
+            case t: TList => ParamTypeDef(t)
+            case t: TMap => ParamTypeDef(t)
+            case t: TUnion => ParamTypeDef(t)
+            case t: TOption => ParamTypeDef(t)
+            case t: TEither => ParamTypeDef(t)
+            case t => SimpleTypeDef(t)
+          }
+
+          FieldDef(fd.name, ftd)
+        }
       }
       case list: TList => singleParam(list)
       case map: TMap => singleParam(map)
@@ -241,8 +253,8 @@ object Gen {
   def collectObjDefs(typ: VTValueElem, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
     typ match {
       case ext: TExt => {
-
-        collectObjDefs(ext.reprType, seen)
+        val obj = objDefForExtType(ext)
+        Map(ext.tag -> obj) ++ collectObjDefs(ext.reprType, seen)
       }
       case struct: TStruct =>
         struct.fields.foldLeft(seen) { (accum, fd) => collectObjDefs(fd.typ, accum) }
@@ -348,6 +360,7 @@ object Gen {
       case TDouble => "Double"
       case TString => "String"
       case t: TList => s"Seq[${fieldSignatureFor(t.paramType)}]"
+      //case t: TUnion => "Any"
       case t: TExt => t.tag
       case t => throw new IllegalArgumentException(s"Type signature unhandled: $t")
     }

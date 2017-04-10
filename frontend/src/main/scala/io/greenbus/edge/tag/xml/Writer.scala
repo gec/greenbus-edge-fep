@@ -276,6 +276,8 @@ object XmlReader {
   def buildBasic(typ: BasicValueType, attrs: Map[String, String], subElements: Seq[Element]): Value = {
     typ match {
       case t: TStruct => {
+
+        println("subElements: " + subElements)
         ???
         //VStruct(subElements.toIndexedSeq)
       }

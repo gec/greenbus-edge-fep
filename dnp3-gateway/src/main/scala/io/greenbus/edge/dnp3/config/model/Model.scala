@@ -112,6 +112,114 @@ object MasterSettings {
 }
 case class MasterSettings(allowTimeSync: Boolean, taskRetryMs: Long, integrityPeriodMs: Long)
 
+object IndexRange {
+
+  def read(data: VStruct, ctx: ReaderContext): Either[String, IndexRange] = {
+    val fieldMap = MappingLibrary.toFieldMap(data)
+
+    val start = MappingLibrary.readField("start", fieldMap, MappingLibrary.readInt, ctx)
+    val count = MappingLibrary.readField("count", fieldMap, MappingLibrary.readInt, ctx)
+
+    if (start.isRight && count.isRight) {
+      Right(IndexRange(start.right.get, count.right.get))
+    } else {
+      Left(Seq(start.left.toOption, count.left.toOption).flatten.mkString(", "))
+    }
+
+  }
+
+  def write(obj: IndexRange): TaggedValue = {
+    val built = VStruct(Vector(
+      TaggedField("start", VUInt32(obj.start)),
+      TaggedField("count", VUInt32(obj.count))))
+
+    TaggedValue("IndexRange", built)
+  }
+}
+case class IndexRange(start: Int, count: Int)
+
+object IndexSet {
+
+  def read(data: VStruct, ctx: ReaderContext): Either[String, IndexSet] = {
+    val fieldMap = MappingLibrary.toFieldMap(data)
+
+    val value = MappingLibrary.readListField[IndexRange]("value", fieldMap, MappingLibrary.readTup[IndexRange](_, _, IndexRange.read), ctx)
+
+    if (value.isRight) {
+      Right(IndexSet(value.right.get))
+    } else {
+      Left(Seq(value.left.toOption).flatten.mkString(", "))
+    }
+
+  }
+
+  def write(obj: IndexSet): TaggedValue = {
+    val built = VStruct(Vector(
+      TaggedField("value", MappingLibrary.writeList(obj.value, IndexRange.write))))
+
+    TaggedValue("IndexSet", built)
+  }
+}
+case class IndexSet(value: Seq[IndexRange])
+
+object InputModel {
+
+  def read(data: VStruct, ctx: ReaderContext): Either[String, InputModel] = {
+    val fieldMap = MappingLibrary.toFieldMap(data)
+
+    val binaryInputs = MappingLibrary.readFieldSubStruct("binaryInputs", fieldMap, "IndexSet", IndexSet.read, ctx)
+    val analogInputs = MappingLibrary.readFieldSubStruct("analogInputs", fieldMap, "IndexSet", IndexSet.read, ctx)
+    val counterInputs = MappingLibrary.readFieldSubStruct("counterInputs", fieldMap, "IndexSet", IndexSet.read, ctx)
+    val binaryOutputs = MappingLibrary.readFieldSubStruct("binaryOutputs", fieldMap, "IndexSet", IndexSet.read, ctx)
+    val analogOutputs = MappingLibrary.readFieldSubStruct("analogOutputs", fieldMap, "IndexSet", IndexSet.read, ctx)
+
+    if (binaryInputs.isRight && analogInputs.isRight && counterInputs.isRight && binaryOutputs.isRight && analogOutputs.isRight) {
+      Right(InputModel(binaryInputs.right.get, analogInputs.right.get, counterInputs.right.get, binaryOutputs.right.get, analogOutputs.right.get))
+    } else {
+      Left(Seq(binaryInputs.left.toOption, analogInputs.left.toOption, counterInputs.left.toOption, binaryOutputs.left.toOption, analogOutputs.left.toOption).flatten.mkString(", "))
+    }
+
+  }
+
+  def write(obj: InputModel): TaggedValue = {
+    val built = VStruct(Vector(
+      TaggedField("binaryInputs", IndexSet.write(obj.binaryInputs)),
+      TaggedField("analogInputs", IndexSet.write(obj.analogInputs)),
+      TaggedField("counterInputs", IndexSet.write(obj.counterInputs)),
+      TaggedField("binaryOutputs", IndexSet.write(obj.binaryOutputs)),
+      TaggedField("analogOutputs", IndexSet.write(obj.analogOutputs))))
+
+    TaggedValue("InputModel", built)
+  }
+}
+case class InputModel(binaryInputs: IndexSet, analogInputs: IndexSet, counterInputs: IndexSet, binaryOutputs: IndexSet, analogOutputs: IndexSet)
+
+object TCPClient {
+
+  def read(data: VStruct, ctx: ReaderContext): Either[String, TCPClient] = {
+    val fieldMap = MappingLibrary.toFieldMap(data)
+
+    val host = MappingLibrary.readField("host", fieldMap, MappingLibrary.readString, ctx)
+    val port = MappingLibrary.readField("port", fieldMap, MappingLibrary.readInt, ctx)
+
+    if (host.isRight && port.isRight) {
+      Right(TCPClient(host.right.get, port.right.get))
+    } else {
+      Left(Seq(host.left.toOption, port.left.toOption).flatten.mkString(", "))
+    }
+
+  }
+
+  def write(obj: TCPClient): TaggedValue = {
+    val built = VStruct(Vector(
+      TaggedField("host", VString(obj.host)),
+      TaggedField("port", VUInt32(obj.port))))
+
+    TaggedValue("TCPClient", built)
+  }
+}
+case class TCPClient(host: String, port: Int)
+
 object Unsol {
 
   def read(data: VStruct, ctx: ReaderContext): Either[String, Unsol] = {
@@ -227,4 +335,34 @@ object Scan {
   }
 }
 case class Scan(enableClass1: Boolean, enableClass2: Boolean, enableClass3: Boolean, periodMs: Long)
+
+object DNP3Gateway {
+
+  def read(data: VStruct, ctx: ReaderContext): Either[String, DNP3Gateway] = {
+    val fieldMap = MappingLibrary.toFieldMap(data)
+
+    val master = MappingLibrary.readFieldSubStruct("master", fieldMap, "Master", Master.read, ctx)
+    val client = MappingLibrary.readFieldSubStruct("client", fieldMap, "TCPClient", TCPClient.read, ctx)
+    val inputModel = MappingLibrary.readFieldSubStruct("inputModel", fieldMap, "InputModel", InputModel.read, ctx)
+    val outputModel = MappingLibrary.readFieldSubStruct("outputModel", fieldMap, "InputModel", InputModel.read, ctx)
+
+    if (master.isRight && client.isRight && inputModel.isRight && outputModel.isRight) {
+      Right(DNP3Gateway(master.right.get, client.right.get, inputModel.right.get, outputModel.right.get))
+    } else {
+      Left(Seq(master.left.toOption, client.left.toOption, inputModel.left.toOption, outputModel.left.toOption).flatten.mkString(", "))
+    }
+
+  }
+
+  def write(obj: DNP3Gateway): TaggedValue = {
+    val built = VStruct(Vector(
+      TaggedField("master", Master.write(obj.master)),
+      TaggedField("client", TCPClient.write(obj.client)),
+      TaggedField("inputModel", InputModel.write(obj.inputModel)),
+      TaggedField("outputModel", InputModel.write(obj.outputModel))))
+
+    TaggedValue("DNP3Gateway", built)
+  }
+}
+case class DNP3Gateway(master: Master, client: TCPClient, inputModel: InputModel, outputModel: InputModel)
 

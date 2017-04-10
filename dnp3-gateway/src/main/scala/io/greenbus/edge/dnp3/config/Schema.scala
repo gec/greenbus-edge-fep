@@ -94,7 +94,8 @@ object DnpGatewaySchema {
       StructFieldDef("count", TUInt32, 1))))
   }
   val indexSet: TExt = {
-    TExt("IndexSet", TList(TUnion(Set(selectIndex, selectRange))))
+    //TExt("IndexSet", TList(TUnion(Set(selectIndex, selectRange))))
+    TExt("IndexSet", TList(selectRange))
   }
 
   val inputModel: TExt = {
@@ -194,7 +195,10 @@ object XmlWriterTester {
 object Builder {
 
   def main(args: Array[String]): Unit = {
-    val all = Gen.collectTypes(DnpGatewaySchema.gateway, Map())
+    //val all = Gen.collectTypes(DnpGatewaySchema.gateway, Map())
+    val all = Gen.collectObjDefs(DnpGatewaySchema.gateway, Map())
+
+    println(all)
 
     val f = new File("dnp3-gateway/src/main/scala/io/greenbus/edge/dnp3/config/model/Model.scala")
     Files.createParentDirs(f)
