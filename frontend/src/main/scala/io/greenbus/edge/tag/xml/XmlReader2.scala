@@ -21,68 +21,120 @@ package io.greenbus.edge.tag.xml
 import java.io.InputStream
 import javax.xml.stream.XMLInputFactory
 
+import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.tag._
 
 import scala.collection.mutable
 
-/*
+object Node extends LazyLogging {
 
-
-
- */
-
-/*
-trait Stack[A] {
-  def push(obj: A): Unit
-  def pop(): Unit
-}
-
-
-  sealed trait Node {
-    def resultType: ValueType
+  def tryParse[A](value: String, f: String => A): Option[A] = {
+    try {
+      Some(f(value))
+    } catch {
+      case ex: Throwable =>
+        logger.debug(s"Problem parsing value: $ex")
+        None
+    }
   }
-  case class SingleNode(resultType: ValueType) extends Node
-  case class TupleNode(resultType: ValueType, queue: mutable.Queue[Node]) extends Node
-  case class SeqNode(resultType: ValueType, paramType: VTValueElem) extends Node
 
+  def termParse[A](parse: String => A, build: A => ValueElement): String => Option[ValueElement] = {
+    s: String => { tryParse[A](s, parse).map(build) }
+  }
+  def term[A](parse: String => A, build: A => ValueElement): Node = {
+    new TerminalNode(termParse(parse, build))
+  }
 
-  struct
-  map
-  list
-  union
-  simple
+  def simpleNodeFor(typ: VTValueElem): Node = {
+    typ match {
+      case TByte => term(java.lang.Byte.parseByte, VByte)
+      case TBool => term(java.lang.Boolean.parseBoolean, VBool)
+      case TInt32 => term(java.lang.Integer.parseInt, VInt32)
+      case TUInt32 => term(java.lang.Integer.parseInt, VUInt32)
+      case TInt64 => term(java.lang.Long.parseLong, VInt64)
+      case TUInt64 => term(java.lang.Long.parseLong, VUInt64)
+      case TFloat => term(java.lang.Float.parseFloat, VFloat)
+      case TDouble => term(java.lang.Double.parseDouble, VDouble)
+      case TString => term(s => s, VString)
+      case t: TList => new ListNode(t)
+      case _ => throw new IllegalArgumentException(s"Type unhandled: " + typ)
+    }
+  }
 
+  def nodeFor(typ: VTValueElem): Node = {
+    typ match {
+      case t: TExt => {
+        t.reprType match {
+          case extType: TStruct => new StructNode(t.tag, extType)
+          case other => simpleNodeFor(other)
+        }
+      }
+      case t => simpleNodeFor(typ)
+    }
+  }
 
-*/
-
+}
 trait Node {
-  //def setName(name: String): Unit
   def setText(content: String): Unit
+  def onPop(subElemOpt: Option[ValueElement]): Unit
   def onPush(name: String): Node
-  def result(): Element
+  def result(): Option[ValueElement]
 }
 
 class NullNode extends Node {
   def setText(content: String): Unit = {}
 
-  def onPush(name: String): Node = {}
+  def onPush(name: String): Node = new NullNode
+  def onPop(subElemOpt: Option[ValueElement]): Unit = {}
 
-  def result(): Element = {}
-}
-
-/*object FieldHolder {
-  def build(sfd: StructFieldDef): FieldHolder = {
-    val isOptional = sfd.typ match {
-      case _: TOption => true
-      case _: TList => true
-      case _: TMap => true
-      case _ => false
-    }
-
-    FieldHolder(isOptional, sfd)
+  def result(): Option[ValueElement] = {
+    None
   }
 }
-case class FieldHolder(isOptional: Boolean, structFieldDef: StructFieldDef)*/
+
+class TerminalNode(parser: String => Option[ValueElement]) extends Node {
+
+  private var textOpt = Option.empty[String]
+
+  def setText(content: String): Unit = {
+    textOpt = Some(content)
+  }
+
+  def onPush(name: String): Node = new NullNode
+  def onPop(subElemOpt: Option[ValueElement]): Unit = {}
+
+  def result(): Option[ValueElement] = {
+    textOpt.flatMap(parser)
+  }
+}
+
+class ListNode(typ: TList) extends Node {
+  private val elems = mutable.ArrayBuffer.empty[ValueElement]
+
+  def setText(content: String): Unit = {}
+
+  def onPush(name: String): Node = {
+    Node.nodeFor(typ.paramType)
+  }
+
+  def onPop(subElemOpt: Option[ValueElement]): Unit = {
+    subElemOpt.foreach { elems += _ }
+  }
+
+  def result(): Option[ValueElement] = {
+    Some(VList(elems.toVector))
+  }
+}
+
+class MapNode(typ: TMap) extends Node {
+  def setText(content: String): Unit = ???
+
+  def onPop(subElemOpt: Option[ValueElement]): Unit = ???
+
+  def onPush(name: String): Node = ???
+
+  def result(): Option[ValueElement] = ???
+}
 
 object StructNode {
   def fieldIsOptional(sfd: StructFieldDef): Boolean = {
@@ -94,8 +146,15 @@ object StructNode {
     }
   }
 }
-class StructNode(typName: String, vt: TStruct) extends Node {
-  private val fieldMap: Map[String, StructFieldDef] = vt.fields.map(sfd => (sfd.name, sfd)).toMap
+class StructNode(typeTag: String, vt: TStruct) extends Node {
+  private val fieldMap: Map[String, StructFieldDef] = vt.fields.map { sfd =>
+    val name = sfd.typ match {
+      case t: TExt => t.tag
+      case _ => sfd.name
+    }
+    (name, sfd)
+  }.toMap
+
   private var builtFields = Map.empty[String, ValueElement]
 
   private var currentField = Option.empty[String]
@@ -105,11 +164,23 @@ class StructNode(typName: String, vt: TStruct) extends Node {
   }
 
   def onPush(name: String): Node = {
-    fieldMap.get(name)
+    fieldMap.get(name) match {
+      case None =>
+        new NullNode
+      case Some(sfd) => {
+        currentField = Some(sfd.name)
+        Node.nodeFor(sfd.typ)
+      }
+    }
   }
 
   def onPop(subElemOpt: Option[ValueElement]): Unit = {
-
+    subElemOpt.foreach { subElem =>
+      currentField.foreach { fieldName =>
+        builtFields += (fieldName -> subElem)
+      }
+    }
+    currentField = None
   }
 
   def result(): Option[ValueElement] = {
@@ -117,7 +188,7 @@ class StructNode(typName: String, vt: TStruct) extends Node {
       builtFields.get(sfd.name) match {
         case None =>
           if (StructNode.fieldIsOptional(sfd)) {
-            throw new IllegalArgumentException(s"Could not find required field ${sfd.name} for $typName")
+            throw new IllegalArgumentException(s"Could not find required field ${sfd.name} for $typeTag")
           } else {
             None
           }
@@ -127,67 +198,89 @@ class StructNode(typName: String, vt: TStruct) extends Node {
       }
     }
 
-    Some(TaggedValue(typName, VMap(kvs.toMap)))
+    Some(TaggedValue(typeTag, VMap(kvs.toMap)))
+  }
+}
+
+class RootNode(rootType: VTValueElem) extends Node {
+
+  private var resultOpt = Option.empty[ValueElement]
+  private var pushed = false
+  private var popped = false
+
+  def setText(content: String): Unit = {}
+
+  def onPush(name: String): Node = {
+    if (!pushed) {
+      pushed = true
+      Node.nodeFor(rootType)
+    } else {
+      new NullNode
+    }
+  }
+
+  def onPop(subElemOpt: Option[ValueElement]): Unit = {
+    if (!popped) {
+      popped = true
+      resultOpt = subElemOpt
+    }
+  }
+
+  def result(): Option[ValueElement] = {
+    resultOpt
   }
 }
 
 object XmlReader2 {
 
-  /*sealed trait Node {
-    def resultType: ValueType
-  }
-  case class SingleNode(resultType: ValueType) extends Node
-  case class TupleNode(resultType: ValueType, queue: mutable.Queue[Node]) extends Node
-  case class SeqNode(resultType: ValueType, paramType: VTValueElem) extends Node*/
-  /*
-  def nodeFor(basicType: BasicValueType, matchType: ValueType): Node = {
-    basicType match {
-      case t: TStruct => {
-        val subNodes = mutable.Queue.empty[Node]
-        t.fields.foreach { fd =>
-          val (_, subBasic) = nameAndBasic(fd.typ)
-          subNodes += nodeFor(subBasic, fd.typ)
-        }
-        TupleNode(matchType, subNodes)
-      }
-      case t: TList => {
-        SeqNode(matchType, t.paramType)
-      }
-      case t => SingleNode(matchType)
-    }
-  }
-  */
-
   class ResultBuilder(name: String, attributes: Seq[(String, String)], var text: Option[String], sub: mutable.ArrayBuffer[Element])
 
-  def read(is: InputStream, rootType: VTValueElem): Element = {
+  def read(is: InputStream, rootType: VTValueElem): Option[ValueElement] = {
     val fac = XMLInputFactory.newInstance()
     val reader = fac.createXMLEventReader(is)
 
-    var builderStack = List.empty[ResultBuilder]
+    var nodeStack = List.empty[Node]
+
+    val root = new RootNode(rootType)
+    nodeStack ::= root
 
     while (reader.hasNext) {
       val event = reader.nextEvent()
 
       if (event.isStartElement) {
-        println("start: " + event.asStartElement().getName)
 
         val elem = event.asStartElement()
-        val b = new ResultBuilder(elem.getName.getLocalPart, Seq(), None, mutable.ArrayBuffer.empty[Element])
-        //builderStack ::=
+
+        nodeStack.headOption.foreach { head =>
+          val pushed = head.onPush(elem.getName.getLocalPart)
+          nodeStack ::= pushed
+        }
 
       } else if (event.isCharacters) {
 
-        println("char: " + event.asCharacters().getData)
+        val trimmed = event.asCharacters().getData.trim
+        if (trimmed.nonEmpty) {
+          nodeStack.headOption.foreach { head =>
+            head.setText(trimmed)
+          }
+        }
 
       } else if (event.isEndElement) {
 
-        println("end: " + event.asEndElement().getName)
+        if (nodeStack.nonEmpty) {
+          val current = nodeStack.head
+          nodeStack = nodeStack.tail
 
+          if (nodeStack.nonEmpty) {
+            val prev = nodeStack.head
+            prev.onPop(current.result())
+          } else {
+          }
+        }
       }
 
     }
 
-    null
+    root.result()
   }
 }

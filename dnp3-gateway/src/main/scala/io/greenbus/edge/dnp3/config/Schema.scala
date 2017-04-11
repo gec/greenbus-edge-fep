@@ -183,15 +183,14 @@ object XmlWriterTester {
 
     val in = new ByteArrayInputStream(array)
 
-    XmlReader2.read(in, Schema.master)
-    /*val xmlRead = XmlReader.read(in, Schema.master)
+    val readOpt = XmlReader2.read(in, Schema.master)
 
-    //println(stringOut.toString("UTF-8"))
+    val xmlRead = readOpt.get
     println(obj)
     println(xmlRead)
 
     val theyMatch = obj == xmlRead
-    println("match? " + theyMatch)*/
+    println("match? " + theyMatch)
   }
 }
 
