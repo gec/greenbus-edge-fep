@@ -213,9 +213,15 @@ object XmlReader {
     while (doc.hasNext) {
       val eventType = doc.next()
 
+      println(eventType)
+
       eventType match {
         case XMLStreamConstants.START_ELEMENT => {
           //println("STACK: " + schemaStack.mkString("\n\t"))
+
+          //val textOpt = Option(doc.getElementText)
+          //println(textOpt)
+
           schemaStack.head match {
             case SingleNode(matchType) => {
               pushResultBuilder(matchType)

@@ -23,7 +23,7 @@ import java.io._
 import com.google.common.io.Files
 import io.greenbus.edge.dnp3.config.model.Master
 import io.greenbus.edge.tag._
-import io.greenbus.edge.tag.xml.{ Writer, XmlReader }
+import io.greenbus.edge.tag.xml.{ Writer, XmlReader, XmlReader2 }
 
 object Schema {
 
@@ -182,14 +182,16 @@ object XmlWriterTester {
     val array = stringOut.toByteArray
 
     val in = new ByteArrayInputStream(array)
-    val xmlRead = XmlReader.read(in, Schema.master)
+
+    XmlReader2.read(in, Schema.master)
+    /*val xmlRead = XmlReader.read(in, Schema.master)
 
     //println(stringOut.toString("UTF-8"))
     println(obj)
     println(xmlRead)
 
     val theyMatch = obj == xmlRead
-    println("match? " + theyMatch)
+    println("match? " + theyMatch)*/
   }
 }
 
