@@ -157,6 +157,31 @@ object IndexSet {
 }
 case class IndexSet(value: Seq[IndexRange])
 
+object OutputModel {
+
+  def read(data: VMap, ctx: ReaderContext): Either[String, OutputModel] = {
+
+    val binaries = MappingLibrary.getMapField("binaries", data).flatMap(elem => MappingLibrary.readFieldSubStruct("binaries", elem, "IndexSet", IndexSet.read, ctx))
+    val setpoints = MappingLibrary.getMapField("setpoints", data).flatMap(elem => MappingLibrary.readFieldSubStruct("setpoints", elem, "IndexSet", IndexSet.read, ctx))
+
+    if (binaries.isRight && setpoints.isRight) {
+      Right(OutputModel(binaries.right.get, setpoints.right.get))
+    } else {
+      Left(Seq(binaries.left.toOption, setpoints.left.toOption).flatten.mkString(", "))
+    }
+
+  }
+
+  def write(obj: OutputModel): TaggedValue = {
+    val built = VMap(Map(
+      (VString("binaries"), IndexSet.write(obj.binaries)),
+      (VString("setpoints"), IndexSet.write(obj.setpoints))))
+
+    TaggedValue("OutputModel", built)
+  }
+}
+case class OutputModel(binaries: IndexSet, setpoints: IndexSet)
+
 object InputModel {
 
   def read(data: VMap, ctx: ReaderContext): Either[String, InputModel] = {
@@ -332,7 +357,7 @@ object DNP3Gateway {
     val master = MappingLibrary.getMapField("master", data).flatMap(elem => MappingLibrary.readFieldSubStruct("master", elem, "Master", Master.read, ctx))
     val client = MappingLibrary.getMapField("client", data).flatMap(elem => MappingLibrary.readFieldSubStruct("client", elem, "TCPClient", TCPClient.read, ctx))
     val inputModel = MappingLibrary.getMapField("inputModel", data).flatMap(elem => MappingLibrary.readFieldSubStruct("inputModel", elem, "InputModel", InputModel.read, ctx))
-    val outputModel = MappingLibrary.getMapField("outputModel", data).flatMap(elem => MappingLibrary.readFieldSubStruct("outputModel", elem, "InputModel", InputModel.read, ctx))
+    val outputModel = MappingLibrary.getMapField("outputModel", data).flatMap(elem => MappingLibrary.readFieldSubStruct("outputModel", elem, "OutputModel", OutputModel.read, ctx))
 
     if (master.isRight && client.isRight && inputModel.isRight && outputModel.isRight) {
       Right(DNP3Gateway(master.right.get, client.right.get, inputModel.right.get, outputModel.right.get))
@@ -347,10 +372,10 @@ object DNP3Gateway {
       (VString("master"), Master.write(obj.master)),
       (VString("client"), TCPClient.write(obj.client)),
       (VString("inputModel"), InputModel.write(obj.inputModel)),
-      (VString("outputModel"), InputModel.write(obj.outputModel))))
+      (VString("outputModel"), OutputModel.write(obj.outputModel))))
 
     TaggedValue("DNP3Gateway", built)
   }
 }
-case class DNP3Gateway(master: Master, client: TCPClient, inputModel: InputModel, outputModel: InputModel)
+case class DNP3Gateway(master: Master, client: TCPClient, inputModel: InputModel, outputModel: OutputModel)
 

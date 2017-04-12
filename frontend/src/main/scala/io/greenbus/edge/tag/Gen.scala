@@ -102,7 +102,7 @@ object MappingLibrary {
   }
   def readString(elem: ValueElement, ctx: ReaderContext): Either[String, String] = {
     elem match {
-      case v: VString => Right(v.toString)
+      case v: VString => Right(v.value)
       case _ => Left(s"${ctx.context} error: expected string value, saw: ${descName(elem)}")
     }
   }

@@ -108,7 +108,7 @@ object DnpGatewaySchema {
   }
 
   val outputModel: TExt = {
-    TExt("InputModel", TStruct(Vector(
+    TExt("OutputModel", TStruct(Vector(
       StructFieldDef("binaries", indexSet, 0),
       StructFieldDef("setpoints", indexSet, 1))))
   }
@@ -140,7 +140,46 @@ object Example {
       Unsol(doTask = true, enable = true, enableClass1 = true, enableClass2 = true, enableClass3 = true))
   }
 
-  def main(args: Array[String]): Unit = {
+  def buildGateway: DNP3Gateway = {
+    DNP3Gateway(buildMaster,
+      TCPClient("127.0.0.1", 20000),
+      InputModel(
+        binaryInputs = IndexSet(Seq(IndexRange(0, 20))),
+        analogInputs = IndexSet(Seq(IndexRange(0, 20))),
+        counterInputs = IndexSet(Seq(IndexRange(0, 20))),
+        binaryOutputs = IndexSet(Seq(IndexRange(0, 20))),
+        analogOutputs = IndexSet(Seq(IndexRange(0, 20)))),
+      OutputModel(
+        binaries = IndexSet(Seq(IndexRange(0, 20))),
+        setpoints = IndexSet(Seq(IndexRange(0, 20)))))
+  }
+
+  def runGateway(): Unit = {
+
+    val example = buildGateway
+    val written = DNP3Gateway.write(example)
+    println(written)
+
+    val readEither = written match {
+      case t: TaggedValue =>
+        t.value match {
+          case tt: VMap => DNP3Gateway.read(tt, SimpleReaderContext(Vector(RootCtx("DNP3Gateway"))))
+          case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
+        }
+      case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
+    }
+
+    readEither match {
+      case Left(err) => println("ERROR: " + err)
+      case Right(read) =>
+        println(example)
+        println(read)
+        println(example == read)
+    }
+
+  }
+
+  def runMaster(): Unit = {
 
     val example = buildMaster
     val written = Master.write(example)
@@ -162,6 +201,10 @@ object Example {
         println(example == master)
     }
 
+  }
+
+  def main(args: Array[String]): Unit = {
+    runGateway()
   }
 
 }
