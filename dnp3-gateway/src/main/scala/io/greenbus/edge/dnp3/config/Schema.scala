@@ -21,9 +21,9 @@ package io.greenbus.edge.dnp3.config
 import java.io._
 
 import com.google.common.io.Files
-import io.greenbus.edge.dnp3.config.model.Master
+import io.greenbus.edge.dnp3.config.model.{ DNP3Gateway, Master }
 import io.greenbus.edge.tag._
-import io.greenbus.edge.tag.xml.{ Writer, XmlReader, XmlReader2 }
+import io.greenbus.edge.tag.xml.{ Writer, XmlReader2 }
 
 object Schema {
 
@@ -211,9 +211,31 @@ object Example {
 
 object XmlWriterTester {
 
-  def main(args: Array[String]): Unit = {
+  def runGateway(): Unit = {
 
-    //Writer.write(VBool(false), System.out)
+    val example = Example.buildGateway
+    val obj = DNP3Gateway.write(example)
+
+    println(obj)
+    val stringOut = new ByteArrayOutputStream()
+
+    Writer.write(obj, stringOut)
+    println(stringOut.toString("UTF-8"))
+    val array = stringOut.toByteArray
+
+    val in = new ByteArrayInputStream(array)
+
+    val readOpt = XmlReader2.read(in, DnpGatewaySchema.gateway)
+
+    val xmlRead = readOpt.get
+    println(obj)
+    println(xmlRead)
+
+    val theyMatch = obj == xmlRead
+    println("match? " + theyMatch)
+  }
+
+  def runMaster(): Unit = {
 
     val example = Example.buildMaster
     val obj = Master.write(example)
@@ -235,8 +257,12 @@ object XmlWriterTester {
     val theyMatch = obj == xmlRead
     println("match? " + theyMatch)
   }
-}
 
+  def main(args: Array[String]): Unit = {
+
+    runGateway()
+  }
+}
 object Builder {
 
   def main(args: Array[String]): Unit = {

@@ -49,18 +49,11 @@ object MappingLibrary {
     map.value.get(VString(name)).map(r => Right(r)).getOrElse(Left(s"Struct map did not contain field $name"))
   }
 
-  def readFieldSubStruct[A](fieldName: String, element: ValueElement, tag: String, read: (VMap, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
-
-    def matchV(elem: ValueElement): Either[String, A] = {
-      elem match {
-        case v: VMap => read(v, ctx.structField(tag, fieldName))
-        case _ => Left(s"${ctx.context} error: expected map value, saw: ${descName(elem)}")
-      }
-    }
+  def readFieldSubStruct[A](fieldName: String, element: ValueElement, tag: String, read: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
 
     element match {
-      case v: TaggedValue => matchV(v.value)
-      case other => matchV(other)
+      case v: TaggedValue => read(v.value, ctx.structField(tag, fieldName))
+      case other => read(other, ctx.structField(tag, fieldName))
     }
   }
 
@@ -115,7 +108,7 @@ object MappingLibrary {
     }
   }
 
-  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (VMap, ReaderContext) => Either[String, A]): Either[String, A] = {
+  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (ValueElement, ReaderContext) => Either[String, A]): Either[String, A] = {
     elem match {
       case v: TaggedValue => readTup(v.value, ctx, read)
       case v: VMap => read(v, ctx)
@@ -138,17 +131,20 @@ object Gen {
   case class TagTypeDef(tag: String) extends FieldTypeDef
 
   case class FieldDef(name: String, typ: FieldTypeDef)
-  case class ObjDef(fields: Seq[FieldDef])
+
+  sealed trait ObjDef
+  case class StructDef(fields: Seq[FieldDef]) extends ObjDef
+  case class WrapperDef(field: FieldDef) extends ObjDef
 
   def objDefForExtType(typ: TExt): ObjDef = {
 
-    def singleParam(typ: ValueType): Seq[FieldDef] = {
-      Seq(FieldDef("value", ParamTypeDef(typ)))
+    def singleParam(typ: ValueType): ObjDef = {
+      WrapperDef(FieldDef("value", ParamTypeDef(typ)))
     }
 
-    val fields = typ.reprType match {
+    typ.reprType match {
       case struct: TStruct => {
-        struct.fields.map { fd =>
+        val fields = struct.fields.map { fd =>
           val ftd = fd.typ match {
             case t: TExt => TagTypeDef(t.tag)
             case t: TList => ParamTypeDef(t)
@@ -161,16 +157,15 @@ object Gen {
 
           FieldDef(fd.name, ftd)
         }
+        StructDef(fields)
       }
       case list: TList => singleParam(list)
       case map: TMap => singleParam(map)
       case union: TUnion => singleParam(union)
       case either: TEither => singleParam(either)
       case option: TOption => singleParam(option)
-      case basic => Seq(FieldDef("value", SimpleTypeDef(basic)))
+      case basic => WrapperDef(FieldDef("value", SimpleTypeDef(basic)))
     }
-
-    ObjDef(fields)
   }
 
   def collectObjDefs(typ: VTValueElem, seen: Map[String, ObjDef]): Map[String, ObjDef] = {
@@ -203,7 +198,11 @@ object Gen {
     pw.println()
 
     objs.foreach {
-      case (tag, obj) => writeStatic(tag, obj, pw)
+      case (tag, obj) =>
+        obj match {
+          case d: StructDef => writeStatic(tag, d, pw)
+          case d: WrapperDef => writeWrapperStatic(tag, d, pw)
+        }
     }
 
     pw.println()
@@ -299,48 +298,120 @@ object Gen {
     }
   }
 
+  def inputSignatureFor(typ: ValueType): String = {
+    typ match {
+      case t: TExt => s"${t.tag}"
+      case t: TList => "VList"
+      case t: TMap => "VMap"
+      case TBool => "VBool"
+      case TInt32 => "VInt32"
+      case TUInt32 => "VUInt32"
+      case TInt64 => "VInt64"
+      case TUInt64 => "VUInt64"
+      case TFloat => "VFloat"
+      case TDouble => "VDouble"
+      case TString => "VString"
+      case _ => throw new IllegalArgumentException(s"Type unhandled: $typ")
+    }
+  }
+
   def tab(n: Int): String = Range(0, n).map(_ => "  ").mkString("")
 
-  def writeStatic(name: String, objDef: ObjDef, pw: PrintWriter): Unit = {
+  def writeWrapperStatic(name: String, wrapper: WrapperDef, pw: PrintWriter): Unit = {
     pw.println(s"object $name {")
     pw.println()
 
-    pw.println(tab(1) + s"def read(data: VMap, ctx: ReaderContext): Either[String, $name] = {")
+    val typeSignature = wrapper.field.typ match {
+      case SimpleTypeDef(typ) => inputSignatureFor(typ)
+      case ParamTypeDef(typ) => inputSignatureFor(typ)
+      case TagTypeDef(tag) => tag
+    }
+
+    pw.println(tab(1) + s"def read(element: ValueElement, ctx: ReaderContext): Either[String, $name] = {")
+    pw.println(tab(2) + s"element match {")
+    pw.println(tab(3) + s"case data: $typeSignature =>")
+    wrapper.field.typ match {
+      case std: SimpleTypeDef => {
+        val readFun = readFuncForSimpleTyp(std.typ)
+        pw.println(tab(4) + "" + s"""$readFun(data, ctx).map(result => $name(result))""")
+      }
+      case ptd: ParamTypeDef => {
+        ptd.typ match {
+          case typ: TList => {
+            val paramRead = readFuncForTypeParam(typ.paramType)
+            val paramSig = fieldSignatureFor(typ.paramType)
+            pw.println(tab(4) + "" + s"""$utilKlass.readList[$paramSig](data, $utilKlass.readTup[$paramSig](_, _, $paramRead), ctx).map(result => $name(result))""")
+          }
+          case other => throw new IllegalArgumentException(s"Parameterized type not handled: $other")
+        }
+      }
+      case ttd: TagTypeDef => {
+        val tagName = ttd.tag
+        pw.println(tab(4) + "" + s"""$utilKlass.readFieldSubStruct("$name", data, "$tagName", $tagName.read, ctx).map(result => $name(result))""")
+      }
+    }
+    pw.println(tab(3) + s"""case _ => Left("$name must be $typeSignature type")""")
+    pw.println(tab(2) + s"}")
+    pw.println(tab(1) + "}")
+
+    pw.println(tab(1) + s"def write(obj: $name): TaggedValue = {")
+
+    pw.println(tab(2) + "val built = " + writeCallFor(wrapper.field.typ, s"obj.${wrapper.field.name}"))
+
+    //pw.println(tab(2) + "))")
     pw.println()
+    pw.println(tab(2) + s"""TaggedValue("$name", built)""")
+    pw.println(tab(1) + "}")
+
+    pw.println("}")
+
+    pw.println(s"""case class $name(${wrapper.field.name}: ${signatureFor(wrapper.field.typ)})""")
+    pw.println()
+  }
+
+  def writeStatic(name: String, objDef: StructDef, pw: PrintWriter): Unit = {
+    pw.println(s"object $name {")
+    pw.println()
+
+    pw.println(tab(1) + s"def read(element: ValueElement, ctx: ReaderContext): Either[String, $name] = {")
+    pw.println(tab(2) + s"element match {")
+    pw.println(tab(3) + s"case data: VMap =>")
     objDef.fields.foreach { fd =>
       val name = fd.name
       fd.typ match {
         case std: SimpleTypeDef => {
           val readFun = readFuncForSimpleTyp(std.typ)
-          pw.println(tab(2) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $readFun(elem, ctx))""")
+          pw.println(tab(4) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $readFun(elem, ctx))""")
         }
         case ptd: ParamTypeDef => {
           ptd.typ match {
             case typ: TList => {
               val paramRead = readFuncForTypeParam(typ.paramType)
               val paramSig = fieldSignatureFor(typ.paramType)
-              pw.println(tab(2) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $utilKlass.readList[$paramSig](elem, $utilKlass.readTup[$paramSig](_, _, $paramRead), ctx))""")
+              pw.println(tab(4) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $utilKlass.readList[$paramSig](elem, $utilKlass.readTup[$paramSig](_, _, $paramRead), ctx))""")
             }
             case other => throw new IllegalArgumentException(s"Parameterized type not handled: $other")
           }
         }
         case ttd: TagTypeDef => {
           val tagName = ttd.tag
-          pw.println(tab(2) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $utilKlass.readFieldSubStruct("$name", elem, "$tagName", $tagName.read, ctx))""")
+          pw.println(tab(4) + "" + s"""val $name = $utilKlass.getMapField("$name", data).flatMap(elem => $utilKlass.readFieldSubStruct("$name", elem, "$tagName", $tagName.read, ctx))""")
         }
       }
     }
     pw.println()
 
     val isRightJoin = objDef.fields.map(f => f.name + ".isRight").mkString(" && ")
-    pw.println(tab(2) + s"if ($isRightJoin) {")
+    pw.println(tab(4) + s"if ($isRightJoin) {")
     val rightGetJoin = objDef.fields.map(_.name + ".right.get").mkString(", ")
-    pw.println(tab(3) + s"Right($name($rightGetJoin))")
-    pw.println(tab(2) + "} else {")
+    pw.println(tab(5) + s"Right($name($rightGetJoin))")
+    pw.println(tab(4) + "} else {")
     val leftJoin = objDef.fields.map(_.name + ".left.toOption").mkString(", ")
-    pw.println(tab(3) + s"""Left(Seq($leftJoin).flatten.mkString(", "))""")
-    pw.println(tab(2) + "}")
+    pw.println(tab(5) + s"""Left(Seq($leftJoin).flatten.mkString(", "))""")
+    pw.println(tab(4) + "}")
     pw.println()
+    pw.println(tab(3) + s"""case _ => Left("$name must be VMap type")""")
+    pw.println(tab(2) + s"}")
     pw.println(tab(1) + "}")
     pw.println()
 

@@ -56,11 +56,12 @@ object Writer {
     w.flush()
   }
 
-  val basicTag = "value"
+  //val basicTag = "value"
 
   def writeValue(value: Value, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
     value match {
       case v: VList => {
+        println("writing list: " + ctxName)
         w.writeStartElement(ctxName.getOrElse("list"))
         v.value.foreach(elem => writeElem(elem, w))
         w.writeEndElement()
@@ -92,13 +93,27 @@ object Writer {
       case _ => throw new IllegalArgumentException(s"Type not handled: " + value)
     }
   }
+  /*
 
+  val inputModel: TExt = {
+    TExt("InputModel", TStruct(Vector(
+      StructFieldDef("binaryInputs", indexSet, 0),
+      StructFieldDef("analogInputs", indexSet, 1),
+      StructFieldDef("counterInputs", indexSet, 2),
+      StructFieldDef("binaryOutputs", indexSet, 3),
+      StructFieldDef("analogOutputs", indexSet, 4))))
+  }
+   */
+
+  //TaggedValue(IndexSet,VMap(Map(VString(value) -> VList(Vector(TaggedValue(IndexRange,VMap(Map(VString(start) -
   def writeElem(value: ValueElement, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
+    //println(value.getClass.getSimpleName + " : " + ctxName)
     value match {
       case tagged: TaggedValue => {
         tagged.value match {
           case v: VMap => {
-            w.writeStartElement(tagged.tag)
+            println("writing map: " + ctxName + ", tag: " + tagged.tag)
+            w.writeStartElement(ctxName.getOrElse(tagged.tag))
             v.value.foreach {
               case (keyV, valueV) =>
                 keyV match {
@@ -131,7 +146,7 @@ object Writer {
     }
   }
 }
-
+/*
 object XmlReader {
   import scala.collection.mutable
 
@@ -350,3 +365,4 @@ object XmlReader {
     b.result()
   }
 }
+*/
