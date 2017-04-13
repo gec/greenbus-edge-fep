@@ -222,7 +222,7 @@ object XmlWriterTester {
     println(obj)
     val stringOut = new ByteArrayOutputStream()
 
-    Writer.write(obj, stringOut)
+    Writer.write(obj, stringOut, Some("io.greenbus.edge.dnp3.config"))
     println(stringOut.toString("UTF-8"))
     val array = stringOut.toByteArray
 
@@ -270,7 +270,7 @@ object XmlWriterTester {
 object XmlSchemaWriter {
 
   def main(args: Array[String]): Unit = {
-    SchemaWriter.write(Schema.all ++ DnpGatewaySchema.all, "io.greenbus.edge.dnp3.config", System.out)
+    SchemaWriter.write(Schema.all ++ DnpGatewaySchema.all, Seq(DnpGatewaySchema.gateway), "io.greenbus.edge.dnp3.config", System.out)
   }
 }
 

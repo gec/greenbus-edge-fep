@@ -27,7 +27,7 @@ import io.greenbus.edge.tag._
 object SchemaWriter {
   val xmlSchemaNs = "http://www.w3.org/2001/XMLSchema"
 
-  def write(types: Seq[TExt], uri: String, os: OutputStream): Unit = {
+  def write(types: Seq[TExt], concreteTypes: Seq[TExt], uri: String, os: OutputStream): Unit = {
 
     val output = XMLOutputFactory.newFactory()
     val base = output.createXMLStreamWriter(os)
@@ -36,9 +36,15 @@ object SchemaWriter {
 
     w.writeStartElement("xs", "schema", xmlSchemaNs)
     w.writeAttribute("xmlns:xs", xmlSchemaNs)
+    w.writeAttribute("xmlns", uri)
     w.writeAttribute("targetNamespace", uri)
+    w.writeAttribute("elementFormDefault", "qualified")
 
     types.foreach(writeType(_, w))
+
+    concreteTypes.foreach { typ =>
+      writeExtension(typ.tag, typ.tag, w)
+    }
 
     w.writeEndElement()
 

@@ -43,14 +43,14 @@ object Writer {
 
    */
 
-  def write(value: ValueElement, os: OutputStream): Unit = {
+  def write(value: ValueElement, os: OutputStream, xmlnsOpt: Option[String] = None): Unit = {
 
     val output = XMLOutputFactory.newFactory()
     val base = output.createXMLStreamWriter(os)
     val w = new IndentingXMLStreamWriter(base)
-    w.writeStartDocument()
+    w.writeStartDocument("UTF-8", "1.0")
 
-    writeElem(value, w)
+    writeElem(value, w, None, xmlnsOpt)
 
     w.writeEndDocument()
     w.flush()
@@ -94,7 +94,7 @@ object Writer {
     }
   }
 
-  def writeElem(value: ValueElement, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
+  def writeElem(value: ValueElement, w: XMLStreamWriter, ctxName: Option[String] = None, xmlnsOpt: Option[String] = None): Unit = {
     //println(value.getClass.getSimpleName + " : " + ctxName)
     value match {
       case tagged: TaggedValue => {
@@ -102,6 +102,7 @@ object Writer {
           case v: VMap => {
             println("writing map: " + ctxName + ", tag: " + tagged.tag)
             w.writeStartElement(ctxName.getOrElse(tagged.tag))
+            xmlnsOpt.foreach(xmlns => w.writeAttribute("xmlns", xmlns))
             v.value.foreach {
               case (keyV, valueV) =>
                 keyV match {
