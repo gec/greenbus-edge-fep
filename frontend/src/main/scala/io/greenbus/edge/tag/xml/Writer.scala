@@ -124,7 +124,7 @@ object Writer {
             }
             w.writeEndElement()
           }
-          case v => writeValue(v, w, Some(tagged.tag))
+          case v => writeValue(v, w, ctxName.orElse(Some(tagged.tag)))
         }
       }
       case untagged: Value => {

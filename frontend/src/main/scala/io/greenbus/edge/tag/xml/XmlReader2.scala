@@ -38,25 +38,25 @@ object Node extends LazyLogging {
     }
   }
 
-  def termParse[A](parse: String => A, build: A => ValueElement): String => Option[ValueElement] = {
+  def termParse[A](parse: String => A, build: A => Value): String => Option[Value] = {
     s: String => { tryParse[A](s, parse).map(build) }
   }
-  def term[A](parse: String => A, build: A => ValueElement): Node = {
-    new TerminalNode(termParse(parse, build))
+  def term[A](parse: String => A, build: A => Value, tagOpt: Option[String]): Node = {
+    new TerminalNode(termParse(parse, build), tagOpt)
   }
 
-  def simpleNodeFor(typ: VTValueElem): Node = {
+  def simpleNodeFor(typ: VTValueElem, tagOpt: Option[String]): Node = {
     typ match {
-      case TByte => term(java.lang.Byte.parseByte, VByte)
-      case TBool => term(java.lang.Boolean.parseBoolean, VBool)
-      case TInt32 => term(java.lang.Integer.parseInt, VInt32)
-      case TUInt32 => term(java.lang.Integer.parseInt, VUInt32)
-      case TInt64 => term(java.lang.Long.parseLong, VInt64)
-      case TUInt64 => term(java.lang.Long.parseLong, VUInt64)
-      case TFloat => term(java.lang.Float.parseFloat, VFloat)
-      case TDouble => term(java.lang.Double.parseDouble, VDouble)
-      case TString => term(s => s, VString)
-      case t: TList => new ListNode(t)
+      case TByte => term(java.lang.Byte.parseByte, VByte, tagOpt)
+      case TBool => term(java.lang.Boolean.parseBoolean, VBool, tagOpt)
+      case TInt32 => term(java.lang.Integer.parseInt, VInt32, tagOpt)
+      case TUInt32 => term(java.lang.Integer.parseInt, VUInt32, tagOpt)
+      case TInt64 => term(java.lang.Long.parseLong, VInt64, tagOpt)
+      case TUInt64 => term(java.lang.Long.parseLong, VUInt64, tagOpt)
+      case TFloat => term(java.lang.Float.parseFloat, VFloat, tagOpt)
+      case TDouble => term(java.lang.Double.parseDouble, VDouble, tagOpt)
+      case TString => term(s => s, VString, tagOpt)
+      case t: TList => new ListNode(t, tagOpt)
       case _ => throw new IllegalArgumentException(s"Type unhandled: " + typ)
     }
   }
@@ -66,10 +66,10 @@ object Node extends LazyLogging {
       case t: TExt => {
         t.reprType match {
           case extType: TStruct => new StructNode(t.tag, extType)
-          case other => simpleNodeFor(other)
+          case other => simpleNodeFor(other, Some(t.tag))
         }
       }
-      case t => simpleNodeFor(typ)
+      case t => simpleNodeFor(typ, None)
     }
   }
 
@@ -92,7 +92,7 @@ class NullNode extends Node {
   }
 }
 
-class TerminalNode(parser: String => Option[ValueElement]) extends Node {
+class TerminalNode(parser: String => Option[Value], tagOpt: Option[String]) extends Node {
 
   private var textOpt = Option.empty[String]
 
@@ -104,11 +104,16 @@ class TerminalNode(parser: String => Option[ValueElement]) extends Node {
   def onPop(subElemOpt: Option[ValueElement]): Unit = {}
 
   def result(): Option[ValueElement] = {
-    textOpt.flatMap(parser)
+    textOpt.flatMap(parser).map { elem =>
+      tagOpt match {
+        case None => elem
+        case Some(tag) => TaggedValue(tag, elem)
+      }
+    }
   }
 }
 
-class ListNode(typ: TList) extends Node {
+class ListNode(typ: TList, tagOpt: Option[String]) extends Node {
   private val elems = mutable.ArrayBuffer.empty[ValueElement]
 
   def setText(content: String): Unit = {}
@@ -122,7 +127,10 @@ class ListNode(typ: TList) extends Node {
   }
 
   def result(): Option[ValueElement] = {
-    Some(VList(elems.toVector))
+    tagOpt match {
+      case None => Some(VList(elems.toVector))
+      case Some(tag) => Some(TaggedValue(tag, VList(elems.toVector)))
+    }
   }
 }
 
@@ -148,11 +156,11 @@ object StructNode {
 }
 class StructNode(typeTag: String, vt: TStruct) extends Node {
   private val fieldMap: Map[String, StructFieldDef] = vt.fields.map { sfd =>
-    val name = sfd.typ match {
+    /*val name = sfd.typ match {
       case t: TExt => t.tag
       case _ => sfd.name
-    }
-    (name, sfd)
+    }*/
+    (sfd.name, sfd)
   }.toMap
 
   private var builtFields = Map.empty[String, ValueElement]
@@ -187,7 +195,7 @@ class StructNode(typeTag: String, vt: TStruct) extends Node {
     val kvs: Seq[(VString, ValueElement)] = vt.fields.flatMap { sfd =>
       builtFields.get(sfd.name) match {
         case None =>
-          if (StructNode.fieldIsOptional(sfd)) {
+          if (!StructNode.fieldIsOptional(sfd)) {
             throw new IllegalArgumentException(s"Could not find required field ${sfd.name} for $typeTag")
           } else {
             None
