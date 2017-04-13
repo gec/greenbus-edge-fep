@@ -23,7 +23,7 @@ import java.io._
 import com.google.common.io.Files
 import io.greenbus.edge.dnp3.config.model.{ DNP3Gateway, Master }
 import io.greenbus.edge.tag._
-import io.greenbus.edge.tag.xml.{ SchemaWriter, Writer, XmlReader2 }
+import io.greenbus.edge.tag.xml.{ SchemaWriter, Writer, XmlReader }
 
 object Schema {
 
@@ -228,7 +228,7 @@ object XmlWriterTester {
 
     val in = new ByteArrayInputStream(array)
 
-    val readOpt = XmlReader2.read(in, DnpGatewaySchema.gateway)
+    val readOpt = XmlReader.read(in, DnpGatewaySchema.gateway)
 
     val xmlRead = readOpt.get
     println(obj)
@@ -251,7 +251,7 @@ object XmlWriterTester {
 
     val in = new ByteArrayInputStream(array)
 
-    val readOpt = XmlReader2.read(in, Schema.master)
+    val readOpt = XmlReader.read(in, Schema.master)
 
     val xmlRead = readOpt.get
     println(obj)

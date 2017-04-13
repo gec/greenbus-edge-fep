@@ -61,7 +61,6 @@ object Writer {
   def writeValue(value: Value, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
     value match {
       case v: VList => {
-        println("writing list: " + ctxName)
         w.writeStartElement(ctxName.getOrElse("list"))
         v.value.foreach(elem => writeElem(elem, w))
         w.writeEndElement()
@@ -100,7 +99,6 @@ object Writer {
       case tagged: TaggedValue => {
         tagged.value match {
           case v: VMap => {
-            println("writing map: " + ctxName + ", tag: " + tagged.tag)
             w.writeStartElement(ctxName.getOrElse(tagged.tag))
             xmlnsOpt.foreach(xmlns => w.writeAttribute("xmlns", xmlns))
             v.value.foreach {

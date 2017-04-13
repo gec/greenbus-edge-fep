@@ -239,7 +239,7 @@ class RootNode(rootType: VTValueElem) extends Node {
   }
 }
 
-object XmlReader2 {
+object XmlReader {
 
   class ResultBuilder(name: String, attributes: Seq[(String, String)], var text: Option[String], sub: mutable.ArrayBuffer[Element])
 
