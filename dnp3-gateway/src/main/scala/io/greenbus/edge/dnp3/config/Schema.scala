@@ -23,7 +23,7 @@ import java.io._
 import com.google.common.io.Files
 import io.greenbus.edge.dnp3.config.model.{ DNP3Gateway, Master }
 import io.greenbus.edge.tag._
-import io.greenbus.edge.tag.xml.{ Writer, XmlReader2 }
+import io.greenbus.edge.tag.xml.{ SchemaWriter, Writer, XmlReader2 }
 
 object Schema {
 
@@ -76,6 +76,8 @@ object Schema {
       StructFieldDef("scanList", TList(scan), 2),
       StructFieldDef("unsol", unsol, 3))))
   }
+
+  def all = Seq(linkLayer, appLayer, stackConfig, masterSettings, scan, unsol, master)
 }
 
 object DnpGatewaySchema {
@@ -121,6 +123,7 @@ object DnpGatewaySchema {
       StructFieldDef("outputModel", outputModel, 3))))
   }
 
+  def all = Seq(tcpClient, selectIndex, selectRange, indexSet, inputModel, outputModel, gateway)
 }
 
 object Example {
@@ -263,6 +266,14 @@ object XmlWriterTester {
     runGateway()
   }
 }
+
+object XmlSchemaWriter {
+
+  def main(args: Array[String]): Unit = {
+    SchemaWriter.write(Schema.all ++ DnpGatewaySchema.all, "io.greenbus.edge.dnp3.config", System.out)
+  }
+}
+
 object Builder {
 
   def main(args: Array[String]): Unit = {
