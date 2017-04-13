@@ -32,10 +32,10 @@ object SchemaWriter {
     val output = XMLOutputFactory.newFactory()
     val base = output.createXMLStreamWriter(os)
     val w = new IndentingXMLStreamWriter(base)
-    w.writeStartDocument()
+    w.writeStartDocument("UTF-8", "1.0")
 
     w.writeStartElement("xs", "schema", xmlSchemaNs)
-    w.writeAttribute("xmlns", xmlSchemaNs, "xs", uri)
+    w.writeAttribute("xmlns:xs", xmlSchemaNs)
     w.writeAttribute("targetNamespace", uri)
 
     types.foreach(writeType(_, w))
@@ -93,7 +93,7 @@ object SchemaWriter {
           writeExtension(sfd.name, t.tag, w)
         }
         case t: TList => {
-          writeList(sfd.name, t, w)
+          writeListConcrete(sfd.name, t, w)
         }
         case TBool => writeSimple(sfd.name, "xs:boolean", w)
         case TByte => writeSimple(sfd.name, "xs:byte", w)
@@ -114,10 +114,18 @@ object SchemaWriter {
     w.writeEndElement()
   }
 
-  def writeList(name: String, list: TList, w: XMLStreamWriter): Unit = {
+  def writeListConcrete(name: String, list: TList, w: XMLStreamWriter): Unit = {
     w.writeStartElement("xs", "element", xmlSchemaNs)
     w.writeAttribute("name", name)
+
+    writeListComplex(None, list, w)
+
+    w.writeEndElement()
+  }
+
+  def writeListComplex(nameOpt: Option[String], list: TList, w: XMLStreamWriter): Unit = {
     w.writeStartElement("xs", "complexType", xmlSchemaNs)
+    nameOpt.foreach(name => w.writeAttribute("name", name))
     w.writeStartElement("xs", "sequence", xmlSchemaNs)
 
     list.paramType match {
@@ -128,11 +136,9 @@ object SchemaWriter {
     }
     w.writeEndElement()
     w.writeEndElement()
-
-    w.writeEndElement()
   }
 
   def writeExtList(tag: String, list: TList, w: XMLStreamWriter): Unit = {
-    writeList(tag, list, w)
+    writeListComplex(Some(tag), list, w)
   }
 }
