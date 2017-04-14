@@ -38,24 +38,24 @@ object Node extends LazyLogging {
     }
   }
 
-  def termParse[A](parse: String => A, build: A => Value): String => Option[Value] = {
+  def termParse[A](parse: String => A, build: A => BasicValue): String => Option[BasicValue] = {
     s: String => { tryParse[A](s, parse).map(build) }
   }
-  def term[A](parse: String => A, build: A => Value, tagOpt: Option[String]): Node = {
+  def term[A](parse: String => A, build: A => BasicValue, tagOpt: Option[String]): Node = {
     new TerminalNode(termParse(parse, build), tagOpt)
   }
 
   def simpleNodeFor(typ: VTValueElem, tagOpt: Option[String]): Node = {
     typ match {
-      case TByte => term(java.lang.Byte.parseByte, VByte, tagOpt)
-      case TBool => term(java.lang.Boolean.parseBoolean, VBool, tagOpt)
-      case TInt32 => term(java.lang.Integer.parseInt, VInt32, tagOpt)
-      case TUInt32 => term(java.lang.Integer.parseInt, VUInt32, tagOpt)
-      case TInt64 => term(java.lang.Long.parseLong, VInt64, tagOpt)
-      case TUInt64 => term(java.lang.Long.parseLong, VUInt64, tagOpt)
-      case TFloat => term(java.lang.Float.parseFloat, VFloat, tagOpt)
-      case TDouble => term(java.lang.Double.parseDouble, VDouble, tagOpt)
-      case TString => term(s => s, VString, tagOpt)
+      case TByte => term(java.lang.Byte.parseByte, ValueByte, tagOpt)
+      case TBool => term(java.lang.Boolean.parseBoolean, ValueBool, tagOpt)
+      case TInt32 => term(java.lang.Integer.parseInt, ValueInt32, tagOpt)
+      case TUInt32 => term(java.lang.Integer.parseInt, ValueUInt32, tagOpt)
+      case TInt64 => term(java.lang.Long.parseLong, ValueInt64, tagOpt)
+      case TUInt64 => term(java.lang.Long.parseLong, ValueUInt64, tagOpt)
+      case TFloat => term(java.lang.Float.parseFloat, ValueFloat, tagOpt)
+      case TDouble => term(java.lang.Double.parseDouble, ValueDouble, tagOpt)
+      case TString => term(s => s, ValueString, tagOpt)
       case t: TList => new ListNode(t, tagOpt)
       case _ => throw new IllegalArgumentException(s"Type unhandled: " + typ)
     }
@@ -76,23 +76,23 @@ object Node extends LazyLogging {
 }
 trait Node {
   def setText(content: String): Unit
-  def onPop(subElemOpt: Option[ValueElement]): Unit
+  def onPop(subElemOpt: Option[Value]): Unit
   def onPush(name: String): Node
-  def result(): Option[ValueElement]
+  def result(): Option[Value]
 }
 
 class NullNode extends Node {
   def setText(content: String): Unit = {}
 
   def onPush(name: String): Node = new NullNode
-  def onPop(subElemOpt: Option[ValueElement]): Unit = {}
+  def onPop(subElemOpt: Option[Value]): Unit = {}
 
-  def result(): Option[ValueElement] = {
+  def result(): Option[Value] = {
     None
   }
 }
 
-class TerminalNode(parser: String => Option[Value], tagOpt: Option[String]) extends Node {
+class TerminalNode(parser: String => Option[BasicValue], tagOpt: Option[String]) extends Node {
 
   private var textOpt = Option.empty[String]
 
@@ -101,9 +101,9 @@ class TerminalNode(parser: String => Option[Value], tagOpt: Option[String]) exte
   }
 
   def onPush(name: String): Node = new NullNode
-  def onPop(subElemOpt: Option[ValueElement]): Unit = {}
+  def onPop(subElemOpt: Option[Value]): Unit = {}
 
-  def result(): Option[ValueElement] = {
+  def result(): Option[Value] = {
     textOpt.flatMap(parser).map { elem =>
       tagOpt match {
         case None => elem
@@ -114,7 +114,7 @@ class TerminalNode(parser: String => Option[Value], tagOpt: Option[String]) exte
 }
 
 class ListNode(typ: TList, tagOpt: Option[String]) extends Node {
-  private val elems = mutable.ArrayBuffer.empty[ValueElement]
+  private val elems = mutable.ArrayBuffer.empty[Value]
 
   def setText(content: String): Unit = {}
 
@@ -122,14 +122,14 @@ class ListNode(typ: TList, tagOpt: Option[String]) extends Node {
     Node.nodeFor(typ.paramType)
   }
 
-  def onPop(subElemOpt: Option[ValueElement]): Unit = {
+  def onPop(subElemOpt: Option[Value]): Unit = {
     subElemOpt.foreach { elems += _ }
   }
 
-  def result(): Option[ValueElement] = {
+  def result(): Option[Value] = {
     tagOpt match {
-      case None => Some(VList(elems.toVector))
-      case Some(tag) => Some(TaggedValue(tag, VList(elems.toVector)))
+      case None => Some(ValueList(elems.toVector))
+      case Some(tag) => Some(TaggedValue(tag, ValueList(elems.toVector)))
     }
   }
 }
@@ -137,11 +137,11 @@ class ListNode(typ: TList, tagOpt: Option[String]) extends Node {
 class MapNode(typ: TMap) extends Node {
   def setText(content: String): Unit = ???
 
-  def onPop(subElemOpt: Option[ValueElement]): Unit = ???
+  def onPop(subElemOpt: Option[Value]): Unit = ???
 
   def onPush(name: String): Node = ???
 
-  def result(): Option[ValueElement] = ???
+  def result(): Option[Value] = ???
 }
 
 object StructNode {
@@ -163,7 +163,7 @@ class StructNode(typeTag: String, vt: TStruct) extends Node {
     (sfd.name, sfd)
   }.toMap
 
-  private var builtFields = Map.empty[String, ValueElement]
+  private var builtFields = Map.empty[String, Value]
 
   private var currentField = Option.empty[String]
 
@@ -182,7 +182,7 @@ class StructNode(typeTag: String, vt: TStruct) extends Node {
     }
   }
 
-  def onPop(subElemOpt: Option[ValueElement]): Unit = {
+  def onPop(subElemOpt: Option[Value]): Unit = {
     subElemOpt.foreach { subElem =>
       currentField.foreach { fieldName =>
         builtFields += (fieldName -> subElem)
@@ -191,8 +191,8 @@ class StructNode(typeTag: String, vt: TStruct) extends Node {
     currentField = None
   }
 
-  def result(): Option[ValueElement] = {
-    val kvs: Seq[(VString, ValueElement)] = vt.fields.flatMap { sfd =>
+  def result(): Option[Value] = {
+    val kvs: Seq[(ValueString, Value)] = vt.fields.flatMap { sfd =>
       builtFields.get(sfd.name) match {
         case None =>
           if (!StructNode.fieldIsOptional(sfd)) {
@@ -201,18 +201,18 @@ class StructNode(typeTag: String, vt: TStruct) extends Node {
             None
           }
         case Some(elem) => {
-          Some((VString(sfd.name), elem))
+          Some((ValueString(sfd.name), elem))
         }
       }
     }
 
-    Some(TaggedValue(typeTag, VMap(kvs.toMap)))
+    Some(TaggedValue(typeTag, ValueMap(kvs.toMap)))
   }
 }
 
 class RootNode(rootType: VTValueElem) extends Node {
 
-  private var resultOpt = Option.empty[ValueElement]
+  private var resultOpt = Option.empty[Value]
   private var pushed = false
   private var popped = false
 
@@ -227,23 +227,23 @@ class RootNode(rootType: VTValueElem) extends Node {
     }
   }
 
-  def onPop(subElemOpt: Option[ValueElement]): Unit = {
+  def onPop(subElemOpt: Option[Value]): Unit = {
     if (!popped) {
       popped = true
       resultOpt = subElemOpt
     }
   }
 
-  def result(): Option[ValueElement] = {
+  def result(): Option[Value] = {
     resultOpt
   }
 }
 
 object XmlReader {
 
-  class ResultBuilder(name: String, attributes: Seq[(String, String)], var text: Option[String], sub: mutable.ArrayBuffer[Element])
+  class ResultBuilder(name: String, attributes: Seq[(String, String)], var text: Option[String], sub: mutable.ArrayBuffer[Value])
 
-  def read(is: InputStream, rootType: VTValueElem): Option[ValueElement] = {
+  def read(is: InputStream, rootType: VTValueElem): Option[Value] = {
     val fac = XMLInputFactory.newInstance()
     val reader = fac.createXMLEventReader(is)
 

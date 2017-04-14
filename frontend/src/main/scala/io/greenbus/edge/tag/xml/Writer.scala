@@ -43,7 +43,7 @@ object Writer {
 
    */
 
-  def write(value: ValueElement, os: OutputStream, xmlnsOpt: Option[String] = None): Unit = {
+  def write(value: Value, os: OutputStream, xmlnsOpt: Option[String] = None): Unit = {
 
     val output = XMLOutputFactory.newFactory()
     val base = output.createXMLStreamWriter(os)
@@ -58,14 +58,14 @@ object Writer {
 
   //val basicTag = "value"
 
-  def writeValue(value: Value, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
+  def writeValue(value: BasicValue, w: XMLStreamWriter, ctxName: Option[String] = None): Unit = {
     value match {
-      case v: VList => {
+      case v: ValueList => {
         w.writeStartElement(ctxName.getOrElse("list"))
         v.value.foreach(elem => writeElem(elem, w))
         w.writeEndElement()
       }
-      case v: VMap => {
+      case v: ValueMap => {
         w.writeStartElement(ctxName.getOrElse("map"))
         v.value.foreach {
           case (keyElem, valueElem) =>
@@ -80,31 +80,31 @@ object Writer {
         }
         w.writeEndElement()
       }
-      case v: VBool => writeSimple("bool", v.value.toString, w, ctxName)
-      case v: VByte => writeSimple("byte", v.value.toString, w, ctxName)
-      case v: VInt32 => writeSimple("int32", v.value.toString, w, ctxName)
-      case v: VUInt32 => writeSimple("uint32", v.value.toString, w, ctxName)
-      case v: VInt64 => writeSimple("int64", v.value.toString, w, ctxName)
-      case v: VUInt64 => writeSimple("uint64", v.value.toString, w, ctxName)
-      case v: VFloat => writeSimple("float", v.value.toString, w, ctxName)
-      case v: VDouble => writeSimple("double", v.value.toString, w, ctxName)
-      case v: VString => writeSimple("string", v.value.toString, w, ctxName)
+      case v: ValueBool => writeSimple("bool", v.value.toString, w, ctxName)
+      case v: ValueByte => writeSimple("byte", v.value.toString, w, ctxName)
+      case v: ValueInt32 => writeSimple("int32", v.value.toString, w, ctxName)
+      case v: ValueUInt32 => writeSimple("uint32", v.value.toString, w, ctxName)
+      case v: ValueInt64 => writeSimple("int64", v.value.toString, w, ctxName)
+      case v: ValueUInt64 => writeSimple("uint64", v.value.toString, w, ctxName)
+      case v: ValueFloat => writeSimple("float", v.value.toString, w, ctxName)
+      case v: ValueDouble => writeSimple("double", v.value.toString, w, ctxName)
+      case v: ValueString => writeSimple("string", v.value.toString, w, ctxName)
       case _ => throw new IllegalArgumentException(s"Type not handled: " + value)
     }
   }
 
-  def writeElem(value: ValueElement, w: XMLStreamWriter, ctxName: Option[String] = None, xmlnsOpt: Option[String] = None): Unit = {
+  def writeElem(value: Value, w: XMLStreamWriter, ctxName: Option[String] = None, xmlnsOpt: Option[String] = None): Unit = {
     //println(value.getClass.getSimpleName + " : " + ctxName)
     value match {
       case tagged: TaggedValue => {
         tagged.value match {
-          case v: VMap => {
+          case v: ValueMap => {
             w.writeStartElement(ctxName.getOrElse(tagged.tag))
             xmlnsOpt.foreach(xmlns => w.writeAttribute("xmlns", xmlns))
             v.value.foreach {
               case (keyV, valueV) =>
                 keyV match {
-                  case VString(name) =>
+                  case ValueString(name) =>
                     writeElem(valueV, w, Some(name))
                   case _ => throw new IllegalArgumentException(s"Tagged map did not have string key")
                 }
@@ -114,7 +114,7 @@ object Writer {
           case v => writeValue(v, w, ctxName.orElse(Some(tagged.tag)))
         }
       }
-      case untagged: Value => {
+      case untagged: BasicValue => {
         writeValue(untagged, w, ctxName)
       }
     }
@@ -126,11 +126,11 @@ object Writer {
     w.writeEndElement()
   }
 
-  def writeField(field: Element, w: XMLStreamWriter): Unit = {
+  /*def writeField(field: Element, w: XMLStreamWriter): Unit = {
     field match {
       case tf: TaggedField => writeElem(tf.value, w, Some(tf.name))
-      case v: ValueElement => writeElem(v, w, None)
+      case v: Value => writeElem(v, w, None)
     }
-  }
+  }*/
 }
 

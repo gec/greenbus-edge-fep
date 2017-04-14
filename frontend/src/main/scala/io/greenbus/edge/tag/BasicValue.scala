@@ -28,35 +28,35 @@ package io.greenbus.edge.tag
   map = { elem, elem }
 
  */
-sealed trait Element
-case class TaggedField(name: String, value: ValueElement) extends Element
+/*sealed trait Element
+case class TaggedField(name: String, value: Value) extends Element*/
 
 //sealed trait ValueElement extends Element
-sealed trait ValueElement extends Element
-case class TaggedValue(tag: String, value: Value) extends ValueElement //ValueElement
-sealed trait Value extends ValueElement //ValueElement
+sealed trait Value //extends Element
+case class TaggedValue(tag: String, value: BasicValue) extends Value //ValueElement
+sealed trait BasicValue extends Value //ValueElement
 
-sealed trait PrimitiveValue extends Value
-case class VByte(value: Byte) extends PrimitiveValue
-case class VBool(value: Boolean) extends PrimitiveValue
+sealed trait PrimitiveValue extends BasicValue
+case class ValueByte(value: Byte) extends PrimitiveValue
+case class ValueBool(value: Boolean) extends PrimitiveValue
 
 sealed trait IntegerValue extends PrimitiveValue {
   def toInt: Int
   def toLong: Long
 }
-case class VInt32(value: Int) extends IntegerValue {
+case class ValueInt32(value: Int) extends IntegerValue {
   def toInt: Int = value
   def toLong: Long = value
 }
-case class VUInt32(value: Int) extends IntegerValue {
+case class ValueUInt32(value: Int) extends IntegerValue {
   def toInt: Int = value
   def toLong: Long = value
 }
-case class VInt64(value: Long) extends IntegerValue {
+case class ValueInt64(value: Long) extends IntegerValue {
   def toInt: Int = value.toInt
   def toLong: Long = value
 }
-case class VUInt64(value: Long) extends IntegerValue {
+case class ValueUInt64(value: Long) extends IntegerValue {
   def toInt: Int = value.toInt
   def toLong: Long = value
 }
@@ -65,16 +65,15 @@ sealed trait FloatingPointValue extends PrimitiveValue {
   def toFloat: Float
   def toDouble: Double
 }
-case class VFloat(value: Float) extends FloatingPointValue {
+case class ValueFloat(value: Float) extends FloatingPointValue {
   def toFloat: Float = value
   def toDouble: Double = value.toDouble
 }
-case class VDouble(value: Double) extends FloatingPointValue {
+case class ValueDouble(value: Double) extends FloatingPointValue {
   def toFloat: Float = value.toFloat
   def toDouble: Double = value
 }
 
-sealed trait BasicValue extends Value
 case class VArrayByte(value: Array[Byte]) extends BasicValue
 case class VArrayBool(value: Array[Boolean]) extends BasicValue
 case class VArrayInt32(value: Array[Int]) extends BasicValue
@@ -89,18 +88,18 @@ case class VArrayDouble(value: Array[Double]) extends BasicValue
 /*sealed trait Field
 case class Field extends Value()*/
 
-case class VString(value: String) extends Value
+case class ValueString(value: String) extends BasicValue
 //case class VSymbol(value: String) extends Value
 
 //case class VStruct(value: Seq[TaggedField]) extends BasicValue // ???
 
-sealed trait StructuralValue extends Value
+sealed trait StructuralValue extends BasicValue
 
-case object VNone extends StructuralValue
+case object ValueNone extends StructuralValue
 
 //case class VTuple(value: IndexedSeq[Element]) extends StructuralValue // ???
-case class VList(value: IndexedSeq[ValueElement]) extends StructuralValue
-case class VMap(value: Map[ValueElement, ValueElement]) extends StructuralValue
+case class ValueList(value: IndexedSeq[Value]) extends StructuralValue
+case class ValueMap(value: Map[Value, Value]) extends StructuralValue
 
 // ==============================
 
@@ -145,11 +144,11 @@ trait VSchemaReader[A] {
   //def expectingTag: String
   //def expectingValueType: VType
 
-  def read(elem: ValueElement): Either[SchemaReadError, A]
+  def read(elem: Value): Either[SchemaReadError, A]
 }
 
-object SchemalessReader extends VSchemaReader[ValueElement] {
-  def read(elem: ValueElement): Either[SchemaReadError, ValueElement] = {
+object SchemalessReader extends VSchemaReader[Value] {
+  def read(elem: Value): Either[SchemaReadError, Value] = {
     Right(elem)
   }
 }

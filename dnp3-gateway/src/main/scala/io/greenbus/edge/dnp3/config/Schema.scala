@@ -166,7 +166,7 @@ object Example {
     val readEither = written match {
       case t: TaggedValue =>
         t.value match {
-          case tt: VMap => DNP3Gateway.read(tt, SimpleReaderContext(Vector(RootCtx("DNP3Gateway"))))
+          case tt: ValueMap => DNP3Gateway.read(tt, SimpleReaderContext(Vector(RootCtx("DNP3Gateway"))))
           case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
         }
       case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
@@ -191,7 +191,7 @@ object Example {
     val readEither = written match {
       case t: TaggedValue =>
         t.value match {
-          case tt: VMap => Master.read(tt, SimpleReaderContext(Vector(RootCtx("Master"))))
+          case tt: ValueMap => Master.read(tt, SimpleReaderContext(Vector(RootCtx("Master"))))
           case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")
         }
       case _ => throw new IllegalArgumentException(s"Written was not a tagged tuple type")

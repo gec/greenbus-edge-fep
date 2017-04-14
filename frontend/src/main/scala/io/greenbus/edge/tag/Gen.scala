@@ -24,11 +24,11 @@ import io.greenbus.edge.util.EitherUtil
 
 object MappingLibrary {
 
-  def descName(v: ValueElement): String = {
+  def descName(v: Value): String = {
     v.getClass.getSimpleName
   }
 
-  def toFieldMap(map: VMap, typ: TStruct): Map[String, ValueElement] = {
+  def toFieldMap(map: ValueMap, typ: TStruct): Map[String, Value] = {
 
     val nameMap: Map[String, StructFieldDef] = {
       typ.fields.map(sfd => (sfd.name, sfd)).toMap
@@ -37,7 +37,7 @@ object MappingLibrary {
     map.value.flatMap {
       case (keyElem, valueElem) =>
         val nameOpt = keyElem match {
-          case VString(key) => nameMap.get(key)
+          case ValueString(key) => nameMap.get(key)
           case _ => None
         }
 
@@ -45,11 +45,11 @@ object MappingLibrary {
     }
   }
 
-  def getMapField(name: String, map: VMap): Either[String, ValueElement] = {
-    map.value.get(VString(name)).map(r => Right(r)).getOrElse(Left(s"Struct map did not contain field $name"))
+  def getMapField(name: String, map: ValueMap): Either[String, Value] = {
+    map.value.get(ValueString(name)).map(r => Right(r)).getOrElse(Left(s"Struct map did not contain field $name"))
   }
 
-  def readFieldSubStruct[A](fieldName: String, element: ValueElement, tag: String, read: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
+  def readFieldSubStruct[A](fieldName: String, element: Value, tag: String, read: (Value, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, A] = {
 
     element match {
       case v: TaggedValue => read(v.value, ctx.structField(tag, fieldName))
@@ -57,67 +57,67 @@ object MappingLibrary {
     }
   }
 
-  def readBool(elem: ValueElement, ctx: ReaderContext): Either[String, Boolean] = {
+  def readBool(elem: Value, ctx: ReaderContext): Either[String, Boolean] = {
     elem match {
-      case v: VBool => Right(v.value)
+      case v: ValueBool => Right(v.value)
       case _ => Left(s"${ctx.context} error: expected boolean value, saw: ${descName(elem)}")
     }
   }
-  def readByte(elem: ValueElement, ctx: ReaderContext): Either[String, Byte] = {
+  def readByte(elem: Value, ctx: ReaderContext): Either[String, Byte] = {
     elem match {
-      case v: VByte => Right(v.value)
+      case v: ValueByte => Right(v.value)
       case _ => Left(s"${ctx.context} error: expected byte value, saw: ${descName(elem)}")
     }
   }
-  def readInt(elem: ValueElement, ctx: ReaderContext): Either[String, Int] = {
+  def readInt(elem: Value, ctx: ReaderContext): Either[String, Int] = {
     elem match {
       case v: IntegerValue => Right(v.toInt)
       case _ => Left(s"${ctx.context} error: expected integer value, saw: ${descName(elem)}")
     }
   }
-  def readLong(elem: ValueElement, ctx: ReaderContext): Either[String, Long] = {
+  def readLong(elem: Value, ctx: ReaderContext): Either[String, Long] = {
     elem match {
       case v: IntegerValue => Right(v.toLong)
       case _ => Left(s"${ctx.context} error: expected long value, saw: ${descName(elem)}")
     }
   }
-  def readFloat(elem: ValueElement, ctx: ReaderContext): Either[String, Float] = {
+  def readFloat(elem: Value, ctx: ReaderContext): Either[String, Float] = {
     elem match {
       case v: FloatingPointValue => Right(v.toFloat)
       case _ => Left(s"${ctx.context} error: expected float value, saw: ${descName(elem)}")
     }
   }
-  def readDouble(elem: ValueElement, ctx: ReaderContext): Either[String, Double] = {
+  def readDouble(elem: Value, ctx: ReaderContext): Either[String, Double] = {
     elem match {
       case v: FloatingPointValue => Right(v.toDouble)
       case _ => Left(s"${ctx.context} error: expected double value, saw: ${descName(elem)}")
     }
   }
-  def readString(elem: ValueElement, ctx: ReaderContext): Either[String, String] = {
+  def readString(elem: Value, ctx: ReaderContext): Either[String, String] = {
     elem match {
-      case v: VString => Right(v.value)
+      case v: ValueString => Right(v.value)
       case _ => Left(s"${ctx.context} error: expected string value, saw: ${descName(elem)}")
     }
   }
 
-  def readList[A](elem: ValueElement, readContained: (ValueElement, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, Seq[A]] = {
+  def readList[A](elem: Value, readContained: (Value, ReaderContext) => Either[String, A], ctx: ReaderContext): Either[String, Seq[A]] = {
     elem match {
-      case v: VList =>
+      case v: ValueList =>
         EitherUtil.rightSequence(v.value.map(readContained(_, ctx)))
       case _ => Left(s"${ctx.context} error: expected string value, saw: ${descName(elem)}")
     }
   }
 
-  def readTup[A](elem: ValueElement, ctx: ReaderContext, read: (ValueElement, ReaderContext) => Either[String, A]): Either[String, A] = {
+  def readTup[A](elem: Value, ctx: ReaderContext, read: (Value, ReaderContext) => Either[String, A]): Either[String, A] = {
     elem match {
       case v: TaggedValue => readTup(v.value, ctx, read)
-      case v: VMap => read(v, ctx)
+      case v: ValueMap => read(v, ctx)
       case _ => Left(s"${ctx.context} error: expected tuple value, saw ${descName(elem)}")
     }
   }
 
-  def writeList[A](list: Seq[A], write: A => ValueElement): VList = {
-    VList(list.toIndexedSeq.map(write))
+  def writeList[A](list: Seq[A], write: A => Value): ValueList = {
+    ValueList(list.toIndexedSeq.map(write))
   }
 }
 

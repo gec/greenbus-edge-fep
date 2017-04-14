@@ -22,9 +22,9 @@ import io.greenbus.edge.tag._
 
 object LinkLayer {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, LinkLayer] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, LinkLayer] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val isMaster = MappingLibrary.getMapField("isMaster", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
         val localAddress = MappingLibrary.getMapField("localAddress", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
         val remoteAddress = MappingLibrary.getMapField("remoteAddress", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
@@ -43,13 +43,13 @@ object LinkLayer {
   }
 
   def write(obj: LinkLayer): TaggedValue = {
-    val built = VMap(Map(
-      (VString("isMaster"), VBool(obj.isMaster)),
-      (VString("localAddress"), VUInt32(obj.localAddress)),
-      (VString("remoteAddress"), VUInt32(obj.remoteAddress)),
-      (VString("userConfirmations"), VBool(obj.userConfirmations)),
-      (VString("ackTimeoutMs"), VUInt64(obj.ackTimeoutMs)),
-      (VString("numRetries"), VUInt32(obj.numRetries))))
+    val built = ValueMap(Map(
+      (ValueString("isMaster"), ValueBool(obj.isMaster)),
+      (ValueString("localAddress"), ValueUInt32(obj.localAddress)),
+      (ValueString("remoteAddress"), ValueUInt32(obj.remoteAddress)),
+      (ValueString("userConfirmations"), ValueBool(obj.userConfirmations)),
+      (ValueString("ackTimeoutMs"), ValueUInt64(obj.ackTimeoutMs)),
+      (ValueString("numRetries"), ValueUInt32(obj.numRetries))))
 
     TaggedValue("LinkLayer", built)
   }
@@ -58,9 +58,9 @@ case class LinkLayer(isMaster: Boolean, localAddress: Int, remoteAddress: Int, u
 
 object Master {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, Master] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, Master] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val stack = MappingLibrary.getMapField("stack", data).flatMap(elem => MappingLibrary.readFieldSubStruct("stack", elem, "StackConfig", StackConfig.read, ctx))
         val masterSettings = MappingLibrary.getMapField("masterSettings", data).flatMap(elem => MappingLibrary.readFieldSubStruct("masterSettings", elem, "MasterSettings", MasterSettings.read, ctx))
         val scanList = MappingLibrary.getMapField("scanList", data).flatMap(elem => MappingLibrary.readList[Scan](elem, MappingLibrary.readTup[Scan](_, _, Scan.read), ctx))
@@ -77,11 +77,11 @@ object Master {
   }
 
   def write(obj: Master): TaggedValue = {
-    val built = VMap(Map(
-      (VString("stack"), StackConfig.write(obj.stack)),
-      (VString("masterSettings"), MasterSettings.write(obj.masterSettings)),
-      (VString("scanList"), MappingLibrary.writeList(obj.scanList, Scan.write)),
-      (VString("unsol"), Unsol.write(obj.unsol))))
+    val built = ValueMap(Map(
+      (ValueString("stack"), StackConfig.write(obj.stack)),
+      (ValueString("masterSettings"), MasterSettings.write(obj.masterSettings)),
+      (ValueString("scanList"), MappingLibrary.writeList(obj.scanList, Scan.write)),
+      (ValueString("unsol"), Unsol.write(obj.unsol))))
 
     TaggedValue("Master", built)
   }
@@ -90,9 +90,9 @@ case class Master(stack: StackConfig, masterSettings: MasterSettings, scanList: 
 
 object MasterSettings {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, MasterSettings] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, MasterSettings] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val allowTimeSync = MappingLibrary.getMapField("allowTimeSync", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
         val taskRetryMs = MappingLibrary.getMapField("taskRetryMs", data).flatMap(elem => MappingLibrary.readLong(elem, ctx))
         val integrityPeriodMs = MappingLibrary.getMapField("integrityPeriodMs", data).flatMap(elem => MappingLibrary.readLong(elem, ctx))
@@ -108,10 +108,10 @@ object MasterSettings {
   }
 
   def write(obj: MasterSettings): TaggedValue = {
-    val built = VMap(Map(
-      (VString("allowTimeSync"), VBool(obj.allowTimeSync)),
-      (VString("taskRetryMs"), VUInt64(obj.taskRetryMs)),
-      (VString("integrityPeriodMs"), VUInt64(obj.integrityPeriodMs))))
+    val built = ValueMap(Map(
+      (ValueString("allowTimeSync"), ValueBool(obj.allowTimeSync)),
+      (ValueString("taskRetryMs"), ValueUInt64(obj.taskRetryMs)),
+      (ValueString("integrityPeriodMs"), ValueUInt64(obj.integrityPeriodMs))))
 
     TaggedValue("MasterSettings", built)
   }
@@ -120,9 +120,9 @@ case class MasterSettings(allowTimeSync: Boolean, taskRetryMs: Long, integrityPe
 
 object IndexRange {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, IndexRange] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, IndexRange] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val start = MappingLibrary.getMapField("start", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
         val count = MappingLibrary.getMapField("count", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
 
@@ -137,9 +137,9 @@ object IndexRange {
   }
 
   def write(obj: IndexRange): TaggedValue = {
-    val built = VMap(Map(
-      (VString("start"), VUInt32(obj.start)),
-      (VString("count"), VUInt32(obj.count))))
+    val built = ValueMap(Map(
+      (ValueString("start"), ValueUInt32(obj.start)),
+      (ValueString("count"), ValueUInt32(obj.count))))
 
     TaggedValue("IndexRange", built)
   }
@@ -148,9 +148,9 @@ case class IndexRange(start: Int, count: Int)
 
 object IndexSet {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, IndexSet] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, IndexSet] = {
     element match {
-      case data: VList =>
+      case data: ValueList =>
         MappingLibrary.readList[IndexRange](data, MappingLibrary.readTup[IndexRange](_, _, IndexRange.read), ctx).map(result => IndexSet(result))
       case _ => Left("IndexSet must be VList type")
     }
@@ -165,9 +165,9 @@ case class IndexSet(value: Seq[IndexRange])
 
 object OutputModel {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, OutputModel] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, OutputModel] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val binaries = MappingLibrary.getMapField("binaries", data).flatMap(elem => MappingLibrary.readFieldSubStruct("binaries", elem, "IndexSet", IndexSet.read, ctx))
         val setpoints = MappingLibrary.getMapField("setpoints", data).flatMap(elem => MappingLibrary.readFieldSubStruct("setpoints", elem, "IndexSet", IndexSet.read, ctx))
 
@@ -182,9 +182,9 @@ object OutputModel {
   }
 
   def write(obj: OutputModel): TaggedValue = {
-    val built = VMap(Map(
-      (VString("binaries"), IndexSet.write(obj.binaries)),
-      (VString("setpoints"), IndexSet.write(obj.setpoints))))
+    val built = ValueMap(Map(
+      (ValueString("binaries"), IndexSet.write(obj.binaries)),
+      (ValueString("setpoints"), IndexSet.write(obj.setpoints))))
 
     TaggedValue("OutputModel", built)
   }
@@ -193,9 +193,9 @@ case class OutputModel(binaries: IndexSet, setpoints: IndexSet)
 
 object InputModel {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, InputModel] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, InputModel] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val binaryInputs = MappingLibrary.getMapField("binaryInputs", data).flatMap(elem => MappingLibrary.readFieldSubStruct("binaryInputs", elem, "IndexSet", IndexSet.read, ctx))
         val analogInputs = MappingLibrary.getMapField("analogInputs", data).flatMap(elem => MappingLibrary.readFieldSubStruct("analogInputs", elem, "IndexSet", IndexSet.read, ctx))
         val counterInputs = MappingLibrary.getMapField("counterInputs", data).flatMap(elem => MappingLibrary.readFieldSubStruct("counterInputs", elem, "IndexSet", IndexSet.read, ctx))
@@ -213,12 +213,12 @@ object InputModel {
   }
 
   def write(obj: InputModel): TaggedValue = {
-    val built = VMap(Map(
-      (VString("binaryInputs"), IndexSet.write(obj.binaryInputs)),
-      (VString("analogInputs"), IndexSet.write(obj.analogInputs)),
-      (VString("counterInputs"), IndexSet.write(obj.counterInputs)),
-      (VString("binaryOutputs"), IndexSet.write(obj.binaryOutputs)),
-      (VString("analogOutputs"), IndexSet.write(obj.analogOutputs))))
+    val built = ValueMap(Map(
+      (ValueString("binaryInputs"), IndexSet.write(obj.binaryInputs)),
+      (ValueString("analogInputs"), IndexSet.write(obj.analogInputs)),
+      (ValueString("counterInputs"), IndexSet.write(obj.counterInputs)),
+      (ValueString("binaryOutputs"), IndexSet.write(obj.binaryOutputs)),
+      (ValueString("analogOutputs"), IndexSet.write(obj.analogOutputs))))
 
     TaggedValue("InputModel", built)
   }
@@ -227,9 +227,9 @@ case class InputModel(binaryInputs: IndexSet, analogInputs: IndexSet, counterInp
 
 object TCPClient {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, TCPClient] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, TCPClient] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val host = MappingLibrary.getMapField("host", data).flatMap(elem => MappingLibrary.readString(elem, ctx))
         val port = MappingLibrary.getMapField("port", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
 
@@ -244,9 +244,9 @@ object TCPClient {
   }
 
   def write(obj: TCPClient): TaggedValue = {
-    val built = VMap(Map(
-      (VString("host"), VString(obj.host)),
-      (VString("port"), VUInt32(obj.port))))
+    val built = ValueMap(Map(
+      (ValueString("host"), ValueString(obj.host)),
+      (ValueString("port"), ValueUInt32(obj.port))))
 
     TaggedValue("TCPClient", built)
   }
@@ -255,9 +255,9 @@ case class TCPClient(host: String, port: Int)
 
 object Unsol {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, Unsol] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, Unsol] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val doTask = MappingLibrary.getMapField("doTask", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
         val enable = MappingLibrary.getMapField("enable", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
         val enableClass1 = MappingLibrary.getMapField("enableClass1", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
@@ -275,12 +275,12 @@ object Unsol {
   }
 
   def write(obj: Unsol): TaggedValue = {
-    val built = VMap(Map(
-      (VString("doTask"), VBool(obj.doTask)),
-      (VString("enable"), VBool(obj.enable)),
-      (VString("enableClass1"), VBool(obj.enableClass1)),
-      (VString("enableClass2"), VBool(obj.enableClass2)),
-      (VString("enableClass3"), VBool(obj.enableClass3))))
+    val built = ValueMap(Map(
+      (ValueString("doTask"), ValueBool(obj.doTask)),
+      (ValueString("enable"), ValueBool(obj.enable)),
+      (ValueString("enableClass1"), ValueBool(obj.enableClass1)),
+      (ValueString("enableClass2"), ValueBool(obj.enableClass2)),
+      (ValueString("enableClass3"), ValueBool(obj.enableClass3))))
 
     TaggedValue("Unsol", built)
   }
@@ -289,9 +289,9 @@ case class Unsol(doTask: Boolean, enable: Boolean, enableClass1: Boolean, enable
 
 object StackConfig {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, StackConfig] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, StackConfig] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val linkLayer = MappingLibrary.getMapField("linkLayer", data).flatMap(elem => MappingLibrary.readFieldSubStruct("linkLayer", elem, "LinkLayer", LinkLayer.read, ctx))
         val appLayer = MappingLibrary.getMapField("appLayer", data).flatMap(elem => MappingLibrary.readFieldSubStruct("appLayer", elem, "AppLayer", AppLayer.read, ctx))
 
@@ -306,9 +306,9 @@ object StackConfig {
   }
 
   def write(obj: StackConfig): TaggedValue = {
-    val built = VMap(Map(
-      (VString("linkLayer"), LinkLayer.write(obj.linkLayer)),
-      (VString("appLayer"), AppLayer.write(obj.appLayer))))
+    val built = ValueMap(Map(
+      (ValueString("linkLayer"), LinkLayer.write(obj.linkLayer)),
+      (ValueString("appLayer"), AppLayer.write(obj.appLayer))))
 
     TaggedValue("StackConfig", built)
   }
@@ -317,9 +317,9 @@ case class StackConfig(linkLayer: LinkLayer, appLayer: AppLayer)
 
 object AppLayer {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, AppLayer] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, AppLayer] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val timeoutMs = MappingLibrary.getMapField("timeoutMs", data).flatMap(elem => MappingLibrary.readLong(elem, ctx))
         val maxFragSize = MappingLibrary.getMapField("maxFragSize", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
         val numRetries = MappingLibrary.getMapField("numRetries", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
@@ -335,10 +335,10 @@ object AppLayer {
   }
 
   def write(obj: AppLayer): TaggedValue = {
-    val built = VMap(Map(
-      (VString("timeoutMs"), VUInt64(obj.timeoutMs)),
-      (VString("maxFragSize"), VUInt32(obj.maxFragSize)),
-      (VString("numRetries"), VUInt32(obj.numRetries))))
+    val built = ValueMap(Map(
+      (ValueString("timeoutMs"), ValueUInt64(obj.timeoutMs)),
+      (ValueString("maxFragSize"), ValueUInt32(obj.maxFragSize)),
+      (ValueString("numRetries"), ValueUInt32(obj.numRetries))))
 
     TaggedValue("AppLayer", built)
   }
@@ -347,9 +347,9 @@ case class AppLayer(timeoutMs: Long, maxFragSize: Int, numRetries: Int)
 
 object Scan {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, Scan] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, Scan] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val enableClass1 = MappingLibrary.getMapField("enableClass1", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
         val enableClass2 = MappingLibrary.getMapField("enableClass2", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
         val enableClass3 = MappingLibrary.getMapField("enableClass3", data).flatMap(elem => MappingLibrary.readBool(elem, ctx))
@@ -366,11 +366,11 @@ object Scan {
   }
 
   def write(obj: Scan): TaggedValue = {
-    val built = VMap(Map(
-      (VString("enableClass1"), VBool(obj.enableClass1)),
-      (VString("enableClass2"), VBool(obj.enableClass2)),
-      (VString("enableClass3"), VBool(obj.enableClass3)),
-      (VString("periodMs"), VUInt64(obj.periodMs))))
+    val built = ValueMap(Map(
+      (ValueString("enableClass1"), ValueBool(obj.enableClass1)),
+      (ValueString("enableClass2"), ValueBool(obj.enableClass2)),
+      (ValueString("enableClass3"), ValueBool(obj.enableClass3)),
+      (ValueString("periodMs"), ValueUInt64(obj.periodMs))))
 
     TaggedValue("Scan", built)
   }
@@ -379,9 +379,9 @@ case class Scan(enableClass1: Boolean, enableClass2: Boolean, enableClass3: Bool
 
 object DNP3Gateway {
 
-  def read(element: ValueElement, ctx: ReaderContext): Either[String, DNP3Gateway] = {
+  def read(element: Value, ctx: ReaderContext): Either[String, DNP3Gateway] = {
     element match {
-      case data: VMap =>
+      case data: ValueMap =>
         val master = MappingLibrary.getMapField("master", data).flatMap(elem => MappingLibrary.readFieldSubStruct("master", elem, "Master", Master.read, ctx))
         val client = MappingLibrary.getMapField("client", data).flatMap(elem => MappingLibrary.readFieldSubStruct("client", elem, "TCPClient", TCPClient.read, ctx))
         val inputModel = MappingLibrary.getMapField("inputModel", data).flatMap(elem => MappingLibrary.readFieldSubStruct("inputModel", elem, "InputModel", InputModel.read, ctx))
@@ -398,11 +398,11 @@ object DNP3Gateway {
   }
 
   def write(obj: DNP3Gateway): TaggedValue = {
-    val built = VMap(Map(
-      (VString("master"), Master.write(obj.master)),
-      (VString("client"), TCPClient.write(obj.client)),
-      (VString("inputModel"), InputModel.write(obj.inputModel)),
-      (VString("outputModel"), OutputModel.write(obj.outputModel))))
+    val built = ValueMap(Map(
+      (ValueString("master"), Master.write(obj.master)),
+      (ValueString("client"), TCPClient.write(obj.client)),
+      (ValueString("inputModel"), InputModel.write(obj.inputModel)),
+      (ValueString("outputModel"), OutputModel.write(obj.outputModel))))
 
     TaggedValue("DNP3Gateway", built)
   }
