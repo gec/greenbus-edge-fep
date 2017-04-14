@@ -18,7 +18,8 @@
  */
 package io.greenbus.edge.dnp3.config.model
 
-import io.greenbus.edge.tag._
+import io.greenbus.edge.data.mapping._
+import io.greenbus.edge.data._
 
 object LinkLayer {
 
@@ -38,7 +39,7 @@ object LinkLayer {
           Left(Seq(isMaster.left.toOption, localAddress.left.toOption, remoteAddress.left.toOption, userConfirmations.left.toOption, ackTimeoutMs.left.toOption, numRetries.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("LinkLayer must be VMap type")
+      case _ => Left("LinkLayer must be ValueMap type")
     }
   }
 
@@ -72,7 +73,7 @@ object Master {
           Left(Seq(stack.left.toOption, masterSettings.left.toOption, scanList.left.toOption, unsol.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("Master must be VMap type")
+      case _ => Left("Master must be ValueMap type")
     }
   }
 
@@ -103,7 +104,7 @@ object MasterSettings {
           Left(Seq(allowTimeSync.left.toOption, taskRetryMs.left.toOption, integrityPeriodMs.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("MasterSettings must be VMap type")
+      case _ => Left("MasterSettings must be ValueMap type")
     }
   }
 
@@ -132,7 +133,7 @@ object IndexRange {
           Left(Seq(start.left.toOption, count.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("IndexRange must be VMap type")
+      case _ => Left("IndexRange must be ValueMap type")
     }
   }
 
@@ -152,7 +153,7 @@ object IndexSet {
     element match {
       case data: ValueList =>
         MappingLibrary.readList[IndexRange](data, MappingLibrary.readTup[IndexRange](_, _, IndexRange.read), ctx).map(result => IndexSet(result))
-      case _ => Left("IndexSet must be VList type")
+      case _ => Left("IndexSet must be ValueList type")
     }
   }
   def write(obj: IndexSet): TaggedValue = {
@@ -177,7 +178,7 @@ object OutputModel {
           Left(Seq(binaries.left.toOption, setpoints.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("OutputModel must be VMap type")
+      case _ => Left("OutputModel must be ValueMap type")
     }
   }
 
@@ -208,7 +209,7 @@ object InputModel {
           Left(Seq(binaryInputs.left.toOption, analogInputs.left.toOption, counterInputs.left.toOption, binaryOutputs.left.toOption, analogOutputs.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("InputModel must be VMap type")
+      case _ => Left("InputModel must be ValueMap type")
     }
   }
 
@@ -239,7 +240,7 @@ object TCPClient {
           Left(Seq(host.left.toOption, port.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("TCPClient must be VMap type")
+      case _ => Left("TCPClient must be ValueMap type")
     }
   }
 
@@ -270,7 +271,7 @@ object Unsol {
           Left(Seq(doTask.left.toOption, enable.left.toOption, enableClass1.left.toOption, enableClass2.left.toOption, enableClass3.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("Unsol must be VMap type")
+      case _ => Left("Unsol must be ValueMap type")
     }
   }
 
@@ -301,7 +302,7 @@ object StackConfig {
           Left(Seq(linkLayer.left.toOption, appLayer.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("StackConfig must be VMap type")
+      case _ => Left("StackConfig must be ValueMap type")
     }
   }
 
@@ -330,7 +331,7 @@ object AppLayer {
           Left(Seq(timeoutMs.left.toOption, maxFragSize.left.toOption, numRetries.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("AppLayer must be VMap type")
+      case _ => Left("AppLayer must be ValueMap type")
     }
   }
 
@@ -361,7 +362,7 @@ object Scan {
           Left(Seq(enableClass1.left.toOption, enableClass2.left.toOption, enableClass3.left.toOption, periodMs.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("Scan must be VMap type")
+      case _ => Left("Scan must be ValueMap type")
     }
   }
 
@@ -393,7 +394,7 @@ object DNP3Gateway {
           Left(Seq(master.left.toOption, client.left.toOption, inputModel.left.toOption, outputModel.left.toOption).flatten.mkString(", "))
         }
 
-      case _ => Left("DNP3Gateway must be VMap type")
+      case _ => Left("DNP3Gateway must be ValueMap type")
     }
   }
 
