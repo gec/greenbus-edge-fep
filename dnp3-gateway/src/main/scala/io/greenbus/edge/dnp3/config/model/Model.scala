@@ -233,11 +233,12 @@ object TCPClient {
       case data: ValueMap =>
         val host = MappingLibrary.getMapField("host", data).flatMap(elem => MappingLibrary.readString(elem, ctx))
         val port = MappingLibrary.getMapField("port", data).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+        val retryMs = MappingLibrary.getMapField("retryMs", data).flatMap(elem => MappingLibrary.readLong(elem, ctx))
 
-        if (host.isRight && port.isRight) {
-          Right(TCPClient(host.right.get, port.right.get))
+        if (host.isRight && port.isRight && retryMs.isRight) {
+          Right(TCPClient(host.right.get, port.right.get, retryMs.right.get))
         } else {
-          Left(Seq(host.left.toOption, port.left.toOption).flatten.mkString(", "))
+          Left(Seq(host.left.toOption, port.left.toOption, retryMs.left.toOption).flatten.mkString(", "))
         }
 
       case _ => Left("TCPClient must be ValueMap type")
@@ -247,12 +248,13 @@ object TCPClient {
   def write(obj: TCPClient): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("host"), ValueString(obj.host)),
-      (ValueString("port"), ValueUInt32(obj.port))))
+      (ValueString("port"), ValueUInt32(obj.port)),
+      (ValueString("retryMs"), ValueUInt64(obj.retryMs))))
 
     TaggedValue("TCPClient", built)
   }
 }
-case class TCPClient(host: String, port: Int)
+case class TCPClient(host: String, port: Int, retryMs: Long)
 
 object Unsol {
 

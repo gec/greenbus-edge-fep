@@ -19,61 +19,128 @@
 package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
+import io.greenbus.edge.data.{ SampleValue, ValueBool, ValueDouble, ValueInt32 }
+import io.greenbus.edge.flow.Sink
 import org.totalgrid.dnp3._
 
-class Adapter2 {
+import scala.collection.mutable
+
+class StackAdapter(obs: Sink[Boolean]) extends IStackObserver {
+  override def OnStateChange(aState: StackStates) {
+    aState match {
+      case StackStates.SS_COMMS_DOWN => obs.push(false)
+      case StackStates.SS_COMMS_UP => obs.push(true)
+      case StackStates.SS_UNKNOWN => obs.push(false)
+    }
+  }
+}
+
+trait CommsObserver {
+  def commsUp(value: Boolean): Unit
+}
+
+trait MeasObserver {
+  def flush(batch: Seq[(String, SampleValue)]): Unit
+}
+
+object Dnp3Mgr {
+  case class StackRecord(name: String, portName: String, measObserver: MeasAdapter, stackAdapter: StackAdapter)
+}
+class Dnp3Mgr[A] {
+  import Dnp3Mgr._
 
   private val stackManager = new StackManager
   private val logAdapter = new LogAdapter
 
   stackManager.AddLogHook(logAdapter)
+
+  private var map = Map.empty[A, StackRecord]
+
+  def add(key: A, name: String, config: Dnp3MasterConfig, measObserver: MeasObserver, commsObserver: Sink[Boolean]) = {
+    remove(key)
+
+    val portName = s"$name-${config.address}:${config.port}"
+    val settings = new PhysLayerSettings(config.logLevel, config.retryMs)
+    stackManager.AddTCPClient(portName, settings, config.address, config.port)
+
+    val measAdapter = new MeasAdapter(measObserver)
+
+    val stackAdapter = new StackAdapter(commsObserver)
+    config.stack.getMaster.setMpObserver(stackAdapter)
+
+    val commandAcceptor = stackManager.AddMaster(portName, name, config.logLevel, measAdapter, config.stack)
+
+    map += (key -> StackRecord(name, portName, measAdapter, stackAdapter))
+
+    commandAcceptor
+  }
+
+  def remove(key: A): Unit = {
+    map.get(key).foreach { record =>
+      stackManager.RemoveStack(record.name)
+      stackManager.RemovePort(record.portName)
+      map -= key
+    }
+  }
+
+  def shutdown(): Unit = {
+    stackManager.Shutdown()
+  }
 }
 
-class MeasAdapter() extends IDataObserver with LazyLogging {
+object MeasAdapter {
 
+  val binaryPrefix = "binary"
+  val analogPrefix = "analog"
+  val counterPrefix = "counter"
+  val controlStatusPrefix = "controlStatus"
+  val setpointStatusPrefix = "setpointStatus"
+
+  def id(prefix: String, index: Long): String = {
+    s"${prefix}_$index"
+  }
+
+}
+class MeasAdapter(observer: MeasObserver) extends IDataObserver with LazyLogging {
+  import MeasAdapter._
   import SafeExecution._
 
   private var wallTime = Option.empty[Long]
-  //private var batch = List.empty[(String, Measurement)]
+  private val batch = mutable.ArrayBuffer.empty[(String, SampleValue)]
 
   override def _Start(): Unit = safeExecute {
     wallTime = Some(System.currentTimeMillis())
   }
 
   override def _End(): Unit = safeExecute {
-    /*if (batch.size > 0) {
-      val time = wallTime.getOrElse(System.currentTimeMillis())
-      val current = batch.reverse
-      batch = Nil
-      wallTime = None
-      accept(time, current)
-    }*/
-  }
-
-  /*private def add(index: Long, map: Map[Long, String], typ: String, meas: => Measurement) {
-    map.get(index) match {
-      case None => //logger.debug("Unknown type/index: " + typ + "/" + index)
-      case Some(name) => batch ::= (name, meas)
+    val result = batch.toVector
+    batch.clear()
+    if (result.nonEmpty) {
+      observer.flush(result)
     }
-  }*/
-
+  }
   override def _Update(v: Binary, index: Long): Unit = safeExecute {
-    //add(index, mapping.binaries, "Binary", DNPTranslator.translate(v))
+    val value = ValueBool(v.get_binary())
+    batch += ((id(binaryPrefix, index), value))
   }
 
   override def _Update(v: Analog, index: Long) = safeExecute {
-    //add(index, mapping.analogs, "Analog", DNPTranslator.translate(v))
+    val value = ValueDouble(v.get_analog())
+    batch += ((id(analogPrefix, index), value))
   }
 
   override def _Update(v: Counter, index: Long) = safeExecute {
-    //add(index, mapping.counters, "Counter", DNPTranslator.translate(v))
-  }
-
-  override def _Update(v: SetpointStatus, index: Long) = safeExecute {
-    //add(index, mapping.setpointStatuses, "SetpointStatus", DNPTranslator.translate(v))
+    val value = ValueInt32(v.get_counter())
+    batch += ((id(counterPrefix, index), value))
   }
 
   override def _Update(v: ControlStatus, index: Long) = safeExecute {
-    //add(index, mapping.controlStatuses, "ControlStatus", DNPTranslator.translate(v))
+    val value = ValueBool(v.get_controlstatus())
+    batch += ((id(controlStatusPrefix, index), value))
+  }
+
+  override def _Update(v: SetpointStatus, index: Long) = safeExecute {
+    val value = ValueDouble(v.get_setpointstatus())
+    batch += ((id(setpointStatusPrefix, index), value))
   }
 }

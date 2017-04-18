@@ -80,7 +80,8 @@ object DnpGatewaySchema {
   val tcpClient: TExt = {
     TExt("TCPClient", TStruct(Vector(
       StructFieldDef("host", TString, 0),
-      StructFieldDef("port", TUInt32, 1))))
+      StructFieldDef("port", TUInt32, 1),
+      StructFieldDef("retryMs", TUInt64, 2))))
   }
   val selectIndex: TExt = {
     TExt("IndexSelect", TUInt32)

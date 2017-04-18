@@ -44,7 +44,7 @@ object Example {
 
   def buildGateway: DNP3Gateway = {
     DNP3Gateway(buildMaster,
-      TCPClient("127.0.0.1", 20000),
+      TCPClient("127.0.0.1", 20000, 5000),
       InputModel(
         binaryInputs = IndexSet(Seq(IndexRange(0, 20))),
         analogInputs = IndexSet(Seq(IndexRange(0, 20))),
