@@ -25,12 +25,12 @@ import org.totalgrid.dnp3._
 
 import scala.collection.mutable
 
-class StackAdapter(obs: Sink[Boolean]) extends IStackObserver {
+class StackAdapter(obs: Boolean => Unit) extends IStackObserver {
   override def OnStateChange(aState: StackStates) {
     aState match {
-      case StackStates.SS_COMMS_DOWN => obs.push(false)
-      case StackStates.SS_COMMS_UP => obs.push(true)
-      case StackStates.SS_UNKNOWN => obs.push(false)
+      case StackStates.SS_COMMS_DOWN => obs(false)
+      case StackStates.SS_COMMS_UP => obs(true)
+      case StackStates.SS_UNKNOWN => obs(false)
     }
   }
 }
@@ -56,7 +56,7 @@ class Dnp3Mgr[A] {
 
   private var map = Map.empty[A, StackRecord]
 
-  def add(key: A, name: String, config: Dnp3MasterConfig, measObserver: MeasObserver, commsObserver: Sink[Boolean]) = {
+  def add(key: A, name: String, config: Dnp3MasterConfig, measObserver: MeasObserver, commsObserver: Boolean => Unit) = {
     remove(key)
 
     val portName = s"$name-${config.address}:${config.port}"

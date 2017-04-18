@@ -31,7 +31,7 @@ object Example {
   def buildMaster: Master = {
     Master(
       StackConfig(
-        LinkLayer(isMaster = true, localAddress = 1, remoteAddress = 100, userConfirmations = false, ackTimeoutMs = 1000, numRetries = 3),
+        LinkLayer(isMaster = true, localAddress = 100, remoteAddress = 1, userConfirmations = false, ackTimeoutMs = 1000, numRetries = 3),
         AppLayer(timeoutMs = 5000, maxFragSize = 2048, numRetries = 0)),
       MasterSettings(allowTimeSync = true, integrityPeriodMs = 300000, taskRetryMs = 5000),
       Seq(Scan(
