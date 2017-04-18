@@ -23,12 +23,24 @@ import io.greenbus.edge.data._
 
 object EdgeCoreModel {
 
+  sealed abstract class SeriesType(val value: String)
+  case object AnalogStatus extends SeriesType("analog_status")
+  case object AnalogSample extends SeriesType("analog_sample")
+  case object CounterStatus extends SeriesType("counter_status")
+  case object CounterSample extends SeriesType("counter_sample")
+  case object BooleanStatus extends SeriesType("boolean_status")
+  case object IntegerEnum extends SeriesType("integer_enum")
+
+  def seriesType(seriesType: SeriesType): (Path, Value) = {
+    (Path(Seq("edm", "core", "series_type")), ValueString(seriesType.value))
+  }
+
   def unitMetadata(unit: String): (Path, Value) = {
     (Path(Seq("edm", "core", "unit")), ValueString(unit))
   }
 
   def labeledBooleanMetadata(truthLabel: String, falseLabel: String): (Path, Value) = {
-    (Path(Seq("edm", "core", "booleanLabel")),
+    (Path(Seq("edm", "core", "boolean_label")),
       ValueMap(Map(
         ValueBool(true) -> ValueString(truthLabel),
         ValueBool(false) -> ValueString(falseLabel))))
@@ -40,7 +52,7 @@ object EdgeCoreModel {
       case (k, v) => (ValueInt64(k), ValueString(v))
     }
 
-    (Path(Seq("edm", "core", "integerLabel")),
+    (Path(Seq("edm", "core", "integer_label")),
       ValueMap(vmap))
   }
 }

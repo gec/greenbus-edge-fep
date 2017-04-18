@@ -18,11 +18,12 @@
  */
 package io.greenbus.edge.fep
 
+import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.Path
 import io.greenbus.edge.api.stream.{ KeyMetadata, ProducerHandle, SeriesValueHandle }
 import io.greenbus.edge.data.SampleValue
 import io.greenbus.edge.edm.core.EdgeCoreModel
-import io.greenbus.edge.fep.model.FrontendEndpointConfiguration
+import io.greenbus.edge.fep.model.{ FrontendEndpointConfiguration, SeriesType }
 import io.greenbus.edge.flow.Sink
 import io.greenbus.edge.peer.ProducerServices
 
@@ -36,12 +37,21 @@ object PublisherHandle {
 
     val dataKeyMap = config.dataKeys.map { fdk =>
 
+      val seriesType = fdk.seriesDescriptor.seriesType match {
+        case SeriesType.AnalogStatus => EdgeCoreModel.AnalogStatus
+        case SeriesType.AnalogSample => EdgeCoreModel.AnalogSample
+        case SeriesType.CounterStatus => EdgeCoreModel.CounterStatus
+        case SeriesType.CounterSample => EdgeCoreModel.CounterSample
+        case SeriesType.BooleanStatus => EdgeCoreModel.BooleanStatus
+        case SeriesType.IntegerEnum => EdgeCoreModel.IntegerEnum
+      }
+      val seriesMeta = EdgeCoreModel.seriesType(seriesType)
       val unitMetaOpt = fdk.seriesDescriptor.unit.map(EdgeCoreModel.unitMetadata)
       val boolLabelMetaOpt = fdk.seriesDescriptor.labeledBoolean.map(l => EdgeCoreModel.labeledBooleanMetadata(l.trueLabel, l.falseLabel))
       val intLabelMetaOpt = fdk.seriesDescriptor.labeledInteger.map(EdgeCoreModel.labeledIntegerMetadata)
 
       val indexes = fdk.indexes
-      val metadata = fdk.metadata ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt).flatten
+      val metadata = fdk.metadata ++ Seq(seriesMeta) ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt).flatten
 
       val keyMetadata = KeyMetadata(indexes, metadata)
 
@@ -59,9 +69,10 @@ object PublisherHandle {
   }
 
 }
-class PublisherHandle(handle: ProducerHandle, map: Map[String, KeyRecord]) {
+class PublisherHandle(handle: ProducerHandle, map: Map[String, KeyRecord]) extends LazyLogging {
 
   def batch(batch: Seq[(String, SampleValue)]): Unit = {
+    logger.trace(s"Saw batch: " + batch)
     val now = System.currentTimeMillis()
     var dirty = false
     batch.foreach {

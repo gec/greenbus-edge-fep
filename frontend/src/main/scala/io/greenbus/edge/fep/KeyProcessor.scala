@@ -54,13 +54,14 @@ object KeyProcessorImpl {
   @tailrec
   def process(v: SampleValue, itr: Iterator[TransformStep]): Option[SampleValue] = {
     if (itr.hasNext) {
-      val resultOpt = itr.next().handle(v)
+      val step = itr.next()
+      val resultOpt = step.handle(v)
       resultOpt match {
         case None => None
         case Some(result) => process(result, itr)
       }
     } else {
-      None
+      Some(v)
     }
   }
 }

@@ -49,6 +49,16 @@ object SampleType {
   case object Byte extends SampleType
 }
 
+sealed trait SeriesType
+object SeriesType {
+  case object AnalogStatus extends SeriesType
+  case object AnalogSample extends SeriesType
+  case object CounterStatus extends SeriesType
+  case object CounterSample extends SeriesType
+  case object BooleanStatus extends SeriesType
+  case object IntegerEnum extends SeriesType
+}
+
 sealed trait TransformDescriptor
 case class TypeCast(target: SampleType) extends TransformDescriptor
 case class LinearTransform(scale: Double, offset: Double) extends TransformDescriptor
@@ -59,6 +69,7 @@ case class FilterDescriptor(suppressDuplicates: Option[Boolean], deadband: Optio
 case class BooleanLabels(trueLabel: String, falseLabel: String)
 
 case class SeriesDescriptor(
+  seriesType: SeriesType,
   unit: Option[String],
   labeledInteger: Option[Map[Long, String]],
   labeledBoolean: Option[BooleanLabels])
