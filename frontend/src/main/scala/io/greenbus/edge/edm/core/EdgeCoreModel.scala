@@ -55,4 +55,8 @@ object EdgeCoreModel {
     (Path(Seq("edm", "core", "integer_label")),
       ValueMap(vmap))
   }
+
+  def analogDecimalPoints(decimalPoints: Int): (Path, Value) = {
+    (Path(Seq("edm", "core", "decimal_points")), ValueUInt32(decimalPoints))
+  }
 }

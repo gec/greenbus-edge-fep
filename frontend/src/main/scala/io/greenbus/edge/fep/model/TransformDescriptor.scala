@@ -71,6 +71,7 @@ case class BooleanLabels(trueLabel: String, falseLabel: String)
 case class SeriesDescriptor(
   seriesType: SeriesType,
   unit: Option[String],
+  decimalPoints: Option[Int],
   labeledInteger: Option[Map[Long, String]],
   labeledBoolean: Option[BooleanLabels])
 

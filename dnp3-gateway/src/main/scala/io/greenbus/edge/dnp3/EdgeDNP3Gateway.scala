@@ -119,6 +119,7 @@ case class SeriesDescriptor(
           SeriesDescriptor(
             SeriesType.AnalogStatus,
             unit = Some("kW"),
+            decimalPoints = Some(2),
             None,
             None),
           Seq(
@@ -132,6 +133,7 @@ case class SeriesDescriptor(
           SeriesDescriptor(
             SeriesType.IntegerEnum,
             None,
+            None,
             labeledInteger = Some(Map(0L -> "Constant", 1L -> "Smoothing", 2L -> "GridForming")),
             None),
           Seq(),
@@ -143,6 +145,7 @@ case class SeriesDescriptor(
           Path("faultStatus"),
           SeriesDescriptor(
             SeriesType.BooleanStatus,
+            None,
             None,
             None,
             labeledBoolean = Some(BooleanLabels("Fault", "Normal"))),

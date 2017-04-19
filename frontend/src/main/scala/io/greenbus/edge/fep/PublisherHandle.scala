@@ -49,9 +49,10 @@ object PublisherHandle {
       val unitMetaOpt = fdk.seriesDescriptor.unit.map(EdgeCoreModel.unitMetadata)
       val boolLabelMetaOpt = fdk.seriesDescriptor.labeledBoolean.map(l => EdgeCoreModel.labeledBooleanMetadata(l.trueLabel, l.falseLabel))
       val intLabelMetaOpt = fdk.seriesDescriptor.labeledInteger.map(EdgeCoreModel.labeledIntegerMetadata)
+      val decimalOpt = fdk.seriesDescriptor.decimalPoints.map(EdgeCoreModel.analogDecimalPoints)
 
       val indexes = fdk.indexes
-      val metadata = fdk.metadata ++ Seq(seriesMeta) ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt).flatten
+      val metadata = fdk.metadata ++ Seq(seriesMeta) ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt, decimalOpt).flatten
 
       val keyMetadata = KeyMetadata(indexes, metadata)
 
