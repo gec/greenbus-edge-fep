@@ -244,7 +244,11 @@ object RawDnpEndpoint {
 
     val dataKeyMap: Map[String, SeriesValueHandle] = dataKeys.toMap
 
+    val cfgKey = b.latestKeyValue(Path("config"))
+
     val built = b.build(100, 100)
+
+    cfgKey.update(DNP3Gateway.write(config))
 
     new RawDnpEndpoint(built, dataKeyMap)
   }
