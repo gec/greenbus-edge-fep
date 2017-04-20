@@ -122,3 +122,31 @@ object DnpGatewaySchema {
   def all = Seq(tcpClient, selectIndex, selectRange, indexSet, inputModel, outputModel, gateway)
 }
 
+/*
+<xs:element name="ControlOptions">
+        <xs:complexType>
+            <xs:attribute name="type" type="ControlType" use="required"/>
+            <xs:attribute name="onTime" type="xs:unsignedShort"/>
+            <xs:attribute name="offTime" type="xs:unsignedShort"/>
+            <xs:attribute name="count" type="xs:unsignedShort"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:simpleType name="FunctionType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="SelectBeforeOperate" />
+            <xs:enumeration value="DirectOperate" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="ControlType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="PULSE" />
+            <xs:enumeration value="PULSE_CLOSE" />
+            <xs:enumeration value="PULSE_TRIP" />
+            <xs:enumeration value="LATCH_ON" />
+            <xs:enumeration value="LATCH_OFF" />
+        </xs:restriction>
+    </xs:simpleType>
+ */
+
