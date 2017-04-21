@@ -105,10 +105,47 @@ object DnpGatewaySchema {
       StructFieldDef("analogOutputs", indexSet, 4))))
   }
 
+  val controlTypeEnum: TExt = {
+    TExt("ControlType", TEnum(Seq(
+      EnumDef("PULSE", 0),
+      EnumDef("PULSE_CLOSE", 1),
+      EnumDef("PULSE_TRIP", 2),
+      EnumDef("LATCH_ON", 3),
+      EnumDef("LATCH_OFF", 4))))
+  }
+
+  val functionTypeEnum: TExt = {
+    TExt("FunctionType", TEnum(Seq(
+      EnumDef("SelectBeforeOperate", 0),
+      EnumDef("DirectOperate", 1))))
+  }
+
+  val controlOptions: TExt = {
+    TExt("ControlOptions", TStruct(Vector(
+      StructFieldDef("controlType", controlTypeEnum, 0),
+      StructFieldDef("onTime", TOption(TUInt32), 1),
+      StructFieldDef("offTime", TOption(TUInt32), 2),
+      StructFieldDef("count", TOption(TUInt32), 3))))
+  }
+
+  val controlItem: TExt = {
+    TExt("Control", TStruct(Vector(
+      StructFieldDef("name", TString, 0),
+      StructFieldDef("index", TUInt32, 1),
+      StructFieldDef("function", functionTypeEnum, 2),
+      StructFieldDef("controlOptions", controlOptions, 3))))
+  }
+  val setpointItem: TExt = {
+    TExt("Setpoint", TStruct(Vector(
+      StructFieldDef("name", TString, 0),
+      StructFieldDef("index", TUInt32, 1),
+      StructFieldDef("function", functionTypeEnum, 2))))
+  }
+
   val outputModel: TExt = {
     TExt("OutputModel", TStruct(Vector(
-      StructFieldDef("binaries", indexSet, 0),
-      StructFieldDef("setpoints", indexSet, 1))))
+      StructFieldDef("controls", TList(controlItem), 0),
+      StructFieldDef("setpoints", TList(setpointItem), 1))))
   }
 
   val gateway: TExt = {
@@ -119,34 +156,17 @@ object DnpGatewaySchema {
       StructFieldDef("outputModel", outputModel, 3))))
   }
 
-  def all = Seq(tcpClient, selectIndex, selectRange, indexSet, inputModel, outputModel, gateway)
+  def all = Seq(
+    tcpClient,
+    selectIndex,
+    selectRange,
+    indexSet,
+    inputModel,
+    controlTypeEnum,
+    functionTypeEnum,
+    controlOptions,
+    controlItem,
+    setpointItem,
+    outputModel,
+    gateway)
 }
-
-/*
-<xs:element name="ControlOptions">
-        <xs:complexType>
-            <xs:attribute name="type" type="ControlType" use="required"/>
-            <xs:attribute name="onTime" type="xs:unsignedShort"/>
-            <xs:attribute name="offTime" type="xs:unsignedShort"/>
-            <xs:attribute name="count" type="xs:unsignedShort"/>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:simpleType name="FunctionType">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="SelectBeforeOperate" />
-            <xs:enumeration value="DirectOperate" />
-        </xs:restriction>
-    </xs:simpleType>
-
-    <xs:simpleType name="ControlType">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="PULSE" />
-            <xs:enumeration value="PULSE_CLOSE" />
-            <xs:enumeration value="PULSE_TRIP" />
-            <xs:enumeration value="LATCH_ON" />
-            <xs:enumeration value="LATCH_OFF" />
-        </xs:restriction>
-    </xs:simpleType>
- */
-

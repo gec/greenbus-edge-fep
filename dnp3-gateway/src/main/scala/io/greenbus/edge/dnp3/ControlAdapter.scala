@@ -18,16 +18,6 @@
  */
 package io.greenbus.edge.dnp3
 
-/*
-simple indication
-parameterized indication
-analog setpoint
-boolean setpoint
-enumeration setpoint
+import io.greenbus.edge.api.OutputResult
+import io.greenbus.edge.data.Value
 
-
- */
-
-class ControlAdapter {
-
-}

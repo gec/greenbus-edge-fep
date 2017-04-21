@@ -49,6 +49,7 @@ object EdgeDNP3Gateway {
   }
 
   def buildGateway: DNP3Gateway = {
+
     DNP3Gateway(buildMaster,
       TCPClient("127.0.0.1", 20000, 5000),
       InputModel(
@@ -58,55 +59,36 @@ object EdgeDNP3Gateway {
         binaryOutputs = IndexSet(Seq(IndexRange(0, 10))),
         analogOutputs = IndexSet(Seq(IndexRange(0, 10)))),
       OutputModel(
-        binaries = IndexSet(Seq(IndexRange(0, 10))),
-        setpoints = IndexSet(Seq(IndexRange(0, 10)))))
+        controls = Seq(Control(
+          "control0",
+          index = 0,
+          function = FunctionType.SelectBeforeOperate,
+          controlOptions = ControlOptions(
+            controlType = ControlType.PULSE,
+            onTime = Some(100),
+            offTime = Some(100),
+            count = Some(1))), Control(
+          "control1_on",
+          index = 1,
+          function = FunctionType.SelectBeforeOperate,
+          controlOptions = ControlOptions(
+            controlType = ControlType.LATCH_ON,
+            onTime = None,
+            offTime = None,
+            count = None)), Control(
+          "control1_off",
+          index = 1,
+          function = FunctionType.SelectBeforeOperate,
+          controlOptions = ControlOptions(
+            controlType = ControlType.LATCH_OFF,
+            onTime = None,
+            offTime = None,
+            count = None))),
+        setpoints = Seq(Setpoint(
+          "setpoint0",
+          index = 0,
+          function = FunctionType.DirectOperate))))
   }
-
-  /*
-  case class IndexDescriptor(key: Path, value: IndexableValue)
-case class MetadataDescriptor(key: Path, value: IndexableValue)
-
-case class FrontendDataKey(
-  gatewayKey: String,
-  path: Path,
-  seriesDescriptor: SeriesDescriptor,
-  transforms: Seq[TransformDescriptor],
-  filter: FilterDescriptor,
-  indexes: Map[Path, IndexableValue],
-  metadata: Map[Path, Value])
-
-case class FrontendEndpointConfiguration(
-  endpointId: EndpointId,
-  dataKeys: Seq[FrontendDataKey])
-
-sealed trait SampleType
-object SampleType {
-  case object Float extends SampleType
-  case object Double extends SampleType
-  case object Int32 extends SampleType
-  case object UInt32 extends SampleType
-  case object Int64 extends SampleType
-  case object UInt64 extends SampleType
-  case object Bool extends SampleType
-  case object Byte extends SampleType
-}
-
-sealed trait TransformDescriptor
-case class TypeCast(target: SampleType) extends TransformDescriptor
-case class LinearTransform(scale: Double, offset: Double) extends TransformDescriptor
-case object Negate extends TransformDescriptor
-
-case class FilterDescriptor(suppressDuplicates: Option[Boolean], deadband: Option[Double])
-
-case class BooleanLabels(trueLabel: String, falseLabel: String)
-
-case class SeriesDescriptor(
-  unit: Option[String],
-  labeledInteger: Option[Map[Long, String]],
-  labeledBoolean: Option[BooleanLabels])
-
-
-   */
 
   def buildFep: FrontendEndpointConfiguration = {
 
@@ -175,92 +157,5 @@ case class SeriesDescriptor(
     gatewayMgr.close()
     services.shutdown()
     eventThread.close()
-  }
-}
-
-class SplittingMeasObserver(observers: Seq[MeasObserver]) extends MeasObserver {
-  def flush(batch: Seq[(String, SampleValue)]): Unit = {
-    observers.foreach(_.flush(batch))
-  }
-}
-
-class FrontendAdapter(handle: PublisherHandle) extends MeasObserver {
-  def flush(batch: Seq[(String, SampleValue)]): Unit = {
-    handle.batch(batch)
-  }
-}
-
-class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices) {
-
-  private val mgr = new Dnp3Mgr[String]
-
-  def onGatewayConfigured(endpointConfig: FrontendEndpointConfiguration, config: DNP3Gateway): Unit = {
-    eventThread.marshal {
-      val name = config.client.host + ":" + config.client.port
-      val stackConfig = Dnp3MasterConfig.load(config)
-
-      val measObserver = RawDnpEndpoint.build(localId, producerServices, config)
-      def commsObs(value: Boolean): Unit = println("got comms: " + value)
-
-      val gatewayPub = PublisherHandle.load(producerServices, endpointConfig)
-
-      val observer = new SplittingMeasObserver(Seq(
-        measObserver,
-        new FrontendAdapter(gatewayPub)))
-
-      mgr.add(name, name, stackConfig, observer, commsObs)
-    }
-  }
-
-  def close(): Unit = {
-    eventThread.marshal {
-      mgr.shutdown()
-    }
-  }
-}
-
-object RawDnpEndpoint {
-  def build(localId: String, producerServices: ProducerServices, config: DNP3Gateway) = {
-
-    val path = Path(Seq("dnp", localId, s"${config.client.host}_${config.client.port}"))
-    val b = producerServices.endpointBuilder(EndpointId(path))
-
-    def loadRange(prefix: String, range: IndexRange): Seq[(String, SeriesValueHandle)] = {
-      Range(range.start, range.count).map { i =>
-        val key = MeasAdapter.id(prefix, i)
-        (key, b.seriesValue(Path(Seq(key))))
-      }
-    }
-
-    def loadSet(prefix: String, set: IndexSet): Seq[(String, SeriesValueHandle)] = {
-      set.value.flatMap(loadRange(prefix, _))
-    }
-
-    val dataKeys = loadSet(MeasAdapter.binaryPrefix, config.inputModel.binaryInputs) ++
-      loadSet(MeasAdapter.analogPrefix, config.inputModel.analogInputs) ++
-      loadSet(MeasAdapter.counterPrefix, config.inputModel.counterInputs) ++
-      loadSet(MeasAdapter.controlStatusPrefix, config.inputModel.binaryOutputs) ++
-      loadSet(MeasAdapter.setpointStatusPrefix, config.inputModel.analogOutputs)
-
-    val dataKeyMap: Map[String, SeriesValueHandle] = dataKeys.toMap
-
-    val cfgKey = b.latestKeyValue(Path("config"))
-
-    val built = b.build(100, 100)
-
-    cfgKey.update(DNP3Gateway.write(config))
-
-    new RawDnpEndpoint(built, dataKeyMap)
-  }
-}
-class RawDnpEndpoint(handle: ProducerHandle, mapping: Map[String, SeriesValueHandle]) extends MeasObserver with LazyLogging {
-  def flush(batch: Seq[(String, SampleValue)]): Unit = {
-    //logger.debug(s"Raw batch: ${batch}")
-    val now = System.currentTimeMillis()
-    batch.foreach {
-      case (key, sample) =>
-        mapping.get(key).foreach(handle => handle.update(sample, now))
-    }
-    handle.flush()
   }
 }

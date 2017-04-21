@@ -56,7 +56,7 @@ class Dnp3Mgr[A] {
 
   private var map = Map.empty[A, StackRecord]
 
-  def add(key: A, name: String, config: Dnp3MasterConfig, measObserver: MeasObserver, commsObserver: Boolean => Unit) = {
+  def add(key: A, name: String, config: Dnp3MasterConfig, measObserver: MeasObserver, commsObserver: Boolean => Unit): ICommandAcceptor = {
     remove(key)
 
     val portName = s"$name-${config.address}:${config.port}"
