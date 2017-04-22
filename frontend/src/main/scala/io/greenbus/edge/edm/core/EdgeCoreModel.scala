@@ -77,7 +77,7 @@ object EdgeCoreModel {
   sealed abstract class OutputType(val value: String)
   object OutputType {
     case object SimpleIndication extends OutputType("simple_indication")
-    case object ParameterizedIndication extends OutputType("parameterized_indication")
+    //case object ParameterizedIndication extends OutputType("parameterized_indication")
     case object AnalogSetpoint extends OutputType("analog_setpoint")
     case object BooleanSetpoint extends OutputType("boolean_setpoint")
     case object EnumerationSetpoint extends OutputType("enumeration_setpoint")
@@ -85,5 +85,28 @@ object EdgeCoreModel {
 
   def outputType(outputType: OutputType): (Path, Value) = {
     (Path(Seq("edm", "core", "output_type")), ValueString(outputType.value))
+  }
+
+  def requestBooleanLabels(truthLabel: String, falseLabel: String): (Path, Value) = {
+    (Path(Seq("edm", "core", "request_boolean_labels")),
+      ValueMap(Map(
+        ValueBool(true) -> ValueString(truthLabel),
+        ValueBool(false) -> ValueString(falseLabel))))
+  }
+
+  def requestIntegerLabels(map: Map[Long, String]): (Path, Value) = {
+
+    val vmap: Map[Value, Value] = map.map {
+      case (k, v) => (ValueInt64(k), ValueString(v))
+    }
+
+    (Path(Seq("edm", "core", "request_integer_labels")),
+      ValueMap(vmap))
+  }
+  def requestScale(scale: Double): (Path, Value) = {
+    (Path(Seq("edm", "core", "request_scale")), ValueDouble(scale))
+  }
+  def requestOffset(offset: Double): (Path, Value) = {
+    (Path(Seq("edm", "core", "request_offset")), ValueDouble(offset))
   }
 }

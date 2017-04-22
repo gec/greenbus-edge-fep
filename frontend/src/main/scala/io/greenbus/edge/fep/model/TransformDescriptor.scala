@@ -35,7 +35,8 @@ case class FrontendDataKey(
 
 case class FrontendEndpointConfiguration(
   endpointId: EndpointId,
-  dataKeys: Seq[FrontendDataKey])
+  dataKeys: Seq[FrontendDataKey],
+  outputKeys: Seq[FrontendOutputKey])
 
 sealed trait SampleType
 object SampleType {
@@ -74,4 +75,25 @@ case class SeriesDescriptor(
   decimalPoints: Option[Int],
   labeledInteger: Option[Map[Long, String]],
   labeledBoolean: Option[BooleanLabels])
+
+sealed trait OutputType
+object OutputType {
+  case object SimpleIndication extends OutputType
+  //case object ParameterizedIndication extends OutputType
+  case object AnalogSetpoint extends OutputType
+  case object BooleanSetpoint extends OutputType
+  case object EnumerationSetpoint extends OutputType
+}
+
+case class OutputDescriptor(
+  outputType: OutputType,
+  requestScale: Option[Double],
+  requestOffset: Option[Double],
+  requestIntegerLabels: Option[Map[Long, String]],
+  requestBooleanLabels: Option[BooleanLabels])
+
+case class FrontendOutputKey(
+  gatewayKey: String,
+  path: Path,
+  outputDescriptor: OutputDescriptor)
 

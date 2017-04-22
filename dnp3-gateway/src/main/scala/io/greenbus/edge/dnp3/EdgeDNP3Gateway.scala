@@ -18,17 +18,11 @@
  */
 package io.greenbus.edge.dnp3
 
-import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.api.stream.{ ProducerHandle, SeriesValueHandle }
 import io.greenbus.edge.api.{ EndpointId, Path }
-import io.greenbus.edge.data.SampleValue
-import io.greenbus.edge.dnp3.config.Example
 import io.greenbus.edge.dnp3.config.model._
-import io.greenbus.edge.fep.PublisherHandle
 import io.greenbus.edge.fep.model._
-import io.greenbus.edge.flow.{ QueuedDistributor, Sink }
-import io.greenbus.edge.peer.{ AmqpEdgeService, ProducerServices }
-import io.greenbus.edge.thread.{ CallMarshaller, EventThreadService }
+import io.greenbus.edge.peer.AmqpEdgeService
+import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -60,7 +54,7 @@ object EdgeDNP3Gateway {
         analogOutputs = IndexSet(Seq(IndexRange(0, 10)))),
       OutputModel(
         controls = Seq(Control(
-          "control0",
+          "control_0",
           index = 0,
           function = FunctionType.SelectBeforeOperate,
           controlOptions = ControlOptions(
@@ -68,7 +62,7 @@ object EdgeDNP3Gateway {
             onTime = Some(100),
             offTime = Some(100),
             count = Some(1))), Control(
-          "control1_on",
+          "control_1_on",
           index = 1,
           function = FunctionType.SelectBeforeOperate,
           controlOptions = ControlOptions(
@@ -76,7 +70,7 @@ object EdgeDNP3Gateway {
             onTime = None,
             offTime = None,
             count = None)), Control(
-          "control1_off",
+          "control_1_off",
           index = 1,
           function = FunctionType.SelectBeforeOperate,
           controlOptions = ControlOptions(
@@ -85,9 +79,13 @@ object EdgeDNP3Gateway {
             offTime = None,
             count = None))),
         setpoints = Seq(Setpoint(
-          "setpoint0",
+          "setpoint_0",
           index = 0,
-          function = FunctionType.SelectBeforeOperate))))
+          function = FunctionType.SelectBeforeOperate),
+          Setpoint(
+            "setpoint_1",
+            index = 1,
+            function = FunctionType.SelectBeforeOperate))))
   }
 
   def buildFep: FrontendEndpointConfiguration = {
@@ -134,7 +132,31 @@ object EdgeDNP3Gateway {
           Seq(),
           FilterDescriptor(None, None),
           Map(),
-          Map())))
+          Map())),
+      Seq(FrontendOutputKey(
+        "control_0",
+        Path("Clear"),
+        OutputDescriptor(
+          OutputType.SimpleIndication,
+          None, None, None, None)),
+        FrontendOutputKey(
+          "setpoint_0",
+          Path("SetPower"),
+          OutputDescriptor(
+            OutputType.AnalogSetpoint,
+            requestScale = Some(100),
+            requestOffset = None,
+            requestIntegerLabels = None,
+            requestBooleanLabels = None)),
+        FrontendOutputKey(
+          "setpoint_1",
+          Path("SetMode"),
+          OutputDescriptor(
+            OutputType.EnumerationSetpoint,
+            requestScale = None,
+            requestOffset = None,
+            requestIntegerLabels = Some(Map(0L -> "Constant", 1L -> "Smoothing", 2L -> "GridForming")),
+            requestBooleanLabels = None))))
   }
 
   def main(args: Array[String]): Unit = {

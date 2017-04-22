@@ -20,7 +20,7 @@ package io.greenbus.edge.dnp3
 
 import io.greenbus.edge.data.SampleValue
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
-import io.greenbus.edge.fep.PublisherHandle
+import io.greenbus.edge.fep.FrontendPublisher
 import io.greenbus.edge.fep.model.FrontendEndpointConfiguration
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
@@ -31,7 +31,7 @@ class SplittingMeasObserver(observers: Seq[MeasObserver]) extends MeasObserver {
   }
 }
 
-class FrontendAdapter(handle: PublisherHandle) extends MeasObserver {
+class FrontendAdapter(handle: FrontendPublisher) extends MeasObserver {
   def flush(batch: Seq[(String, SampleValue)]): Unit = {
     handle.batch(batch)
   }
@@ -47,13 +47,13 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
       val name = config.client.host + ":" + config.client.port
       val stackConfig = Dnp3MasterConfig.load(config)
 
-      val (rawMeasObserver, controlAdapter) = RawDnpEndpoint.build(eventThread, localId, producerServices, config)
+      val (rawDnpEndpoint, controlAdapter) = RawDnpEndpoint.build(eventThread, localId, producerServices, config)
       def commsObs(value: Boolean): Unit = println("got comms: " + value)
 
-      val gatewayPub = PublisherHandle.load(producerServices, endpointConfig)
+      val gatewayPub = FrontendPublisher.load(eventThread, producerServices, rawDnpEndpoint, endpointConfig)
 
       val observer = new SplittingMeasObserver(Seq(
-        rawMeasObserver,
+        rawDnpEndpoint,
         new FrontendAdapter(gatewayPub)))
 
       val cmdAcceptor = mgr.add(name, name, stackConfig, observer, commsObs)

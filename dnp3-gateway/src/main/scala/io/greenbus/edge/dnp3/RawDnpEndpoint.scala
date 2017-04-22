@@ -26,6 +26,7 @@ import io.greenbus.edge.api.stream.{ KeyMetadata, OutputStatusHandle, ProducerHa
 import io.greenbus.edge.data._
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.edm.core.EdgeCoreModel
+import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate }
 import io.greenbus.edge.flow
 import io.greenbus.edge.flow.Receiver
 import io.greenbus.edge.peer.ProducerServices
@@ -33,7 +34,7 @@ import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
 
-case class ControlEntry(path: Path, name: String, status: OutputStatusHandle, rcv: Receiver[OutputParams, OutputResult])
+//case class ControlEntry(path: Path, name: String, status: OutputStatusHandle, rcv: Receiver[OutputParams, OutputResult])
 
 case class RawDnpOutputConfig(status: OutputStatusHandle, rcv: Receiver[OutputParams, OutputResult], typedConfig: DnpOutputTypeConfig)
 
@@ -42,7 +43,7 @@ case class DnpControlConfig(index: Int, function: FunctionType, options: Control
 case class DnpSetpointConfig(index: Int, function: FunctionType) extends DnpOutputTypeConfig
 
 object RawDnpEndpoint {
-  def build(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, config: DNP3Gateway): (MeasObserver, DNPKeyedControlAdapter) = {
+  def build(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, config: DNP3Gateway): (RawDnpEndpoint, DNPKeyedControlAdapter) = {
 
     val path = Path(Seq("dnp", localId, s"${config.client.host}_${config.client.port}"))
     val b = producerServices.endpointBuilder(EndpointId(path))
@@ -105,30 +106,45 @@ class RawDnpEndpoint(eventThread: CallMarshaller,
     handle: ProducerHandle,
     controlAdapter: DNPKeyedControlAdapter,
     mapping: Map[String, SeriesValueHandle],
-    outputs: Seq[ControlEntry]) extends MeasObserver with LazyLogging {
+    outputs: Seq[ControlEntry]) extends MeasObserver with FrontendOutputDelegate with LazyLogging {
 
   private val session = UUID.randomUUID()
   private val sequenceMap = mutable.Map.empty[String, Long]
+  private var outputMap = Map.empty[String, ControlEntry]
   eventThread.marshal {
     init()
   }
 
   def init(): Unit = {
-    outputs.foreach { entry =>
+    val mappings = outputs.map { entry =>
       sequenceMap.put(entry.name, 0)
       entry.status.update(OutputKeyStatus(session, 0, None))
 
       entry.rcv.bind(new flow.Responder[OutputParams, OutputResult] {
         def handle(params: OutputParams, respond: (OutputResult) => Unit): Unit = {
           eventThread.marshal {
-            handleOutput(entry.name, params, entry.status, respond)
+            handleSelfOutput(entry.name, params, entry.status, respond)
           }
         }
       })
+
+      (entry.name, entry)
+    }
+
+    outputMap = mappings.toMap
+  }
+
+  def handleOutput(name: String, params: OutputParams, respond: (OutputResult) => Unit): Unit = {
+    eventThread.marshal {
+      outputMap.get(name) match {
+        case None => respond(OutputFailure(s"No mapped output for $name"))
+        case Some(entry) =>
+          handleSelfOutput(name, params, entry.status, respond)
+      }
     }
   }
 
-  private def handleOutput(name: String, params: OutputParams, handle: OutputStatusHandle, respond: OutputResult => Unit): Unit = {
+  private def handleSelfOutput(name: String, params: OutputParams, handle: OutputStatusHandle, respond: OutputResult => Unit): Unit = {
     logger.debug(s"Handling output for $name: $params")
 
     val setpointValueOpt = params.outputValueOpt.flatMap {
@@ -144,6 +160,8 @@ class RawDnpEndpoint(eventThread: CallMarshaller,
 
       // TODO: check sequence
       controlAdapter.handle(name, setpointValueOpt, respond)
+      sequenceMap.put(name, currentSeq + 1)
+      handle.update(OutputKeyStatus(session, currentSeq + 1, None))
 
     } else {
 
