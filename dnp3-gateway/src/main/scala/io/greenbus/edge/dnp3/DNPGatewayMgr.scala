@@ -41,6 +41,7 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
 
   private val mgr = new Dnp3Mgr[String]
 
+  // TODO: close producers
   def onGatewayConfigured(endpointConfig: FrontendEndpointConfiguration, config: DNP3Gateway): Unit = {
     eventThread.marshal {
       val name = config.client.host + ":" + config.client.port
@@ -57,8 +58,8 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
 
       val cmdAcceptor = mgr.add(name, name, stackConfig, observer, commsObs)
 
-      val cmdMgr = new DNP3ControlHandleImpl(eventThread, cmdAcceptor)
-
+      val stackCmdMgr = new DNP3ControlHandleImpl(eventThread, cmdAcceptor)
+      controlAdapter.setHandle(stackCmdMgr)
     }
   }
 

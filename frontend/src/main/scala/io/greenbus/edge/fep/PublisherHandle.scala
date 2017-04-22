@@ -38,12 +38,12 @@ object PublisherHandle {
     val dataKeyMap = config.dataKeys.map { fdk =>
 
       val seriesType = fdk.seriesDescriptor.seriesType match {
-        case SeriesType.AnalogStatus => EdgeCoreModel.AnalogStatus
-        case SeriesType.AnalogSample => EdgeCoreModel.AnalogSample
-        case SeriesType.CounterStatus => EdgeCoreModel.CounterStatus
-        case SeriesType.CounterSample => EdgeCoreModel.CounterSample
-        case SeriesType.BooleanStatus => EdgeCoreModel.BooleanStatus
-        case SeriesType.IntegerEnum => EdgeCoreModel.IntegerEnum
+        case SeriesType.AnalogStatus => EdgeCoreModel.SeriesType.AnalogStatus
+        case SeriesType.AnalogSample => EdgeCoreModel.SeriesType.AnalogSample
+        case SeriesType.CounterStatus => EdgeCoreModel.SeriesType.CounterStatus
+        case SeriesType.CounterSample => EdgeCoreModel.SeriesType.CounterSample
+        case SeriesType.BooleanStatus => EdgeCoreModel.SeriesType.BooleanStatus
+        case SeriesType.IntegerEnum => EdgeCoreModel.SeriesType.IntegerEnum
       }
       val seriesMeta = EdgeCoreModel.seriesType(seriesType)
       val unitMetaOpt = fdk.seriesDescriptor.unit.map(EdgeCoreModel.unitMetadata)

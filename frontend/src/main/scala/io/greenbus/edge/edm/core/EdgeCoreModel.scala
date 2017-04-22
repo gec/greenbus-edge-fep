@@ -24,12 +24,14 @@ import io.greenbus.edge.data._
 object EdgeCoreModel {
 
   sealed abstract class SeriesType(val value: String)
-  case object AnalogStatus extends SeriesType("analog_status")
-  case object AnalogSample extends SeriesType("analog_sample")
-  case object CounterStatus extends SeriesType("counter_status")
-  case object CounterSample extends SeriesType("counter_sample")
-  case object BooleanStatus extends SeriesType("boolean_status")
-  case object IntegerEnum extends SeriesType("integer_enum")
+  object SeriesType {
+    case object AnalogStatus extends SeriesType("analog_status")
+    case object AnalogSample extends SeriesType("analog_sample")
+    case object CounterStatus extends SeriesType("counter_status")
+    case object CounterSample extends SeriesType("counter_sample")
+    case object BooleanStatus extends SeriesType("boolean_status")
+    case object IntegerEnum extends SeriesType("integer_enum")
+  }
 
   def seriesType(seriesType: SeriesType): (Path, Value) = {
     (Path(Seq("edm", "core", "series_type")), ValueString(seriesType.value))
@@ -58,5 +60,30 @@ object EdgeCoreModel {
 
   def analogDecimalPoints(decimalPoints: Int): (Path, Value) = {
     (Path(Seq("edm", "core", "decimal_points")), ValueUInt32(decimalPoints))
+  }
+
+  /*
+  simple indication
+  parameterized indication
+  analog setpoint
+  boolean setpoint
+  enumeration setpoint
+
+  output scale
+  output offset
+  bool labels
+  integer labels
+   */
+  sealed abstract class OutputType(val value: String)
+  object OutputType {
+    case object SimpleIndication extends OutputType("simple_indication")
+    case object ParameterizedIndication extends OutputType("parameterized_indication")
+    case object AnalogSetpoint extends OutputType("analog_setpoint")
+    case object BooleanSetpoint extends OutputType("boolean_setpoint")
+    case object EnumerationSetpoint extends OutputType("enumeration_setpoint")
+  }
+
+  def outputType(outputType: OutputType): (Path, Value) = {
+    (Path(Seq("edm", "core", "output_type")), ValueString(outputType.value))
   }
 }

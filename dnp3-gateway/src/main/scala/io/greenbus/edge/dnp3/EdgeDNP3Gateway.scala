@@ -87,7 +87,7 @@ object EdgeDNP3Gateway {
         setpoints = Seq(Setpoint(
           "setpoint0",
           index = 0,
-          function = FunctionType.DirectOperate))))
+          function = FunctionType.SelectBeforeOperate))))
   }
 
   def buildFep: FrontendEndpointConfiguration = {

@@ -18,6 +18,7 @@
  */
 package io.greenbus.edge.dnp3
 
+import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.thread.CallMarshaller
 import org.totalgrid.dnp3._
 
@@ -33,7 +34,7 @@ trait DNP3ControlHandle {
   def issueSetpoint(index: Int, value: DNPSetpointValue, directOperate: Boolean, result: CommandResponse => Unit): Unit
 }
 
-class DNP3ControlHandleImpl(eventThread: CallMarshaller, cmdAcceptor: ICommandAcceptor) extends IResponseAcceptor with DNP3ControlHandle {
+class DNP3ControlHandleImpl(eventThread: CallMarshaller, cmdAcceptor: ICommandAcceptor) extends IResponseAcceptor with DNP3ControlHandle with LazyLogging {
 
   private var sequence: Int = 0
   private var map = Map.empty[Int, CommandResponse => Unit]
@@ -59,6 +60,8 @@ class DNP3ControlHandleImpl(eventThread: CallMarshaller, cmdAcceptor: ICommandAc
       count.foreach(bo.setMCount)
       onTime.foreach(bo.setMOnTimeMS)
       offTime.foreach(bo.setMOffTimeMS)
+
+      logger.debug(s"Issuing control for $index: $seq")
       cmdAcceptor.AcceptCommand(bo, index, seq, this, directOperate)
     }
   }
@@ -71,12 +74,14 @@ class DNP3ControlHandleImpl(eventThread: CallMarshaller, cmdAcceptor: ICommandAc
         case DoubleSetpointValue(v) => new Setpoint(v)
       }
 
+      logger.debug(s"Issuing setpoint for $index: $seq")
       cmdAcceptor.AcceptCommand(sp, index, seq, this, directOperate)
     }
   }
 
   override def AcceptResponse(arResponse: CommandResponse, aSequence: Int): Unit = {
     eventThread.marshal {
+      logger.debug(s"Command response for $aSequence: ${arResponse.getMResult.toString}")
       map.get(aSequence).foreach { onResp => onResp(arResponse) }
       map -= aSequence
     }
