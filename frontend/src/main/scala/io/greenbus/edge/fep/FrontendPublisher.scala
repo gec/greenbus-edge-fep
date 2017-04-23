@@ -25,7 +25,7 @@ import io.greenbus.edge.api._
 import io.greenbus.edge.api.stream.{ KeyMetadata, OutputStatusHandle, ProducerHandle, SeriesValueHandle }
 import io.greenbus.edge.data.SampleValue
 import io.greenbus.edge.edm.core.EdgeCoreModel
-import io.greenbus.edge.fep.model.{ FrontendEndpointConfiguration, OutputType, SeriesType }
+import io.greenbus.edge.fep.config.model.{ FrontendConfiguration, IntegerLabelSet, OutputType, SeriesType }
 import io.greenbus.edge.flow.{ Receiver, Sink }
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
@@ -41,13 +41,17 @@ trait FrontendOutputDelegate {
 
 object FrontendPublisher {
 
-  def load(eventThread: CallMarshaller, services: ProducerServices, delegate: FrontendOutputDelegate, config: FrontendEndpointConfiguration): FrontendPublisher = {
+  private def readLabels(labels: IntegerLabelSet): Map[Long, String] = {
+    labels.value.map(l => (l.value.toLong, l.label)).toMap
+  }
 
-    val builder = services.endpointBuilder(config.endpointId)
+  def load(eventThread: CallMarshaller, services: ProducerServices, delegate: FrontendOutputDelegate, config: FrontendConfiguration): FrontendPublisher = {
+
+    val builder = services.endpointBuilder(EndpointId(Path(config.endpointId.value)))
 
     val dataKeyMap = config.dataKeys.map { fdk =>
 
-      val seriesType = fdk.seriesDescriptor.seriesType match {
+      val seriesType = fdk.descriptor.seriesType match {
         case SeriesType.AnalogStatus => EdgeCoreModel.SeriesType.AnalogStatus
         case SeriesType.AnalogSample => EdgeCoreModel.SeriesType.AnalogSample
         case SeriesType.CounterStatus => EdgeCoreModel.SeriesType.CounterStatus
@@ -56,17 +60,16 @@ object FrontendPublisher {
         case SeriesType.IntegerEnum => EdgeCoreModel.SeriesType.IntegerEnum
       }
       val seriesMeta = EdgeCoreModel.seriesType(seriesType)
-      val unitMetaOpt = fdk.seriesDescriptor.unit.map(EdgeCoreModel.unitMetadata)
-      val boolLabelMetaOpt = fdk.seriesDescriptor.labeledBoolean.map(l => EdgeCoreModel.labeledBooleanMetadata(l.trueLabel, l.falseLabel))
-      val intLabelMetaOpt = fdk.seriesDescriptor.labeledInteger.map(EdgeCoreModel.labeledIntegerMetadata)
-      val decimalOpt = fdk.seriesDescriptor.decimalPoints.map(EdgeCoreModel.analogDecimalPoints)
+      val unitMetaOpt = fdk.descriptor.unit.map(EdgeCoreModel.unitMetadata)
+      val boolLabelMetaOpt = fdk.descriptor.booleanLabels.map(l => EdgeCoreModel.labeledBooleanMetadata(l.trueLabel, l.falseLabel))
+      val intLabelMetaOpt = fdk.descriptor.integerLabels.map(labels => readLabels(labels)).map(EdgeCoreModel.labeledIntegerMetadata)
+      val decimalOpt = fdk.descriptor.decimalPoints.map(EdgeCoreModel.analogDecimalPoints)
 
-      val indexes = fdk.indexes
-      val metadata = fdk.metadata ++ Seq(seriesMeta) ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt, decimalOpt).flatten
+      val metadata = (Seq(seriesMeta) ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt, decimalOpt).flatten).toMap
 
-      val keyMetadata = KeyMetadata(indexes, metadata)
+      val keyMetadata = KeyMetadata(Map(), metadata)
 
-      val sink: SeriesValueHandle = builder.seriesValue(fdk.path, keyMetadata)
+      val sink: SeriesValueHandle = builder.seriesValue(Path(fdk.path.value), keyMetadata)
 
       val proc = KeyProcessor.load(fdk.transforms, fdk.filter)
 
@@ -76,7 +79,7 @@ object FrontendPublisher {
 
     val outputEntries = config.outputKeys.map { fok =>
 
-      val outputType = fok.outputDescriptor.outputType match {
+      val outputType = fok.descriptor.outputType match {
         case OutputType.AnalogSetpoint => EdgeCoreModel.OutputType.AnalogSetpoint
         case OutputType.SimpleIndication => EdgeCoreModel.OutputType.SimpleIndication
         case OutputType.BooleanSetpoint => EdgeCoreModel.OutputType.BooleanSetpoint
@@ -84,19 +87,19 @@ object FrontendPublisher {
       }
 
       val typMeta = EdgeCoreModel.outputType(outputType)
-      val boolLabelOpt = fok.outputDescriptor.requestBooleanLabels.map(l => EdgeCoreModel.requestBooleanLabels(l.trueLabel, l.falseLabel))
-      val intLabelOpt = fok.outputDescriptor.requestIntegerLabels.map(l => EdgeCoreModel.requestIntegerLabels(l))
-      val reqScaleOpt = fok.outputDescriptor.requestScale.map(EdgeCoreModel.requestScale)
-      val reqOffsetOpt = fok.outputDescriptor.requestOffset.map(EdgeCoreModel.requestOffset)
+      val boolLabelOpt = fok.descriptor.requestBooleanLabels.map(l => EdgeCoreModel.requestBooleanLabels(l.trueLabel, l.falseLabel))
+      val intLabelOpt = fok.descriptor.requestIntegerLabels.map(readLabels).map(EdgeCoreModel.labeledIntegerMetadata)
+      val reqScaleOpt = fok.descriptor.requestScale.map(EdgeCoreModel.requestScale)
+      val reqOffsetOpt = fok.descriptor.requestOffset.map(EdgeCoreModel.requestOffset)
 
       val metadata = (Seq(typMeta) ++ Seq(boolLabelOpt, intLabelOpt, reqScaleOpt, reqOffsetOpt).flatten).toMap
 
       val keyMetadata = KeyMetadata(Map(), metadata)
 
-      val keyHandle = builder.outputStatus(fok.path, keyMetadata)
-      val rcv = builder.registerOutput(fok.path)
+      val keyHandle = builder.outputStatus(Path(fok.path.value), keyMetadata)
+      val rcv = builder.registerOutput(Path(fok.path.value))
 
-      ControlEntry(fok.path, fok.gatewayKey, keyHandle, rcv)
+      ControlEntry(Path(fok.path.value), fok.gatewayKey, keyHandle, rcv)
     }
 
     val handle: ProducerHandle = builder.build(100, 100)

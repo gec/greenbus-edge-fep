@@ -19,6 +19,8 @@
 package io.greenbus.edge.fep
 
 import io.greenbus.edge.data.SampleValue
+import io.greenbus.edge.fep.config.model.SimpleTransformType.Negate
+import io.greenbus.edge.fep.config.model._
 import io.greenbus.edge.fep.model._
 
 import scala.annotation.tailrec
@@ -26,15 +28,15 @@ import scala.annotation.tailrec
 object KeyProcessor {
 
   def load(transforms: Seq[TransformDescriptor],
-    filter: FilterDescriptor): KeyProcessor = {
+    filterOpt: Option[FilterDescriptor]): KeyProcessor = {
 
     val transSteps = transforms.map {
       case LinearTransform(scale, offset) => new LinearTransformStep(scale, offset)
       case TypeCast(sampleType) => CastStep.load(sampleType)
-      case Negate => new NegateBoolStep
+      case SimpleTransform(Negate) => new NegateBoolStep
     }
 
-    val filtOpt = (filter.suppressDuplicates, filter.deadband) match {
+    val filtOpt = (filterOpt.flatMap(_.suppressDuplicates), filterOpt.flatMap(_.deadband)) match {
       case (_, Some(dead)) => Some(new DeadbandFilter(dead))
       case (Some(suppress), None) =>
         if (suppress) Some(new NoDuplicateFilter) else None

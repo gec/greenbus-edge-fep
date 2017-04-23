@@ -18,9 +18,7 @@
  */
 package io.greenbus.edge.dnp3
 
-import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.dnp3.config.model._
-import io.greenbus.edge.fep.model._
 import io.greenbus.edge.peer.AmqpEdgeService
 import io.greenbus.edge.thread.EventThreadService
 
@@ -88,7 +86,7 @@ object EdgeDNP3Gateway {
             function = FunctionType.SelectBeforeOperate))))
   }
 
-  def buildFep: FrontendEndpointConfiguration = {
+  /*def buildFep: FrontendEndpointConfiguration = {
 
     FrontendEndpointConfiguration(
       EndpointId(Path(Seq("mthy", "mgrid", "ess01"))),
@@ -157,7 +155,7 @@ object EdgeDNP3Gateway {
             requestOffset = None,
             requestIntegerLabels = Some(Map(0L -> "Constant", 1L -> "Smoothing", 2L -> "GridForming")),
             requestBooleanLabels = None))))
-  }
+  }*/
 
   def main(args: Array[String]): Unit = {
 
@@ -167,7 +165,7 @@ object EdgeDNP3Gateway {
 
     val config = buildGateway
 
-    val endConfig = buildFep
+    val endConfig = Example.build
 
     val eventThread = EventThreadService.build("DNP MGR")
 

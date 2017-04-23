@@ -24,7 +24,6 @@ import com.google.common.io.Files
 import io.greenbus.edge.data.codegen.Gen
 import io.greenbus.edge.data.schema._
 import io.greenbus.edge.data.xml.SchemaWriter
-import io.greenbus.edge.fep.model.SeriesDescriptor
 
 object FrontendSchema {
 

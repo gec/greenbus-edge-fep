@@ -21,6 +21,7 @@ package io.greenbus.edge.fep.model
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.data.schema._
 import io.greenbus.edge.data.{ IndexableValue, Value }
+/*
 
 case class IndexDescriptor(key: Path, value: IndexableValue)
 case class MetadataDescriptor(key: Path, value: IndexableValue)
@@ -98,3 +99,4 @@ case class FrontendOutputKey(
   path: Path,
   outputDescriptor: OutputDescriptor)
 
+*/

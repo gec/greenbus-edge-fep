@@ -21,7 +21,7 @@ package io.greenbus.edge.dnp3
 import io.greenbus.edge.data.SampleValue
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.fep.FrontendPublisher
-import io.greenbus.edge.fep.model.FrontendEndpointConfiguration
+import io.greenbus.edge.fep.config.model.FrontendConfiguration
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
 
@@ -42,7 +42,7 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
   private val mgr = new Dnp3Mgr[String]
 
   // TODO: close producers
-  def onGatewayConfigured(endpointConfig: FrontendEndpointConfiguration, config: DNP3Gateway): Unit = {
+  def onGatewayConfigured(endpointConfig: FrontendConfiguration, config: DNP3Gateway): Unit = {
     eventThread.marshal {
       val name = config.client.host + ":" + config.client.port
       val stackConfig = Dnp3MasterConfig.load(config)

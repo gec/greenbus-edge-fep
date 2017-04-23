@@ -19,7 +19,7 @@
 package io.greenbus.edge.fep
 
 import io.greenbus.edge.data._
-import io.greenbus.edge.fep.model.SampleType
+import io.greenbus.edge.fep.config.model.SampleType
 
 trait TransformStep {
   def handle(v: SampleValue): Option[SampleValue]
