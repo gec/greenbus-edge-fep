@@ -16,7 +16,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.greenbus.edge.fep.model2
+package io.greenbus.edge.fep.model
 
 import java.io.{ File, FileOutputStream, PrintWriter }
 
@@ -168,91 +168,6 @@ object FrontendSchema {
     frontendConfiguration)
 }
 
-/*
-
-case class OutputDescriptor(
-  outputType: OutputType,
-  requestScale: Option[Double],
-  requestOffset: Option[Double],
-  requestIntegerLabels: Option[Map[Long, String]],
-  requestBooleanLabels: Option[BooleanLabels])
-
-case class SeriesDescriptor(
-  seriesType: SeriesType,
-  unit: Option[String],
-  decimalPoints: Option[Int],
-  labeledInteger: Option[Map[Long, String]],
-  labeledBoolean: Option[BooleanLabels])
-
-
-case class FrontendDataKey(
-  gatewayKey: String,
-  path: Path,
-  seriesDescriptor: SeriesDescriptor,
-  transforms: Seq[TransformDescriptor],
-  filter: FilterDescriptor,
-  indexes: Map[Path, IndexableValue],
-  metadata: Map[Path, Value])
-
-case class FrontendEndpointConfiguration(
-  endpointId: EndpointId,
-  dataKeys: Seq[FrontendDataKey],
-  outputKeys: Seq[FrontendOutputKey])
-
-sealed trait SampleType
-object SampleType {
-  case object Float extends SampleType
-  case object Double extends SampleType
-  case object Int32 extends SampleType
-  case object UInt32 extends SampleType
-  case object Int64 extends SampleType
-  case object UInt64 extends SampleType
-  case object Bool extends SampleType
-  case object Byte extends SampleType
-}
-
-sealed trait SeriesType
-object SeriesType {
-  case object AnalogStatus extends SeriesType
-  case object AnalogSample extends SeriesType
-  case object CounterStatus extends SeriesType
-  case object CounterSample extends SeriesType
-  case object BooleanStatus extends SeriesType
-  case object IntegerEnum extends SeriesType
-}
-
-sealed trait TransformDescriptor
-case class TypeCast(target: SampleType) extends TransformDescriptor
-case class LinearTransform(scale: Double, offset: Double) extends TransformDescriptor
-case object Negate extends TransformDescriptor
-
-case class FilterDescriptor(suppressDuplicates: Option[Boolean], deadband: Option[Double])
-
-case class BooleanLabels(trueLabel: String, falseLabel: String)
-
-sealed trait OutputType
-object OutputType {
-  case object SimpleIndication extends OutputType
-  //case object ParameterizedIndication extends OutputType
-  case object AnalogSetpoint extends OutputType
-  case object BooleanSetpoint extends OutputType
-  case object EnumerationSetpoint extends OutputType
-}
-
-case class OutputDescriptor(
-  outputType: OutputType,
-  requestScale: Option[Double],
-  requestOffset: Option[Double],
-  requestIntegerLabels: Option[Map[Long, String]],
-  requestBooleanLabels: Option[BooleanLabels])
-
-case class FrontendOutputKey(
-  gatewayKey: String,
-  path: Path,
-  outputDescriptor: OutputDescriptor)
-
-
- */
 object FepXmlSchemaWriter {
 
   def main(args: Array[String]): Unit = {

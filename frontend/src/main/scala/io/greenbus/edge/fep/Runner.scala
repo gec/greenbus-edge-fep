@@ -18,72 +18,10 @@
  */
 package io.greenbus.edge.fep
 
-import io.greenbus.edge.api.proto.EndpointId
-import io.greenbus.edge.api.{ EndpointDescriptor, Path }
 import io.greenbus.edge.data._
-import io.greenbus.edge.fep.model._
-import io.greenbus.edge.peer.{ AmqpEdgeService, ProducerServices }
+import io.greenbus.edge.peer.AmqpEdgeService
 
-import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
-
-/*
-
-key ->
-  transforms[]
-  filter
-  config >
-    data key
-    result type
-    unit
-    indexes >
-      string -> value
-    metadata >
-      string -> value
-
- */
-
-/*
-
-types:
------------
-bool
-analog value (int/double)
-boolean -> label
-int -> label
-
-filters:
------------
-disable de-duplication
-deadband
-
-transforms:
-------------
-scale integer/real
-flip bool
-cast to float
-cast to integer
-int (test) -> boolean
-
-modbus:
--------------
-cast to (byte ordering)
-mask -> int
-
-
-
-decorate with kvs:
---------------
-unit
-user def string -> simple value
-
-
-commands:
------------
-indication
-setpoint (bool, int, float)
-
- */
 
 object Runner {
 
