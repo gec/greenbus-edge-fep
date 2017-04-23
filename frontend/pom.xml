@@ -32,6 +32,11 @@
         </dependency>
         <dependency>
             <groupId>io.greenbus.edge</groupId>
+            <artifactId>greenbus-edge-data-xml</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-data</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
