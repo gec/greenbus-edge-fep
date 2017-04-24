@@ -65,8 +65,8 @@ object FrontendConfigExample {
           filter = None)),
       outputKeys = Seq(
         OutputKeyConfig(
-          gatewayKey = "control_0",
-          path = Path(Seq("Clear")),
+          gatewayKey = "setpoint_0",
+          path = Path(Seq("SetOutputPower")),
           descriptor = OutputDescriptor(
             OutputType.AnalogSetpoint,
             requestScale = Some(100),

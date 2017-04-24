@@ -40,6 +40,7 @@
     <modules>
         <module>frontend</module>
         <module>sql-h2</module>
+        <module>configure-db</module>
         <module>dnp3-gateway</module>
     </modules>
 
