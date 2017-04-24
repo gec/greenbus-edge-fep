@@ -21,14 +21,16 @@ package io.greenbus.edge.fep.model
 import java.io.{ File, FileOutputStream, PrintWriter }
 
 import com.google.common.io.Files
-import io.greenbus.edge.data.codegen.Gen
+import io.greenbus.edge.data.codegen.ScalaGen
 import io.greenbus.edge.data.schema._
-import io.greenbus.edge.data.xml.SchemaWriter
+import io.greenbus.edge.data.xml.{ SchemaWriter, XmlNamespaceInfo, XmlNsDecl }
 
 object FrontendSchema {
 
+  val ns = TypeNamespace("io.greenbus.edge.fep.config.model", Map("scalaPackage" -> "io.greenbus.edge.fep.config.model", "xmlns" -> "io.greenbus.edge.fep.config.model"))
+
   val sampleTypeEnum: TExt = {
-    TExt("SampleType", TEnum(Seq(
+    TExt(ns, "SampleType", TEnum(Seq(
       EnumDef("Float", 0),
       EnumDef("Double", 1),
       EnumDef("Int32", 2),
@@ -39,7 +41,7 @@ object FrontendSchema {
       EnumDef("Byte", 7))))
   }
   val seriesTypeEnum: TExt = {
-    TExt("SeriesType", TEnum(Seq(
+    TExt(ns, "SeriesType", TEnum(Seq(
       EnumDef("AnalogStatus", 0),
       EnumDef("AnalogSample", 1),
       EnumDef("CounterStatus", 2),
@@ -48,7 +50,7 @@ object FrontendSchema {
       EnumDef("IntegerEnum", 5))))
   }
   val outputTypeEnum: TExt = {
-    TExt("OutputType", TEnum(Seq(
+    TExt(ns, "OutputType", TEnum(Seq(
       EnumDef("SimpleIndication", 0),
       EnumDef("AnalogSetpoint", 1),
       EnumDef("BooleanSetpoint", 2),
@@ -56,48 +58,48 @@ object FrontendSchema {
   }
 
   val path: TExt = {
-    TExt("Path", TList(TString))
+    TExt(ns, "Path", TList(TString))
   }
 
   val typeCast: TExt = {
-    TExt("TypeCast", TStruct(Vector(
+    TExt(ns, "TypeCast", TStruct(Vector(
       StructFieldDef("target", sampleTypeEnum, 0))))
   }
 
   val linearTransform: TExt = {
-    TExt("LinearTransform", TStruct(Vector(
+    TExt(ns, "LinearTransform", TStruct(Vector(
       StructFieldDef("scale", TDouble, 0),
       StructFieldDef("offset", TDouble, 1))))
   }
 
   val simpleTransformTypeEnum: TExt = {
-    TExt("SimpleTransformType", TEnum(Seq(
+    TExt(ns, "SimpleTransformType", TEnum(Seq(
       EnumDef("Negate", 0))))
   }
 
   val simpleTransform: TExt = {
-    TExt("SimpleTransform", TStruct(Vector(
+    TExt(ns, "SimpleTransform", TStruct(Vector(
       StructFieldDef("transformType", simpleTransformTypeEnum, 0))))
   }
 
   val integerLabel: TExt = {
-    TExt("IntegerLabel", TStruct(Vector(
+    TExt(ns, "IntegerLabel", TStruct(Vector(
       StructFieldDef("value", TInt32, 0),
       StructFieldDef("label", TString, 1))))
   }
 
   val booleanLabels: TExt = {
-    TExt("BooleanLabels", TStruct(Vector(
+    TExt(ns, "BooleanLabels", TStruct(Vector(
       StructFieldDef("trueLabel", TString, 0),
       StructFieldDef("falseLabel", TString, 1))))
   }
 
   val integerLabelSet: TExt = {
-    TExt("IntegerLabelSet", TList(integerLabel))
+    TExt(ns, "IntegerLabelSet", TList(integerLabel))
   }
 
   val seriesDescriptor: TExt = {
-    TExt("SeriesDescriptor", TStruct(Vector(
+    TExt(ns, "SeriesDescriptor", TStruct(Vector(
       StructFieldDef("seriesType", seriesTypeEnum, 0),
       StructFieldDef("unit", TOption(TString), 1),
       StructFieldDef("decimalPoints", TOption(TUInt32), 2),
@@ -106,17 +108,17 @@ object FrontendSchema {
   }
 
   val transformDescriptor: TExt = {
-    TExt("TransformDescriptor", TUnion(Set(typeCast, linearTransform, simpleTransform)))
+    TExt(ns, "TransformDescriptor", TUnion(Set(typeCast, linearTransform, simpleTransform)))
   }
 
   val filterDescriptor: TExt = {
-    TExt("FilterDescriptor", TStruct(Vector(
+    TExt(ns, "FilterDescriptor", TStruct(Vector(
       StructFieldDef("suppressDuplicates", TOption(TBool), 0),
       StructFieldDef("deadband", TOption(TDouble), 1))))
   }
 
   val frontendDataKey: TExt = {
-    TExt("DataKeyConfig", TStruct(Vector(
+    TExt(ns, "DataKeyConfig", TStruct(Vector(
       StructFieldDef("gatewayKey", TString, 0),
       StructFieldDef("path", path, 1),
       StructFieldDef("descriptor", seriesDescriptor, 2),
@@ -125,7 +127,7 @@ object FrontendSchema {
   }
 
   val outputDescriptor: TExt = {
-    TExt("OutputDescriptor", TStruct(Vector(
+    TExt(ns, "OutputDescriptor", TStruct(Vector(
       StructFieldDef("outputType", outputTypeEnum, 0),
       StructFieldDef("requestScale", TOption(TDouble), 1),
       StructFieldDef("requestOffset", TOption(TDouble), 2),
@@ -134,14 +136,14 @@ object FrontendSchema {
   }
 
   val frontendOutputKey: TExt = {
-    TExt("OutputKeyConfig", TStruct(Vector(
+    TExt(ns, "OutputKeyConfig", TStruct(Vector(
       StructFieldDef("gatewayKey", TString, 0),
       StructFieldDef("path", path, 1),
       StructFieldDef("descriptor", outputDescriptor, 2))))
   }
 
   val frontendConfiguration: TExt = {
-    TExt("FrontendConfiguration", TStruct(Vector(
+    TExt(ns, "FrontendConfiguration", TStruct(Vector(
       StructFieldDef("endpointId", path, 0),
       StructFieldDef("dataKeys", TList(frontendDataKey), 1),
       StructFieldDef("outputKeys", TList(frontendOutputKey), 2))))
@@ -171,16 +173,27 @@ object FrontendSchema {
 object FepXmlSchemaWriter {
 
   def main(args: Array[String]): Unit = {
-    SchemaWriter.write(FrontendSchema.all, Seq(FrontendSchema.path), "io.greenbus.edge.fep.config.model", System.out)
+
+    val f = new File("testschemas/fep.xsd")
+    Files.createParentDirs(f)
+    if (!f.exists()) {
+      f.createNewFile()
+    }
+
+    val xmlNs = XmlNamespaceInfo(FrontendSchema.ns.name,
+      Map(
+        (FrontendSchema.ns.name, XmlNsDecl("fep", FrontendSchema.ns.name))))
+
+    SchemaWriter.write(FrontendSchema.all, Seq(FrontendSchema.frontendConfiguration), xmlNs, new FileOutputStream(f))
   }
 }
 
-object FepSchemaBuilder {
+object FepScalaWriter {
 
   def main(args: Array[String]): Unit = {
-    val all = Gen.collectObjDefs(FrontendSchema.frontendConfiguration, Map())
+    val all = ScalaGen.collectObjDefs(FrontendSchema.ns.name, FrontendSchema.frontendConfiguration, Map())
 
-    println(all.map(_._1).toVector)
+    println(all)
 
     val f = new File("frontend/src/main/scala/io/greenbus/edge/fep/config/model/Model.scala")
     Files.createParentDirs(f)
@@ -188,10 +201,8 @@ object FepSchemaBuilder {
       f.createNewFile()
     }
 
-    //val fw = new PrintWriter("dnp3-gateway/fakesrc/testfile.scala" /*new FileOutputStream(new File("testdir/testfile.scala"))*/ )
     val fw = new PrintWriter(new FileOutputStream(f))
-    Gen.output("io.greenbus.edge.fep.config.model", all, fw)
+    ScalaGen.output("io.greenbus.edge.fep.config.model", FrontendSchema.ns.name, all, fw)
     fw.flush()
   }
-
 }

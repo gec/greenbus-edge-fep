@@ -21,22 +21,35 @@ package io.greenbus.edge.dnp3.config
 import java.io.{ File, FileOutputStream, PrintWriter }
 
 import com.google.common.io.Files
-import io.greenbus.edge.data.codegen.Gen
-import io.greenbus.edge.data.xml.SchemaWriter
+import io.greenbus.edge.data.codegen.{ ScalaGen }
+import io.greenbus.edge.data.xml.{ SchemaWriter, XmlNamespaceInfo, XmlNsDecl }
+import io.greenbus.edge.fep.model.FrontendSchema
 
-object XmlSchemaWriter {
+object DnpXmlSchemaWriter {
 
   def main(args: Array[String]): Unit = {
-    SchemaWriter.write(Schema.all ++ DnpGatewaySchema.all, Seq(DnpGatewaySchema.gateway), "io.greenbus.edge.dnp3.config", System.out)
+
+    val f = new File("testschemas/dnp.xsd")
+    Files.createParentDirs(f)
+    if (!f.exists()) {
+      f.createNewFile()
+    }
+
+    val xmlNs = XmlNamespaceInfo(DnpGatewaySchema.gateway.ns.name,
+      Map(
+        (DnpGatewaySchema.ns.name, XmlNsDecl("dnp3", DnpGatewaySchema.ns.name)),
+        (FrontendSchema.ns.name, XmlNsDecl("fep", FrontendSchema.ns.name))))
+
+    SchemaWriter.write(DnpGatewaySchema.all, Seq(DnpGatewaySchema.gateway), xmlNs, new FileOutputStream(f))
   }
 }
 
-object Builder {
+object DnpScalaWriter {
 
   def main(args: Array[String]): Unit = {
-    val all = Gen.collectObjDefs(DnpGatewaySchema.gateway, Map())
+    val all = ScalaGen.collectObjDefs(DnpGatewaySchema.ns.name, DnpGatewaySchema.gateway, Map())
 
-    println(all.map(_._1).toVector)
+    println(all)
 
     val f = new File("dnp3-gateway/src/main/scala/io/greenbus/edge/dnp3/config/model/Model.scala")
     Files.createParentDirs(f)
@@ -44,10 +57,8 @@ object Builder {
       f.createNewFile()
     }
 
-    //val fw = new PrintWriter("dnp3-gateway/fakesrc/testfile.scala" /*new FileOutputStream(new File("testdir/testfile.scala"))*/ )
     val fw = new PrintWriter(new FileOutputStream(f))
-    Gen.output("io.greenbus.edge.dnp3.config.model", all, fw)
+    ScalaGen.output("io.greenbus.edge.dnp3.config.model", DnpGatewaySchema.ns.name, all, fw)
     fw.flush()
   }
-
 }

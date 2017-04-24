@@ -73,8 +73,8 @@ object Control {
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, Control] = {
     val name = MappingLibrary.getMapField("name", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
     val index = MappingLibrary.getMapField("index", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val function = MappingLibrary.getMapField("function", element).flatMap(elem => MappingLibrary.readFieldSubStruct("function", elem, "FunctionType", FunctionType.read, ctx))
-    val controlOptions = MappingLibrary.getMapField("controlOptions", element).flatMap(elem => MappingLibrary.readFieldSubStruct("controlOptions", elem, "ControlOptions", ControlOptions.read, ctx))
+    val function = MappingLibrary.getMapField("function", element).flatMap(elem => MappingLibrary.readFieldSubStruct("function", elem, "FunctionType", io.greenbus.edge.dnp3.config.model.FunctionType.read, ctx))
+    val controlOptions = MappingLibrary.getMapField("controlOptions", element).flatMap(elem => MappingLibrary.readFieldSubStruct("controlOptions", elem, "ControlOptions", io.greenbus.edge.dnp3.config.model.ControlOptions.read, ctx))
 
     if (name.isRight && index.isRight && function.isRight && controlOptions.isRight) {
       Right(Control(name.right.get, index.right.get, function.right.get, controlOptions.right.get))
@@ -87,13 +87,13 @@ object Control {
     val built = ValueMap(Map(
       (ValueString("name"), ValueString(obj.name)),
       (ValueString("index"), ValueUInt32(obj.index)),
-      (ValueString("function"), FunctionType.write(obj.function)),
-      (ValueString("controlOptions"), ControlOptions.write(obj.controlOptions))))
+      (ValueString("function"), io.greenbus.edge.dnp3.config.model.FunctionType.write(obj.function)),
+      (ValueString("controlOptions"), io.greenbus.edge.dnp3.config.model.ControlOptions.write(obj.controlOptions))))
 
     TaggedValue("Control", built)
   }
 }
-case class Control(name: String, index: Int, function: FunctionType, controlOptions: ControlOptions)
+case class Control(name: String, index: Int, function: io.greenbus.edge.dnp3.config.model.FunctionType, controlOptions: io.greenbus.edge.dnp3.config.model.ControlOptions)
 
 object ControlOptions {
 
@@ -109,7 +109,7 @@ object ControlOptions {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, ControlOptions] = {
-    val controlType = MappingLibrary.getMapField("controlType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("controlType", elem, "ControlType", ControlType.read, ctx))
+    val controlType = MappingLibrary.getMapField("controlType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("controlType", elem, "ControlType", io.greenbus.edge.dnp3.config.model.ControlType.read, ctx))
     val onTime = MappingLibrary.optMapField("onTime", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
     val offTime = MappingLibrary.optMapField("offTime", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
     val count = MappingLibrary.optMapField("count", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
@@ -123,7 +123,7 @@ object ControlOptions {
 
   def write(obj: ControlOptions): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("controlType"), ControlType.write(obj.controlType)),
+      (ValueString("controlType"), io.greenbus.edge.dnp3.config.model.ControlType.write(obj.controlType)),
       (ValueString("onTime"), obj.onTime.map(p => ValueUInt32(p)).getOrElse(ValueNone)),
       (ValueString("offTime"), obj.offTime.map(p => ValueUInt32(p)).getOrElse(ValueNone)),
       (ValueString("count"), obj.count.map(p => ValueUInt32(p)).getOrElse(ValueNone))))
@@ -131,7 +131,7 @@ object ControlOptions {
     TaggedValue("ControlOptions", built)
   }
 }
-case class ControlOptions(controlType: ControlType, onTime: Option[Int], offTime: Option[Int], count: Option[Int])
+case class ControlOptions(controlType: io.greenbus.edge.dnp3.config.model.ControlType, onTime: Option[Int], offTime: Option[Int], count: Option[Int])
 
 object ControlType {
 
@@ -194,29 +194,31 @@ object DNP3Gateway {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, DNP3Gateway] = {
-    val master = MappingLibrary.getMapField("master", element).flatMap(elem => MappingLibrary.readFieldSubStruct("master", elem, "Master", Master.read, ctx))
-    val client = MappingLibrary.getMapField("client", element).flatMap(elem => MappingLibrary.readFieldSubStruct("client", elem, "TCPClient", TCPClient.read, ctx))
-    val inputModel = MappingLibrary.getMapField("inputModel", element).flatMap(elem => MappingLibrary.readFieldSubStruct("inputModel", elem, "InputModel", InputModel.read, ctx))
-    val outputModel = MappingLibrary.getMapField("outputModel", element).flatMap(elem => MappingLibrary.readFieldSubStruct("outputModel", elem, "OutputModel", OutputModel.read, ctx))
+    val master = MappingLibrary.getMapField("master", element).flatMap(elem => MappingLibrary.readFieldSubStruct("master", elem, "Master", io.greenbus.edge.dnp3.config.model.Master.read, ctx))
+    val client = MappingLibrary.getMapField("client", element).flatMap(elem => MappingLibrary.readFieldSubStruct("client", elem, "TCPClient", io.greenbus.edge.dnp3.config.model.TCPClient.read, ctx))
+    val inputModel = MappingLibrary.getMapField("inputModel", element).flatMap(elem => MappingLibrary.readFieldSubStruct("inputModel", elem, "InputModel", io.greenbus.edge.dnp3.config.model.InputModel.read, ctx))
+    val outputModel = MappingLibrary.getMapField("outputModel", element).flatMap(elem => MappingLibrary.readFieldSubStruct("outputModel", elem, "OutputModel", io.greenbus.edge.dnp3.config.model.OutputModel.read, ctx))
+    val endpoint = MappingLibrary.getMapField("endpoint", element).flatMap(elem => MappingLibrary.readFieldSubStruct("endpoint", elem, "FrontendConfiguration", io.greenbus.edge.fep.config.model.FrontendConfiguration.read, ctx))
 
-    if (master.isRight && client.isRight && inputModel.isRight && outputModel.isRight) {
-      Right(DNP3Gateway(master.right.get, client.right.get, inputModel.right.get, outputModel.right.get))
+    if (master.isRight && client.isRight && inputModel.isRight && outputModel.isRight && endpoint.isRight) {
+      Right(DNP3Gateway(master.right.get, client.right.get, inputModel.right.get, outputModel.right.get, endpoint.right.get))
     } else {
-      Left(Seq(master.left.toOption, client.left.toOption, inputModel.left.toOption, outputModel.left.toOption).flatten.mkString(", "))
+      Left(Seq(master.left.toOption, client.left.toOption, inputModel.left.toOption, outputModel.left.toOption, endpoint.left.toOption).flatten.mkString(", "))
     }
   }
 
   def write(obj: DNP3Gateway): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("master"), Master.write(obj.master)),
-      (ValueString("client"), TCPClient.write(obj.client)),
-      (ValueString("inputModel"), InputModel.write(obj.inputModel)),
-      (ValueString("outputModel"), OutputModel.write(obj.outputModel))))
+      (ValueString("master"), io.greenbus.edge.dnp3.config.model.Master.write(obj.master)),
+      (ValueString("client"), io.greenbus.edge.dnp3.config.model.TCPClient.write(obj.client)),
+      (ValueString("inputModel"), io.greenbus.edge.dnp3.config.model.InputModel.write(obj.inputModel)),
+      (ValueString("outputModel"), io.greenbus.edge.dnp3.config.model.OutputModel.write(obj.outputModel)),
+      (ValueString("endpoint"), io.greenbus.edge.fep.config.model.FrontendConfiguration.write(obj.endpoint))))
 
     TaggedValue("DNP3Gateway", built)
   }
 }
-case class DNP3Gateway(master: Master, client: TCPClient, inputModel: InputModel, outputModel: OutputModel)
+case class DNP3Gateway(master: io.greenbus.edge.dnp3.config.model.Master, client: io.greenbus.edge.dnp3.config.model.TCPClient, inputModel: io.greenbus.edge.dnp3.config.model.InputModel, outputModel: io.greenbus.edge.dnp3.config.model.OutputModel, endpoint: io.greenbus.edge.fep.config.model.FrontendConfiguration)
 
 object FunctionType {
 
@@ -304,15 +306,15 @@ object IndexSet {
     }
   }
   def readRepr(element: ValueList, ctx: ReaderContext): Either[String, IndexSet] = {
-    MappingLibrary.readList[IndexRange](element, MappingLibrary.readTup[IndexRange](_, _, IndexRange.read), ctx).map(result => IndexSet(result))
+    MappingLibrary.readList[io.greenbus.edge.dnp3.config.model.IndexRange](element, io.greenbus.edge.dnp3.config.model.IndexRange.read, ctx).map(result => IndexSet(result))
   }
   def write(obj: IndexSet): TaggedValue = {
-    val built = MappingLibrary.writeList(obj.value, IndexRange.write)
+    val built = MappingLibrary.writeList(obj.value, io.greenbus.edge.dnp3.config.model.IndexRange.write)
 
     TaggedValue("IndexSet", built)
   }
 }
-case class IndexSet(value: Seq[IndexRange])
+case class IndexSet(value: Seq[io.greenbus.edge.dnp3.config.model.IndexRange])
 
 object InputModel {
 
@@ -328,11 +330,11 @@ object InputModel {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, InputModel] = {
-    val binaryInputs = MappingLibrary.getMapField("binaryInputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("binaryInputs", elem, "IndexSet", IndexSet.read, ctx))
-    val analogInputs = MappingLibrary.getMapField("analogInputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("analogInputs", elem, "IndexSet", IndexSet.read, ctx))
-    val counterInputs = MappingLibrary.getMapField("counterInputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("counterInputs", elem, "IndexSet", IndexSet.read, ctx))
-    val binaryOutputs = MappingLibrary.getMapField("binaryOutputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("binaryOutputs", elem, "IndexSet", IndexSet.read, ctx))
-    val analogOutputs = MappingLibrary.getMapField("analogOutputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("analogOutputs", elem, "IndexSet", IndexSet.read, ctx))
+    val binaryInputs = MappingLibrary.getMapField("binaryInputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("binaryInputs", elem, "IndexSet", io.greenbus.edge.dnp3.config.model.IndexSet.read, ctx))
+    val analogInputs = MappingLibrary.getMapField("analogInputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("analogInputs", elem, "IndexSet", io.greenbus.edge.dnp3.config.model.IndexSet.read, ctx))
+    val counterInputs = MappingLibrary.getMapField("counterInputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("counterInputs", elem, "IndexSet", io.greenbus.edge.dnp3.config.model.IndexSet.read, ctx))
+    val binaryOutputs = MappingLibrary.getMapField("binaryOutputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("binaryOutputs", elem, "IndexSet", io.greenbus.edge.dnp3.config.model.IndexSet.read, ctx))
+    val analogOutputs = MappingLibrary.getMapField("analogOutputs", element).flatMap(elem => MappingLibrary.readFieldSubStruct("analogOutputs", elem, "IndexSet", io.greenbus.edge.dnp3.config.model.IndexSet.read, ctx))
 
     if (binaryInputs.isRight && analogInputs.isRight && counterInputs.isRight && binaryOutputs.isRight && analogOutputs.isRight) {
       Right(InputModel(binaryInputs.right.get, analogInputs.right.get, counterInputs.right.get, binaryOutputs.right.get, analogOutputs.right.get))
@@ -343,16 +345,16 @@ object InputModel {
 
   def write(obj: InputModel): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("binaryInputs"), IndexSet.write(obj.binaryInputs)),
-      (ValueString("analogInputs"), IndexSet.write(obj.analogInputs)),
-      (ValueString("counterInputs"), IndexSet.write(obj.counterInputs)),
-      (ValueString("binaryOutputs"), IndexSet.write(obj.binaryOutputs)),
-      (ValueString("analogOutputs"), IndexSet.write(obj.analogOutputs))))
+      (ValueString("binaryInputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.binaryInputs)),
+      (ValueString("analogInputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.analogInputs)),
+      (ValueString("counterInputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.counterInputs)),
+      (ValueString("binaryOutputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.binaryOutputs)),
+      (ValueString("analogOutputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.analogOutputs))))
 
     TaggedValue("InputModel", built)
   }
 }
-case class InputModel(binaryInputs: IndexSet, analogInputs: IndexSet, counterInputs: IndexSet, binaryOutputs: IndexSet, analogOutputs: IndexSet)
+case class InputModel(binaryInputs: io.greenbus.edge.dnp3.config.model.IndexSet, analogInputs: io.greenbus.edge.dnp3.config.model.IndexSet, counterInputs: io.greenbus.edge.dnp3.config.model.IndexSet, binaryOutputs: io.greenbus.edge.dnp3.config.model.IndexSet, analogOutputs: io.greenbus.edge.dnp3.config.model.IndexSet)
 
 object LinkLayer {
 
@@ -410,10 +412,10 @@ object Master {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, Master] = {
-    val stack = MappingLibrary.getMapField("stack", element).flatMap(elem => MappingLibrary.readFieldSubStruct("stack", elem, "StackConfig", StackConfig.read, ctx))
-    val masterSettings = MappingLibrary.getMapField("masterSettings", element).flatMap(elem => MappingLibrary.readFieldSubStruct("masterSettings", elem, "MasterSettings", MasterSettings.read, ctx))
-    val scanList = MappingLibrary.getMapField("scanList", element).flatMap(elem => MappingLibrary.readList[Scan](elem, MappingLibrary.readTup[Scan](_, _, Scan.read), ctx))
-    val unsol = MappingLibrary.getMapField("unsol", element).flatMap(elem => MappingLibrary.readFieldSubStruct("unsol", elem, "Unsol", Unsol.read, ctx))
+    val stack = MappingLibrary.getMapField("stack", element).flatMap(elem => MappingLibrary.readFieldSubStruct("stack", elem, "StackConfig", io.greenbus.edge.dnp3.config.model.StackConfig.read, ctx))
+    val masterSettings = MappingLibrary.getMapField("masterSettings", element).flatMap(elem => MappingLibrary.readFieldSubStruct("masterSettings", elem, "MasterSettings", io.greenbus.edge.dnp3.config.model.MasterSettings.read, ctx))
+    val scanList = MappingLibrary.getMapField("scanList", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.dnp3.config.model.Scan](elem, io.greenbus.edge.dnp3.config.model.Scan.read, ctx))
+    val unsol = MappingLibrary.getMapField("unsol", element).flatMap(elem => MappingLibrary.readFieldSubStruct("unsol", elem, "Unsol", io.greenbus.edge.dnp3.config.model.Unsol.read, ctx))
 
     if (stack.isRight && masterSettings.isRight && scanList.isRight && unsol.isRight) {
       Right(Master(stack.right.get, masterSettings.right.get, scanList.right.get, unsol.right.get))
@@ -424,15 +426,15 @@ object Master {
 
   def write(obj: Master): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("stack"), StackConfig.write(obj.stack)),
-      (ValueString("masterSettings"), MasterSettings.write(obj.masterSettings)),
-      (ValueString("scanList"), MappingLibrary.writeList(obj.scanList, Scan.write)),
-      (ValueString("unsol"), Unsol.write(obj.unsol))))
+      (ValueString("stack"), io.greenbus.edge.dnp3.config.model.StackConfig.write(obj.stack)),
+      (ValueString("masterSettings"), io.greenbus.edge.dnp3.config.model.MasterSettings.write(obj.masterSettings)),
+      (ValueString("scanList"), MappingLibrary.writeList(obj.scanList, io.greenbus.edge.dnp3.config.model.Scan.write)),
+      (ValueString("unsol"), io.greenbus.edge.dnp3.config.model.Unsol.write(obj.unsol))))
 
     TaggedValue("Master", built)
   }
 }
-case class Master(stack: StackConfig, masterSettings: MasterSettings, scanList: Seq[Scan], unsol: Unsol)
+case class Master(stack: io.greenbus.edge.dnp3.config.model.StackConfig, masterSettings: io.greenbus.edge.dnp3.config.model.MasterSettings, scanList: Seq[io.greenbus.edge.dnp3.config.model.Scan], unsol: io.greenbus.edge.dnp3.config.model.Unsol)
 
 object MasterSettings {
 
@@ -484,8 +486,8 @@ object OutputModel {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputModel] = {
-    val controls = MappingLibrary.getMapField("controls", element).flatMap(elem => MappingLibrary.readList[Control](elem, MappingLibrary.readTup[Control](_, _, Control.read), ctx))
-    val setpoints = MappingLibrary.getMapField("setpoints", element).flatMap(elem => MappingLibrary.readList[Setpoint](elem, MappingLibrary.readTup[Setpoint](_, _, Setpoint.read), ctx))
+    val controls = MappingLibrary.getMapField("controls", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.dnp3.config.model.Control](elem, io.greenbus.edge.dnp3.config.model.Control.read, ctx))
+    val setpoints = MappingLibrary.getMapField("setpoints", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.dnp3.config.model.Setpoint](elem, io.greenbus.edge.dnp3.config.model.Setpoint.read, ctx))
 
     if (controls.isRight && setpoints.isRight) {
       Right(OutputModel(controls.right.get, setpoints.right.get))
@@ -496,13 +498,13 @@ object OutputModel {
 
   def write(obj: OutputModel): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("controls"), MappingLibrary.writeList(obj.controls, Control.write)),
-      (ValueString("setpoints"), MappingLibrary.writeList(obj.setpoints, Setpoint.write))))
+      (ValueString("controls"), MappingLibrary.writeList(obj.controls, io.greenbus.edge.dnp3.config.model.Control.write)),
+      (ValueString("setpoints"), MappingLibrary.writeList(obj.setpoints, io.greenbus.edge.dnp3.config.model.Setpoint.write))))
 
     TaggedValue("OutputModel", built)
   }
 }
-case class OutputModel(controls: Seq[Control], setpoints: Seq[Setpoint])
+case class OutputModel(controls: Seq[io.greenbus.edge.dnp3.config.model.Control], setpoints: Seq[io.greenbus.edge.dnp3.config.model.Setpoint])
 
 object Scan {
 
@@ -558,7 +560,7 @@ object Setpoint {
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, Setpoint] = {
     val name = MappingLibrary.getMapField("name", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
     val index = MappingLibrary.getMapField("index", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val function = MappingLibrary.getMapField("function", element).flatMap(elem => MappingLibrary.readFieldSubStruct("function", elem, "FunctionType", FunctionType.read, ctx))
+    val function = MappingLibrary.getMapField("function", element).flatMap(elem => MappingLibrary.readFieldSubStruct("function", elem, "FunctionType", io.greenbus.edge.dnp3.config.model.FunctionType.read, ctx))
 
     if (name.isRight && index.isRight && function.isRight) {
       Right(Setpoint(name.right.get, index.right.get, function.right.get))
@@ -571,12 +573,12 @@ object Setpoint {
     val built = ValueMap(Map(
       (ValueString("name"), ValueString(obj.name)),
       (ValueString("index"), ValueUInt32(obj.index)),
-      (ValueString("function"), FunctionType.write(obj.function))))
+      (ValueString("function"), io.greenbus.edge.dnp3.config.model.FunctionType.write(obj.function))))
 
     TaggedValue("Setpoint", built)
   }
 }
-case class Setpoint(name: String, index: Int, function: FunctionType)
+case class Setpoint(name: String, index: Int, function: io.greenbus.edge.dnp3.config.model.FunctionType)
 
 object StackConfig {
 
@@ -592,8 +594,8 @@ object StackConfig {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, StackConfig] = {
-    val linkLayer = MappingLibrary.getMapField("linkLayer", element).flatMap(elem => MappingLibrary.readFieldSubStruct("linkLayer", elem, "LinkLayer", LinkLayer.read, ctx))
-    val appLayer = MappingLibrary.getMapField("appLayer", element).flatMap(elem => MappingLibrary.readFieldSubStruct("appLayer", elem, "AppLayer", AppLayer.read, ctx))
+    val linkLayer = MappingLibrary.getMapField("linkLayer", element).flatMap(elem => MappingLibrary.readFieldSubStruct("linkLayer", elem, "LinkLayer", io.greenbus.edge.dnp3.config.model.LinkLayer.read, ctx))
+    val appLayer = MappingLibrary.getMapField("appLayer", element).flatMap(elem => MappingLibrary.readFieldSubStruct("appLayer", elem, "AppLayer", io.greenbus.edge.dnp3.config.model.AppLayer.read, ctx))
 
     if (linkLayer.isRight && appLayer.isRight) {
       Right(StackConfig(linkLayer.right.get, appLayer.right.get))
@@ -604,13 +606,13 @@ object StackConfig {
 
   def write(obj: StackConfig): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("linkLayer"), LinkLayer.write(obj.linkLayer)),
-      (ValueString("appLayer"), AppLayer.write(obj.appLayer))))
+      (ValueString("linkLayer"), io.greenbus.edge.dnp3.config.model.LinkLayer.write(obj.linkLayer)),
+      (ValueString("appLayer"), io.greenbus.edge.dnp3.config.model.AppLayer.write(obj.appLayer))))
 
     TaggedValue("StackConfig", built)
   }
 }
-case class StackConfig(linkLayer: LinkLayer, appLayer: AppLayer)
+case class StackConfig(linkLayer: io.greenbus.edge.dnp3.config.model.LinkLayer, appLayer: io.greenbus.edge.dnp3.config.model.AppLayer)
 
 object TCPClient {
 

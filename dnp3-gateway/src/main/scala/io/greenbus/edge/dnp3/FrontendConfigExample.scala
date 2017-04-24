@@ -20,7 +20,7 @@ package io.greenbus.edge.dnp3
 
 import io.greenbus.edge.fep.config.model._
 
-object Example {
+object FrontendConfigExample {
 
   def build: FrontendConfiguration = {
     FrontendConfiguration(

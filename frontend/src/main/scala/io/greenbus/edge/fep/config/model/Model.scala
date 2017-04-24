@@ -70,10 +70,10 @@ object DataKeyConfig {
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, DataKeyConfig] = {
     val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", Path.read, ctx))
-    val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "SeriesDescriptor", SeriesDescriptor.read, ctx))
-    val transforms = MappingLibrary.getMapField("transforms", element).flatMap(elem => MappingLibrary.readList[TransformDescriptor](elem, MappingLibrary.readTup[TransformDescriptor](_, _, TransformDescriptor.read), ctx))
-    val filter = MappingLibrary.optMapField("filter", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => FilterDescriptor.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "SeriesDescriptor", io.greenbus.edge.fep.config.model.SeriesDescriptor.read, ctx))
+    val transforms = MappingLibrary.getMapField("transforms", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.TransformDescriptor](elem, io.greenbus.edge.fep.config.model.TransformDescriptor.read, ctx))
+    val filter = MappingLibrary.optMapField("filter", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.FilterDescriptor.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
 
     if (gatewayKey.isRight && path.isRight && descriptor.isRight && transforms.isRight && filter.isRight) {
       Right(DataKeyConfig(gatewayKey.right.get, path.right.get, descriptor.right.get, transforms.right.get, filter.right.get))
@@ -85,15 +85,15 @@ object DataKeyConfig {
   def write(obj: DataKeyConfig): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("gatewayKey"), ValueString(obj.gatewayKey)),
-      (ValueString("path"), Path.write(obj.path)),
-      (ValueString("descriptor"), SeriesDescriptor.write(obj.descriptor)),
-      (ValueString("transforms"), MappingLibrary.writeList(obj.transforms, TransformDescriptor.write)),
-      (ValueString("filter"), obj.filter.map(p => FilterDescriptor.write(p)).getOrElse(ValueNone))))
+      (ValueString("path"), io.greenbus.edge.fep.config.model.Path.write(obj.path)),
+      (ValueString("descriptor"), io.greenbus.edge.fep.config.model.SeriesDescriptor.write(obj.descriptor)),
+      (ValueString("transforms"), MappingLibrary.writeList(obj.transforms, io.greenbus.edge.fep.config.model.TransformDescriptor.write)),
+      (ValueString("filter"), obj.filter.map(p => io.greenbus.edge.fep.config.model.FilterDescriptor.write(p)).getOrElse(ValueNone))))
 
     TaggedValue("DataKeyConfig", built)
   }
 }
-case class DataKeyConfig(gatewayKey: String, path: Path, descriptor: SeriesDescriptor, transforms: Seq[TransformDescriptor], filter: Option[FilterDescriptor])
+case class DataKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, descriptor: io.greenbus.edge.fep.config.model.SeriesDescriptor, transforms: Seq[io.greenbus.edge.fep.config.model.TransformDescriptor], filter: Option[io.greenbus.edge.fep.config.model.FilterDescriptor])
 
 object FilterDescriptor {
 
@@ -143,9 +143,9 @@ object FrontendConfiguration {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, FrontendConfiguration] = {
-    val endpointId = MappingLibrary.getMapField("endpointId", element).flatMap(elem => MappingLibrary.readFieldSubStruct("endpointId", elem, "Path", Path.read, ctx))
-    val dataKeys = MappingLibrary.getMapField("dataKeys", element).flatMap(elem => MappingLibrary.readList[DataKeyConfig](elem, MappingLibrary.readTup[DataKeyConfig](_, _, DataKeyConfig.read), ctx))
-    val outputKeys = MappingLibrary.getMapField("outputKeys", element).flatMap(elem => MappingLibrary.readList[OutputKeyConfig](elem, MappingLibrary.readTup[OutputKeyConfig](_, _, OutputKeyConfig.read), ctx))
+    val endpointId = MappingLibrary.getMapField("endpointId", element).flatMap(elem => MappingLibrary.readFieldSubStruct("endpointId", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val dataKeys = MappingLibrary.getMapField("dataKeys", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.DataKeyConfig](elem, io.greenbus.edge.fep.config.model.DataKeyConfig.read, ctx))
+    val outputKeys = MappingLibrary.getMapField("outputKeys", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.OutputKeyConfig](elem, io.greenbus.edge.fep.config.model.OutputKeyConfig.read, ctx))
 
     if (endpointId.isRight && dataKeys.isRight && outputKeys.isRight) {
       Right(FrontendConfiguration(endpointId.right.get, dataKeys.right.get, outputKeys.right.get))
@@ -156,14 +156,14 @@ object FrontendConfiguration {
 
   def write(obj: FrontendConfiguration): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("endpointId"), Path.write(obj.endpointId)),
-      (ValueString("dataKeys"), MappingLibrary.writeList(obj.dataKeys, DataKeyConfig.write)),
-      (ValueString("outputKeys"), MappingLibrary.writeList(obj.outputKeys, OutputKeyConfig.write))))
+      (ValueString("endpointId"), io.greenbus.edge.fep.config.model.Path.write(obj.endpointId)),
+      (ValueString("dataKeys"), MappingLibrary.writeList(obj.dataKeys, io.greenbus.edge.fep.config.model.DataKeyConfig.write)),
+      (ValueString("outputKeys"), MappingLibrary.writeList(obj.outputKeys, io.greenbus.edge.fep.config.model.OutputKeyConfig.write))))
 
     TaggedValue("FrontendConfiguration", built)
   }
 }
-case class FrontendConfiguration(endpointId: Path, dataKeys: Seq[DataKeyConfig], outputKeys: Seq[OutputKeyConfig])
+case class FrontendConfiguration(endpointId: io.greenbus.edge.fep.config.model.Path, dataKeys: Seq[io.greenbus.edge.fep.config.model.DataKeyConfig], outputKeys: Seq[io.greenbus.edge.fep.config.model.OutputKeyConfig])
 
 object IntegerLabel {
 
@@ -213,15 +213,15 @@ object IntegerLabelSet {
     }
   }
   def readRepr(element: ValueList, ctx: ReaderContext): Either[String, IntegerLabelSet] = {
-    MappingLibrary.readList[IntegerLabel](element, MappingLibrary.readTup[IntegerLabel](_, _, IntegerLabel.read), ctx).map(result => IntegerLabelSet(result))
+    MappingLibrary.readList[io.greenbus.edge.fep.config.model.IntegerLabel](element, io.greenbus.edge.fep.config.model.IntegerLabel.read, ctx).map(result => IntegerLabelSet(result))
   }
   def write(obj: IntegerLabelSet): TaggedValue = {
-    val built = MappingLibrary.writeList(obj.value, IntegerLabel.write)
+    val built = MappingLibrary.writeList(obj.value, io.greenbus.edge.fep.config.model.IntegerLabel.write)
 
     TaggedValue("IntegerLabelSet", built)
   }
 }
-case class IntegerLabelSet(value: Seq[IntegerLabel])
+case class IntegerLabelSet(value: Seq[io.greenbus.edge.fep.config.model.IntegerLabel])
 
 object LinearTransform {
 
@@ -271,11 +271,11 @@ object OutputDescriptor {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputDescriptor] = {
-    val outputType = MappingLibrary.getMapField("outputType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("outputType", elem, "OutputType", OutputType.read, ctx))
+    val outputType = MappingLibrary.getMapField("outputType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("outputType", elem, "OutputType", io.greenbus.edge.fep.config.model.OutputType.read, ctx))
     val requestScale = MappingLibrary.optMapField("requestScale", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
     val requestOffset = MappingLibrary.optMapField("requestOffset", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val requestIntegerLabels = MappingLibrary.optMapField("requestIntegerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => IntegerLabelSet.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val requestBooleanLabels = MappingLibrary.optMapField("requestBooleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => BooleanLabels.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val requestIntegerLabels = MappingLibrary.optMapField("requestIntegerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.IntegerLabelSet.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val requestBooleanLabels = MappingLibrary.optMapField("requestBooleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.BooleanLabels.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
 
     if (outputType.isRight && requestScale.isRight && requestOffset.isRight && requestIntegerLabels.isRight && requestBooleanLabels.isRight) {
       Right(OutputDescriptor(outputType.right.get, requestScale.right.get, requestOffset.right.get, requestIntegerLabels.right.get, requestBooleanLabels.right.get))
@@ -286,16 +286,16 @@ object OutputDescriptor {
 
   def write(obj: OutputDescriptor): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("outputType"), OutputType.write(obj.outputType)),
+      (ValueString("outputType"), io.greenbus.edge.fep.config.model.OutputType.write(obj.outputType)),
       (ValueString("requestScale"), obj.requestScale.map(p => ValueDouble(p)).getOrElse(ValueNone)),
       (ValueString("requestOffset"), obj.requestOffset.map(p => ValueDouble(p)).getOrElse(ValueNone)),
-      (ValueString("requestIntegerLabels"), obj.requestIntegerLabels.map(p => IntegerLabelSet.write(p)).getOrElse(ValueNone)),
-      (ValueString("requestBooleanLabels"), obj.requestBooleanLabels.map(p => BooleanLabels.write(p)).getOrElse(ValueNone))))
+      (ValueString("requestIntegerLabels"), obj.requestIntegerLabels.map(p => io.greenbus.edge.fep.config.model.IntegerLabelSet.write(p)).getOrElse(ValueNone)),
+      (ValueString("requestBooleanLabels"), obj.requestBooleanLabels.map(p => io.greenbus.edge.fep.config.model.BooleanLabels.write(p)).getOrElse(ValueNone))))
 
     TaggedValue("OutputDescriptor", built)
   }
 }
-case class OutputDescriptor(outputType: OutputType, requestScale: Option[Double], requestOffset: Option[Double], requestIntegerLabels: Option[IntegerLabelSet], requestBooleanLabels: Option[BooleanLabels])
+case class OutputDescriptor(outputType: io.greenbus.edge.fep.config.model.OutputType, requestScale: Option[Double], requestOffset: Option[Double], requestIntegerLabels: Option[io.greenbus.edge.fep.config.model.IntegerLabelSet], requestBooleanLabels: Option[io.greenbus.edge.fep.config.model.BooleanLabels])
 
 object OutputKeyConfig {
 
@@ -312,8 +312,8 @@ object OutputKeyConfig {
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputKeyConfig] = {
     val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", Path.read, ctx))
-    val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "OutputDescriptor", OutputDescriptor.read, ctx))
+    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "OutputDescriptor", io.greenbus.edge.fep.config.model.OutputDescriptor.read, ctx))
 
     if (gatewayKey.isRight && path.isRight && descriptor.isRight) {
       Right(OutputKeyConfig(gatewayKey.right.get, path.right.get, descriptor.right.get))
@@ -325,13 +325,13 @@ object OutputKeyConfig {
   def write(obj: OutputKeyConfig): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("gatewayKey"), ValueString(obj.gatewayKey)),
-      (ValueString("path"), Path.write(obj.path)),
-      (ValueString("descriptor"), OutputDescriptor.write(obj.descriptor))))
+      (ValueString("path"), io.greenbus.edge.fep.config.model.Path.write(obj.path)),
+      (ValueString("descriptor"), io.greenbus.edge.fep.config.model.OutputDescriptor.write(obj.descriptor))))
 
     TaggedValue("OutputKeyConfig", built)
   }
 }
-case class OutputKeyConfig(gatewayKey: String, path: Path, descriptor: OutputDescriptor)
+case class OutputKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, descriptor: io.greenbus.edge.fep.config.model.OutputDescriptor)
 
 object OutputType {
 
@@ -391,7 +391,7 @@ object Path {
     }
   }
   def readRepr(element: ValueList, ctx: ReaderContext): Either[String, Path] = {
-    MappingLibrary.readList[String](element, MappingLibrary.readTup[String](_, _, MappingLibrary.readString), ctx).map(result => Path(result))
+    MappingLibrary.readList[String](element, MappingLibrary.readString, ctx).map(result => Path(result))
   }
   def write(obj: Path): TaggedValue = {
     val built = MappingLibrary.writeList(obj.value, ValueString)
@@ -471,11 +471,11 @@ object SeriesDescriptor {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, SeriesDescriptor] = {
-    val seriesType = MappingLibrary.getMapField("seriesType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("seriesType", elem, "SeriesType", SeriesType.read, ctx))
+    val seriesType = MappingLibrary.getMapField("seriesType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("seriesType", elem, "SeriesType", io.greenbus.edge.fep.config.model.SeriesType.read, ctx))
     val unit = MappingLibrary.optMapField("unit", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readString(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
     val decimalPoints = MappingLibrary.optMapField("decimalPoints", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val integerLabels = MappingLibrary.optMapField("integerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => IntegerLabelSet.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val booleanLabels = MappingLibrary.optMapField("booleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => BooleanLabels.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val integerLabels = MappingLibrary.optMapField("integerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.IntegerLabelSet.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val booleanLabels = MappingLibrary.optMapField("booleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.BooleanLabels.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
 
     if (seriesType.isRight && unit.isRight && decimalPoints.isRight && integerLabels.isRight && booleanLabels.isRight) {
       Right(SeriesDescriptor(seriesType.right.get, unit.right.get, decimalPoints.right.get, integerLabels.right.get, booleanLabels.right.get))
@@ -486,16 +486,16 @@ object SeriesDescriptor {
 
   def write(obj: SeriesDescriptor): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("seriesType"), SeriesType.write(obj.seriesType)),
+      (ValueString("seriesType"), io.greenbus.edge.fep.config.model.SeriesType.write(obj.seriesType)),
       (ValueString("unit"), obj.unit.map(p => ValueString(p)).getOrElse(ValueNone)),
       (ValueString("decimalPoints"), obj.decimalPoints.map(p => ValueUInt32(p)).getOrElse(ValueNone)),
-      (ValueString("integerLabels"), obj.integerLabels.map(p => IntegerLabelSet.write(p)).getOrElse(ValueNone)),
-      (ValueString("booleanLabels"), obj.booleanLabels.map(p => BooleanLabels.write(p)).getOrElse(ValueNone))))
+      (ValueString("integerLabels"), obj.integerLabels.map(p => io.greenbus.edge.fep.config.model.IntegerLabelSet.write(p)).getOrElse(ValueNone)),
+      (ValueString("booleanLabels"), obj.booleanLabels.map(p => io.greenbus.edge.fep.config.model.BooleanLabels.write(p)).getOrElse(ValueNone))))
 
     TaggedValue("SeriesDescriptor", built)
   }
 }
-case class SeriesDescriptor(seriesType: SeriesType, unit: Option[String], decimalPoints: Option[Int], integerLabels: Option[IntegerLabelSet], booleanLabels: Option[BooleanLabels])
+case class SeriesDescriptor(seriesType: io.greenbus.edge.fep.config.model.SeriesType, unit: Option[String], decimalPoints: Option[Int], integerLabels: Option[io.greenbus.edge.fep.config.model.IntegerLabelSet], booleanLabels: Option[io.greenbus.edge.fep.config.model.BooleanLabels])
 
 object SeriesType {
 
@@ -561,7 +561,7 @@ object SimpleTransform {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, SimpleTransform] = {
-    val transformType = MappingLibrary.getMapField("transformType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("transformType", elem, "SimpleTransformType", SimpleTransformType.read, ctx))
+    val transformType = MappingLibrary.getMapField("transformType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("transformType", elem, "SimpleTransformType", io.greenbus.edge.fep.config.model.SimpleTransformType.read, ctx))
 
     if (transformType.isRight) {
       Right(SimpleTransform(transformType.right.get))
@@ -572,12 +572,12 @@ object SimpleTransform {
 
   def write(obj: SimpleTransform): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("transformType"), SimpleTransformType.write(obj.transformType))))
+      (ValueString("transformType"), io.greenbus.edge.fep.config.model.SimpleTransformType.write(obj.transformType))))
 
     TaggedValue("SimpleTransform", built)
   }
 }
-case class SimpleTransform(transformType: SimpleTransformType) extends TransformDescriptor
+case class SimpleTransform(transformType: io.greenbus.edge.fep.config.model.SimpleTransformType) extends TransformDescriptor
 
 object SimpleTransformType {
 
@@ -620,9 +620,9 @@ object TransformDescriptor {
     element match {
       case t: TaggedValue =>
         t.tag match {
-          case "TypeCast" => TypeCast.read(element, ctx)
-          case "LinearTransform" => LinearTransform.read(element, ctx)
-          case "SimpleTransform" => SimpleTransform.read(element, ctx)
+          case "TypeCast" => io.greenbus.edge.fep.config.model.TypeCast.read(element, ctx)
+          case "LinearTransform" => io.greenbus.edge.fep.config.model.LinearTransform.read(element, ctx)
+          case "SimpleTransform" => io.greenbus.edge.fep.config.model.SimpleTransform.read(element, ctx)
           case other => throw new IllegalArgumentException("Type TransformDescriptor did not union type tag " + other)
         }
       case other => throw new IllegalArgumentException("Type TransformDescriptor did not recognize " + other)
@@ -630,9 +630,9 @@ object TransformDescriptor {
   }
   def write(obj: TransformDescriptor): TaggedValue = {
     obj match {
-      case data: TypeCast => TypeCast.write(data)
-      case data: LinearTransform => LinearTransform.write(data)
-      case data: SimpleTransform => SimpleTransform.write(data)
+      case data: io.greenbus.edge.fep.config.model.TypeCast => io.greenbus.edge.fep.config.model.TypeCast.write(data)
+      case data: io.greenbus.edge.fep.config.model.LinearTransform => io.greenbus.edge.fep.config.model.LinearTransform.write(data)
+      case data: io.greenbus.edge.fep.config.model.SimpleTransform => io.greenbus.edge.fep.config.model.SimpleTransform.write(data)
       case other => throw new IllegalArgumentException("Type TransformDescriptor did not recognize " + other)
     }
   }
@@ -653,7 +653,7 @@ object TypeCast {
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, TypeCast] = {
-    val target = MappingLibrary.getMapField("target", element).flatMap(elem => MappingLibrary.readFieldSubStruct("target", elem, "SampleType", SampleType.read, ctx))
+    val target = MappingLibrary.getMapField("target", element).flatMap(elem => MappingLibrary.readFieldSubStruct("target", elem, "SampleType", io.greenbus.edge.fep.config.model.SampleType.read, ctx))
 
     if (target.isRight) {
       Right(TypeCast(target.right.get))
@@ -664,10 +664,10 @@ object TypeCast {
 
   def write(obj: TypeCast): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("target"), SampleType.write(obj.target))))
+      (ValueString("target"), io.greenbus.edge.fep.config.model.SampleType.write(obj.target))))
 
     TaggedValue("TypeCast", built)
   }
 }
-case class TypeCast(target: SampleType) extends TransformDescriptor
+case class TypeCast(target: io.greenbus.edge.fep.config.model.SampleType) extends TransformDescriptor
 

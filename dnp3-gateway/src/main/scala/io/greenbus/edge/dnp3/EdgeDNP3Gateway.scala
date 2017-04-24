@@ -83,7 +83,8 @@ object EdgeDNP3Gateway {
           Setpoint(
             "setpoint_1",
             index = 1,
-            function = FunctionType.SelectBeforeOperate))))
+            function = FunctionType.SelectBeforeOperate))),
+      FrontendConfigExample.build)
   }
 
   def main(args: Array[String]): Unit = {
@@ -94,7 +95,7 @@ object EdgeDNP3Gateway {
 
     val config = buildGateway
 
-    val endConfig = Example.build
+    val endConfig = FrontendConfigExample.build
 
     val eventThread = EventThreadService.build("DNP MGR")
 

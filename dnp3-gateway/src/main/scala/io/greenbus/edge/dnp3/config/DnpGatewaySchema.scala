@@ -19,11 +19,14 @@
 package io.greenbus.edge.dnp3.config
 
 import io.greenbus.edge.data.schema._
+import io.greenbus.edge.fep.model.FrontendSchema
 
-object Schema {
+object DnpGatewaySchema {
+
+  val ns = TypeNamespace("io.greenbus.edge.dnp3.config.model", Map("scalaPackage" -> "io.greenbus.edge.dnp3.config.model", "xmlns" -> "io.greenbus.edge.dnp3.config.model"))
 
   val linkLayer: TExt = {
-    TExt("LinkLayer", TStruct(Vector(
+    TExt(ns, "LinkLayer", TStruct(Vector(
       StructFieldDef("isMaster", TBool, 0),
       StructFieldDef("localAddress", TUInt32, 1),
       StructFieldDef("remoteAddress", TUInt32, 2),
@@ -32,31 +35,31 @@ object Schema {
       StructFieldDef("numRetries", TUInt32, 5))))
   }
   val appLayer: TExt = {
-    TExt("AppLayer", TStruct(Vector(
+    TExt(ns, "AppLayer", TStruct(Vector(
       StructFieldDef("timeoutMs", TUInt64, 0),
       StructFieldDef("maxFragSize", TUInt32, 1),
       StructFieldDef("numRetries", TUInt32, 2))))
   }
   val stackConfig: TExt = {
-    TExt("StackConfig", TStruct(Vector(
+    TExt(ns, "StackConfig", TStruct(Vector(
       StructFieldDef("linkLayer", linkLayer, 0),
       StructFieldDef("appLayer", appLayer, 1))))
   }
   val masterSettings: TExt = {
-    TExt("MasterSettings", TStruct(Vector(
+    TExt(ns, "MasterSettings", TStruct(Vector(
       StructFieldDef("allowTimeSync", TBool, 0),
       StructFieldDef("taskRetryMs", TUInt64, 1),
       StructFieldDef("integrityPeriodMs", TUInt64, 2))))
   }
   val scan: TExt = {
-    TExt("Scan", TStruct(Vector(
+    TExt(ns, "Scan", TStruct(Vector(
       StructFieldDef("enableClass1", TBool, 0),
       StructFieldDef("enableClass2", TBool, 1),
       StructFieldDef("enableClass3", TBool, 2),
       StructFieldDef("periodMs", TUInt64, 3))))
   }
   val unsol: TExt = {
-    TExt("Unsol", TStruct(Vector(
+    TExt(ns, "Unsol", TStruct(Vector(
       StructFieldDef("doTask", TBool, 0),
       StructFieldDef("enable", TBool, 1),
       StructFieldDef("enableClass1", TBool, 2),
@@ -65,39 +68,34 @@ object Schema {
   }
 
   val master: TExt = {
-    TExt("Master", TStruct(Vector(
+    TExt(ns, "Master", TStruct(Vector(
       StructFieldDef("stack", stackConfig, 0),
       StructFieldDef("masterSettings", masterSettings, 1),
       StructFieldDef("scanList", TList(scan), 2),
       StructFieldDef("unsol", unsol, 3))))
   }
 
-  def all = Seq(linkLayer, appLayer, stackConfig, masterSettings, scan, unsol, master)
-}
-
-object DnpGatewaySchema {
-
   val tcpClient: TExt = {
-    TExt("TCPClient", TStruct(Vector(
+    TExt(ns, "TCPClient", TStruct(Vector(
       StructFieldDef("host", TString, 0),
       StructFieldDef("port", TUInt32, 1),
       StructFieldDef("retryMs", TUInt64, 2))))
   }
   val selectIndex: TExt = {
-    TExt("IndexSelect", TUInt32)
+    TExt(ns, "IndexSelect", TUInt32)
   }
   val selectRange: TExt = {
-    TExt("IndexRange", TStruct(Vector(
+    TExt(ns, "IndexRange", TStruct(Vector(
       StructFieldDef("start", TUInt32, 0),
       StructFieldDef("count", TUInt32, 1))))
   }
   val indexSet: TExt = {
     //TExt("IndexSet", TList(TUnion(Set(selectIndex, selectRange))))
-    TExt("IndexSet", TList(selectRange))
+    TExt(ns, "IndexSet", TList(selectRange))
   }
 
   val inputModel: TExt = {
-    TExt("InputModel", TStruct(Vector(
+    TExt(ns, "InputModel", TStruct(Vector(
       StructFieldDef("binaryInputs", indexSet, 0),
       StructFieldDef("analogInputs", indexSet, 1),
       StructFieldDef("counterInputs", indexSet, 2),
@@ -106,7 +104,7 @@ object DnpGatewaySchema {
   }
 
   val controlTypeEnum: TExt = {
-    TExt("ControlType", TEnum(Seq(
+    TExt(ns, "ControlType", TEnum(Seq(
       EnumDef("PULSE", 0),
       EnumDef("PULSE_CLOSE", 1),
       EnumDef("PULSE_TRIP", 2),
@@ -115,13 +113,13 @@ object DnpGatewaySchema {
   }
 
   val functionTypeEnum: TExt = {
-    TExt("FunctionType", TEnum(Seq(
+    TExt(ns, "FunctionType", TEnum(Seq(
       EnumDef("SelectBeforeOperate", 0),
       EnumDef("DirectOperate", 1))))
   }
 
   val controlOptions: TExt = {
-    TExt("ControlOptions", TStruct(Vector(
+    TExt(ns, "ControlOptions", TStruct(Vector(
       StructFieldDef("controlType", controlTypeEnum, 0),
       StructFieldDef("onTime", TOption(TUInt32), 1),
       StructFieldDef("offTime", TOption(TUInt32), 2),
@@ -129,34 +127,36 @@ object DnpGatewaySchema {
   }
 
   val controlItem: TExt = {
-    TExt("Control", TStruct(Vector(
+    TExt(ns, "Control", TStruct(Vector(
       StructFieldDef("name", TString, 0),
       StructFieldDef("index", TUInt32, 1),
       StructFieldDef("function", functionTypeEnum, 2),
       StructFieldDef("controlOptions", controlOptions, 3))))
   }
   val setpointItem: TExt = {
-    TExt("Setpoint", TStruct(Vector(
+    TExt(ns, "Setpoint", TStruct(Vector(
       StructFieldDef("name", TString, 0),
       StructFieldDef("index", TUInt32, 1),
       StructFieldDef("function", functionTypeEnum, 2))))
   }
 
   val outputModel: TExt = {
-    TExt("OutputModel", TStruct(Vector(
+    TExt(ns, "OutputModel", TStruct(Vector(
       StructFieldDef("controls", TList(controlItem), 0),
       StructFieldDef("setpoints", TList(setpointItem), 1))))
   }
 
   val gateway: TExt = {
-    TExt("DNP3Gateway", TStruct(Vector(
-      StructFieldDef("master", Schema.master, 0),
+    TExt(ns, "DNP3Gateway", TStruct(Vector(
+      StructFieldDef("master", master, 0),
       StructFieldDef("client", tcpClient, 1),
       StructFieldDef("inputModel", inputModel, 2),
-      StructFieldDef("outputModel", outputModel, 3))))
+      StructFieldDef("outputModel", outputModel, 3),
+      StructFieldDef("endpoint", FrontendSchema.frontendConfiguration, 4))))
   }
 
   def all = Seq(
+    linkLayer, appLayer, stackConfig, masterSettings, scan, unsol, master,
     tcpClient,
     selectIndex,
     selectRange,
