@@ -78,7 +78,7 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle) 
   def onModuleConfig(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
     config.components.foreach {
       case (comp, value) => {
-        if (comp == "dnp3") {
+        if (comp == "dnpgateway") {
           current = current + (ValueString(module) -> value)
           handle.dnpHandle.update(current)
         }

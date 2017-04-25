@@ -19,6 +19,7 @@
 package io.greenbus.edge.dnp3
 
 import io.greenbus.edge.dnp3.config.model._
+import io.greenbus.edge.dnp3.sub.ConfigSubscriber
 import io.greenbus.edge.peer.AmqpEdgeService
 import io.greenbus.edge.thread.EventThreadService
 
@@ -93,14 +94,11 @@ object EdgeDNP3Gateway {
     services.start()
     val producerServices = services.producer
 
-    val config = buildGateway
-
-    val endConfig = FrontendConfigExample.build
-
     val eventThread = EventThreadService.build("DNP MGR")
 
     val gatewayMgr = new DNPGatewayMgr(eventThread, "local-me", producerServices)
-    gatewayMgr.onGatewayConfigured(endConfig, config)
+
+    val configSubscriber = new ConfigSubscriber(eventThread, services.consumer, gatewayMgr)
 
     System.in.read()
 

@@ -18,10 +18,10 @@
  */
 package io.greenbus.edge.dnp3
 
+import io.greenbus.edge.api.stream.ProducerHandle
 import io.greenbus.edge.data.SampleValue
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.fep.FrontendPublisher
-import io.greenbus.edge.fep.config.model.FrontendConfiguration
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
 
@@ -37,29 +37,50 @@ class FrontendAdapter(handle: FrontendPublisher) extends MeasObserver {
   }
 }
 
-class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices) {
+trait DNPGatewayHandler {
+  def onGatewayConfigured(key: String, config: DNP3Gateway): Unit
+  def onGatewayRemoved(key: String): Unit
+}
+
+class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices) extends DNPGatewayHandler {
 
   private val mgr = new Dnp3Mgr[String]
+  private var resources = Map.empty[String, (ProducerHandle, ProducerHandle)]
 
   // TODO: close producers
-  def onGatewayConfigured(endpointConfig: FrontendConfiguration, config: DNP3Gateway): Unit = {
+  def onGatewayConfigured(key: String, config: DNP3Gateway): Unit = {
     eventThread.marshal {
-      val name = config.client.host + ":" + config.client.port
       val stackConfig = Dnp3MasterConfig.load(config)
 
       val (rawDnpEndpoint, controlAdapter) = RawDnpEndpoint.build(eventThread, localId, producerServices, config)
       def commsObs(value: Boolean): Unit = println("got comms: " + value)
 
-      val gatewayPub = FrontendPublisher.load(eventThread, producerServices, rawDnpEndpoint, endpointConfig)
+      val gatewayPub = FrontendPublisher.load(eventThread, producerServices, rawDnpEndpoint, config.endpoint)
 
       val observer = new SplittingMeasObserver(Seq(
         rawDnpEndpoint,
         new FrontendAdapter(gatewayPub)))
 
-      val cmdAcceptor = mgr.add(name, name, stackConfig, observer, commsObs)
+      val name = config.client.host + ":" + config.client.port
+      val cmdAcceptor = mgr.add(key, name, stackConfig, observer, commsObs)
 
       val stackCmdMgr = new DNP3ControlHandleImpl(eventThread, cmdAcceptor)
       controlAdapter.setHandle(stackCmdMgr)
+    }
+  }
+
+  def onGatewayRemoved(key: String): Unit = {
+    eventThread.marshal {
+      remove(key)
+    }
+  }
+
+  private def remove(key: String): Unit = {
+    mgr.remove(key)
+    resources.get(key).foreach {
+      case (handle1, handle2) =>
+      //handle1.close()
+      //handle2.close()
     }
   }
 
