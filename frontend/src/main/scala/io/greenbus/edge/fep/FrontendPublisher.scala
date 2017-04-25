@@ -88,7 +88,7 @@ object FrontendPublisher {
 
       val typMeta = EdgeCoreModel.outputType(outputType)
       val boolLabelOpt = fok.descriptor.requestBooleanLabels.map(l => EdgeCoreModel.requestBooleanLabels(l.trueLabel, l.falseLabel))
-      val intLabelOpt = fok.descriptor.requestIntegerLabels.map(readLabels).map(EdgeCoreModel.labeledIntegerMetadata)
+      val intLabelOpt = fok.descriptor.requestIntegerLabels.map(readLabels).map(EdgeCoreModel.requestIntegerLabels)
       val reqScaleOpt = fok.descriptor.requestScale.map(EdgeCoreModel.requestScale)
       val reqOffsetOpt = fok.descriptor.requestOffset.map(EdgeCoreModel.requestOffset)
 
