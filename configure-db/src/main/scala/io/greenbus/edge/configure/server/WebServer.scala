@@ -75,7 +75,7 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
 
         val ctx = req.startAsync()
         val prom = Promise[Boolean]
-        handler.handleModule(module, ModuleConfiguration(Map(component -> ValueBytes(bytes))), prom)
+        handler.updateModule(module, ModuleConfiguration(Map(component -> ValueBytes(bytes))), prom)
 
         val future = prom.future
 

@@ -18,8 +18,11 @@
  */
 package io.greenbus.edge.configure.endpoint
 
+import java.util.concurrent.Executors
+
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.configure.server.WebServer
+import io.greenbus.edge.configure.sql.{ JooqTransactable, ModuleDb, PostgresDataPool, SqlSettings }
 import io.greenbus.edge.peer.AmqpEdgeService
 import io.greenbus.edge.thread.EventThreadService
 
@@ -28,16 +31,30 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object ConfigurerEndpoint {
 
   def main(args: Array[String]): Unit = {
+    //val sqlSettings =
+
+    val baseDir = Option(System.getProperty("io.greenbus.config.base")).getOrElse("")
+    val sqlConfigPath = Option(System.getProperty("io.greenbus.config.sql")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.sql.cfg")
+
+    val settings = SqlSettings.load(sqlConfigPath)
+    val ds = PostgresDataPool.dataSource(settings)
+
+    val s = Executors.newFixedThreadPool(4)
+    val db = JooqTransactable.build(ds, s)
+
+    val moduleDb = ModuleDb.build(db)
+
     val services = AmqpEdgeService.build("127.0.0.1", 50001, 10000)
     services.start()
     val producerServices = services.producer
     val eventThread = EventThreadService.build("DNP MGR")
 
-    val mgr = FepConfigurerMgr.load(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices)
+    val mgr = FepConfigurerMgr.load(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices, moduleDb)
 
     val server = WebServer.build(mgr, 8809)
     server.start()
     server.join()
+    s.shutdown()
   }
 }
 
