@@ -56,8 +56,8 @@ trait ModuleDb {
   def valuesForModule(module: String): Future[Seq[ModuleComponentValue]]
   def valuesForComponent(component: String): Future[Seq[ModuleComponentValue]]
   def insertValues(value: ModuleComponentValue): Future[Int]
+  def removeModule(module: String): Future[Int]
 }
-
 
 import scala.collection.JavaConverters._
 class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
@@ -70,8 +70,8 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
       val results: Result[Record2[String, Array[Byte]]] =
         sql.select(Values.component, Values.data)
           .from(Values.table)
-        .where(Values.module.eq(module))
-        .fetch()
+          .where(Values.module.eq(module))
+          .fetch()
 
       results.asScala.map(rec => ModuleComponentValue(module, rec.value1(), rec.value2())).toVector
     }
@@ -111,6 +111,14 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
           .values(value.module, value.component, value.data)
           .execute()
       }
+    }
+  }
+
+  def removeModule(module: String): Future[Int] = {
+    db.transaction { sql =>
+      import ModuleSchema.Values
+
+      sql.deleteFrom(Values.table).where(Values.module.eq(module)).execute()
     }
   }
 
