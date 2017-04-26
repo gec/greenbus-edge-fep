@@ -18,6 +18,7 @@
  */
 package io.greenbus.edge.dnp3
 
+import io.greenbus.edge.api.{EndpointId, Path}
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.dnp3.sub.ConfigSubscriber
 import io.greenbus.edge.peer.AmqpEdgeService
@@ -96,7 +97,11 @@ object EdgeDNP3Gateway {
 
     val eventThread = EventThreadService.build("DNP MGR")
 
-    val gatewayMgr = new DNPGatewayMgr(eventThread, "local-me", producerServices)
+    val gatewayId = "local"
+
+    val publisher = new GatewayEndpointPublisher(producerServices.endpointBuilder(EndpointId(Path(Seq("dnp", gatewayId)))))
+
+    val gatewayMgr = new DNPGatewayMgr(eventThread, gatewayId, producerServices, publisher)
 
     val configSubscriber = new ConfigSubscriber(eventThread, services.consumer, gatewayMgr)
 

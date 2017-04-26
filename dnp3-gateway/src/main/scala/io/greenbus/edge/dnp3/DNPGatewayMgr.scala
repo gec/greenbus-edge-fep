@@ -19,8 +19,9 @@
 package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.api.stream.ProducerHandle
-import io.greenbus.edge.data.SampleValue
+import io.greenbus.edge.api.Path
+import io.greenbus.edge.api.stream.{EndpointBuilder, ProducerHandle}
+import io.greenbus.edge.data.{SampleValue, ValueString}
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.fep.FrontendPublisher
 import io.greenbus.edge.peer.ProducerServices
@@ -43,7 +44,17 @@ trait DNPGatewayHandler {
   def onGatewayRemoved(key: String): Unit
 }
 
-class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices) extends DNPGatewayHandler with LazyLogging {
+class GatewayEndpointPublisher(b: EndpointBuilder) {
+
+  val events = b.topicEventValue(Path("events"))
+
+  private val handle = b.build(100, 100)
+  def flush(): Unit = {
+    handle.flush()
+  }
+}
+
+class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, publisher: GatewayEndpointPublisher) extends DNPGatewayHandler with LazyLogging {
 
   private val mgr = new Dnp3Mgr[String]
   private var resources = Map.empty[String, (RawDnpEndpoint, FrontendPublisher)]
@@ -52,6 +63,10 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
   def onGatewayConfigured(key: String, config: DNP3Gateway): Unit = {
     logger.info(s"Gateway configured: $key")
     eventThread.marshal {
+
+      publisher.events.update(Path(Seq("source", "updated")), ValueString(s"Gateway configured: $key"), System.currentTimeMillis())
+      publisher.flush()
+
       remove(key)
 
       val stackConfig = Dnp3MasterConfig.load(config)
@@ -78,6 +93,8 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
   def onGatewayRemoved(key: String): Unit = {
     logger.info(s"Gateway removed: $key")
     eventThread.marshal {
+      publisher.events.update(Path(Seq("source", "removed")), ValueString(s"Gateway removed: $key"), System.currentTimeMillis())
+      publisher.flush()
       remove(key)
     }
   }
