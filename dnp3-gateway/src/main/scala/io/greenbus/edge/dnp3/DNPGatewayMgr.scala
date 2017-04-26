@@ -18,6 +18,7 @@
  */
 package io.greenbus.edge.dnp3
 
+import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.stream.ProducerHandle
 import io.greenbus.edge.data.SampleValue
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
@@ -42,14 +43,17 @@ trait DNPGatewayHandler {
   def onGatewayRemoved(key: String): Unit
 }
 
-class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices) extends DNPGatewayHandler {
+class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices) extends DNPGatewayHandler with LazyLogging {
 
   private val mgr = new Dnp3Mgr[String]
-  private var resources = Map.empty[String, (ProducerHandle, ProducerHandle)]
+  private var resources = Map.empty[String, (RawDnpEndpoint, FrontendPublisher)]
 
   // TODO: close producers
   def onGatewayConfigured(key: String, config: DNP3Gateway): Unit = {
+    logger.info(s"Gateway configured: $key")
     eventThread.marshal {
+      remove(key)
+
       val stackConfig = Dnp3MasterConfig.load(config)
 
       val (rawDnpEndpoint, controlAdapter) = RawDnpEndpoint.build(eventThread, localId, producerServices, config)
@@ -66,10 +70,13 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
 
       val stackCmdMgr = new DNP3ControlHandleImpl(eventThread, cmdAcceptor)
       controlAdapter.setHandle(stackCmdMgr)
+
+      resources += ((key, (rawDnpEndpoint, gatewayPub)))
     }
   }
 
   def onGatewayRemoved(key: String): Unit = {
+    logger.info(s"Gateway removed: $key")
     eventThread.marshal {
       remove(key)
     }
@@ -85,6 +92,7 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
   }
 
   def close(): Unit = {
+    logger.info(s"Gateway mgr closed")
     eventThread.marshal {
       mgr.shutdown()
     }

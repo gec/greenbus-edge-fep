@@ -149,22 +149,24 @@ class FrontendPublisher(eventThread: CallMarshaller, handle: ProducerHandle, del
   }
 
   def batch(batch: Seq[(String, SampleValue)]): Unit = {
-    logger.trace(s"Saw batch: " + batch)
-    val now = System.currentTimeMillis()
-    var dirty = false
-    batch.foreach {
-      case (key, v) =>
-        map.get(key).foreach {
-          case (keyRecord) => {
-            keyRecord.processor.process(v).foreach { update =>
-              keyRecord.handle.update(update, now)
-              dirty = true
+    eventThread.marshal {
+      logger.trace(s"Saw batch: " + batch)
+      val now = System.currentTimeMillis()
+      var dirty = false
+      batch.foreach {
+        case (key, v) =>
+          map.get(key).foreach {
+            case (keyRecord) => {
+              keyRecord.processor.process(v).foreach { update =>
+                keyRecord.handle.update(update, now)
+                dirty = true
+              }
             }
           }
-        }
-    }
-    if (dirty) {
-      handle.flush()
+      }
+      if (dirty) {
+        handle.flush()
+      }
     }
   }
 }

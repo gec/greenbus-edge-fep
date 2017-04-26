@@ -80,7 +80,7 @@ object FepConfigurerMgr extends LazyLogging {
     }
   }
 }
-class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, db: ModuleDb) extends ModuleConfigurer {
+class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, db: ModuleDb) extends ModuleConfigurer with LazyLogging {
 
   private var currentDnp = Map.empty[IndexableValue, Value]
 
@@ -92,11 +92,13 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
 
   private def load(): Unit = {
     db.valuesForComponent("dnpgateway").foreach { values =>
+      logger.debug(s"Module/components on launch: ${values.map(v => (v.module, v.component))}")
       eventThread.marshal {
         currentDnp = values.flatMap { mv =>
           FepConfigurerMgr.fromDbBytes(s"${mv.module}/${mv.component}", mv.data)
             .map(v => (ValueString(mv.module), v))
         }.toMap
+        handle.dnpHandle.update(currentDnp)
         handle.flush()
       }
     }

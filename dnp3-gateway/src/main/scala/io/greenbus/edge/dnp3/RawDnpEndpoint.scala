@@ -170,7 +170,7 @@ class RawDnpEndpoint(eventThread: CallMarshaller,
   }
 
   def flush(batch: Seq[(String, SampleValue)]): Unit = {
-    //logger.debug(s"Raw batch: ${batch}")
+    logger.debug(s"Raw batch: ${batch}")
     val now = System.currentTimeMillis()
     batch.foreach {
       case (key, sample) =>
