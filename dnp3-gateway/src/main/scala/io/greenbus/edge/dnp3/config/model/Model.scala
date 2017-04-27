@@ -1,21 +1,3 @@
-/**
- * Copyright 2011-2017 Green Energy Corp.
- *
- * Licensed to Green Energy Corp (www.greenenergycorp.com) under one or more
- * contributor license agreements. See the NOTICE file distributed with this
- * work for additional information regarding copyright ownership. Green Energy
- * Corp licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package io.greenbus.edge.dnp3.config.model
 
 import io.greenbus.edge.data.mapping._
@@ -50,7 +32,8 @@ object AppLayer {
     val built = ValueMap(Map(
       (ValueString("timeoutMs"), ValueUInt64(obj.timeoutMs)),
       (ValueString("maxFragSize"), ValueUInt32(obj.maxFragSize)),
-      (ValueString("numRetries"), ValueUInt32(obj.numRetries))))
+      (ValueString("numRetries"), ValueUInt32(obj.numRetries))
+    ))
 
     TaggedValue("AppLayer", built)
   }
@@ -88,7 +71,8 @@ object Control {
       (ValueString("name"), ValueString(obj.name)),
       (ValueString("index"), ValueUInt32(obj.index)),
       (ValueString("function"), io.greenbus.edge.dnp3.config.model.FunctionType.write(obj.function)),
-      (ValueString("controlOptions"), io.greenbus.edge.dnp3.config.model.ControlOptions.write(obj.controlOptions))))
+      (ValueString("controlOptions"), io.greenbus.edge.dnp3.config.model.ControlOptions.write(obj.controlOptions))
+    ))
 
     TaggedValue("Control", built)
   }
@@ -126,7 +110,8 @@ object ControlOptions {
       (ValueString("controlType"), io.greenbus.edge.dnp3.config.model.ControlType.write(obj.controlType)),
       (ValueString("onTime"), obj.onTime.map(p => ValueUInt32(p)).getOrElse(ValueNone)),
       (ValueString("offTime"), obj.offTime.map(p => ValueUInt32(p)).getOrElse(ValueNone)),
-      (ValueString("count"), obj.count.map(p => ValueUInt32(p)).getOrElse(ValueNone))))
+      (ValueString("count"), obj.count.map(p => ValueUInt32(p)).getOrElse(ValueNone))
+    ))
 
     TaggedValue("ControlOptions", built)
   }
@@ -213,7 +198,8 @@ object DNP3Gateway {
       (ValueString("client"), io.greenbus.edge.dnp3.config.model.TCPClient.write(obj.client)),
       (ValueString("inputModel"), io.greenbus.edge.dnp3.config.model.InputModel.write(obj.inputModel)),
       (ValueString("outputModel"), io.greenbus.edge.dnp3.config.model.OutputModel.write(obj.outputModel)),
-      (ValueString("endpoint"), io.greenbus.edge.fep.config.model.FrontendConfiguration.write(obj.endpoint))))
+      (ValueString("endpoint"), io.greenbus.edge.fep.config.model.FrontendConfiguration.write(obj.endpoint))
+    ))
 
     TaggedValue("DNP3Gateway", built)
   }
@@ -285,7 +271,8 @@ object IndexRange {
   def write(obj: IndexRange): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("start"), ValueUInt32(obj.start)),
-      (ValueString("count"), ValueUInt32(obj.count))))
+      (ValueString("count"), ValueUInt32(obj.count))
+    ))
 
     TaggedValue("IndexRange", built)
   }
@@ -349,7 +336,8 @@ object InputModel {
       (ValueString("analogInputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.analogInputs)),
       (ValueString("counterInputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.counterInputs)),
       (ValueString("binaryOutputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.binaryOutputs)),
-      (ValueString("analogOutputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.analogOutputs))))
+      (ValueString("analogOutputs"), io.greenbus.edge.dnp3.config.model.IndexSet.write(obj.analogOutputs))
+    ))
 
     TaggedValue("InputModel", built)
   }
@@ -391,7 +379,8 @@ object LinkLayer {
       (ValueString("remoteAddress"), ValueUInt32(obj.remoteAddress)),
       (ValueString("userConfirmations"), ValueBool(obj.userConfirmations)),
       (ValueString("ackTimeoutMs"), ValueUInt64(obj.ackTimeoutMs)),
-      (ValueString("numRetries"), ValueUInt32(obj.numRetries))))
+      (ValueString("numRetries"), ValueUInt32(obj.numRetries))
+    ))
 
     TaggedValue("LinkLayer", built)
   }
@@ -429,7 +418,8 @@ object Master {
       (ValueString("stack"), io.greenbus.edge.dnp3.config.model.StackConfig.write(obj.stack)),
       (ValueString("masterSettings"), io.greenbus.edge.dnp3.config.model.MasterSettings.write(obj.masterSettings)),
       (ValueString("scanList"), MappingLibrary.writeList(obj.scanList, io.greenbus.edge.dnp3.config.model.Scan.write)),
-      (ValueString("unsol"), io.greenbus.edge.dnp3.config.model.Unsol.write(obj.unsol))))
+      (ValueString("unsol"), io.greenbus.edge.dnp3.config.model.Unsol.write(obj.unsol))
+    ))
 
     TaggedValue("Master", built)
   }
@@ -465,7 +455,8 @@ object MasterSettings {
     val built = ValueMap(Map(
       (ValueString("allowTimeSync"), ValueBool(obj.allowTimeSync)),
       (ValueString("taskRetryMs"), ValueUInt64(obj.taskRetryMs)),
-      (ValueString("integrityPeriodMs"), ValueUInt64(obj.integrityPeriodMs))))
+      (ValueString("integrityPeriodMs"), ValueUInt64(obj.integrityPeriodMs))
+    ))
 
     TaggedValue("MasterSettings", built)
   }
@@ -499,7 +490,8 @@ object OutputModel {
   def write(obj: OutputModel): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("controls"), MappingLibrary.writeList(obj.controls, io.greenbus.edge.dnp3.config.model.Control.write)),
-      (ValueString("setpoints"), MappingLibrary.writeList(obj.setpoints, io.greenbus.edge.dnp3.config.model.Setpoint.write))))
+      (ValueString("setpoints"), MappingLibrary.writeList(obj.setpoints, io.greenbus.edge.dnp3.config.model.Setpoint.write))
+    ))
 
     TaggedValue("OutputModel", built)
   }
@@ -537,7 +529,8 @@ object Scan {
       (ValueString("enableClass1"), ValueBool(obj.enableClass1)),
       (ValueString("enableClass2"), ValueBool(obj.enableClass2)),
       (ValueString("enableClass3"), ValueBool(obj.enableClass3)),
-      (ValueString("periodMs"), ValueUInt64(obj.periodMs))))
+      (ValueString("periodMs"), ValueUInt64(obj.periodMs))
+    ))
 
     TaggedValue("Scan", built)
   }
@@ -573,7 +566,8 @@ object Setpoint {
     val built = ValueMap(Map(
       (ValueString("name"), ValueString(obj.name)),
       (ValueString("index"), ValueUInt32(obj.index)),
-      (ValueString("function"), io.greenbus.edge.dnp3.config.model.FunctionType.write(obj.function))))
+      (ValueString("function"), io.greenbus.edge.dnp3.config.model.FunctionType.write(obj.function))
+    ))
 
     TaggedValue("Setpoint", built)
   }
@@ -607,7 +601,8 @@ object StackConfig {
   def write(obj: StackConfig): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("linkLayer"), io.greenbus.edge.dnp3.config.model.LinkLayer.write(obj.linkLayer)),
-      (ValueString("appLayer"), io.greenbus.edge.dnp3.config.model.AppLayer.write(obj.appLayer))))
+      (ValueString("appLayer"), io.greenbus.edge.dnp3.config.model.AppLayer.write(obj.appLayer))
+    ))
 
     TaggedValue("StackConfig", built)
   }
@@ -643,7 +638,8 @@ object TCPClient {
     val built = ValueMap(Map(
       (ValueString("host"), ValueString(obj.host)),
       (ValueString("port"), ValueUInt32(obj.port)),
-      (ValueString("retryMs"), ValueUInt64(obj.retryMs))))
+      (ValueString("retryMs"), ValueUInt64(obj.retryMs))
+    ))
 
     TaggedValue("TCPClient", built)
   }
@@ -683,10 +679,12 @@ object Unsol {
       (ValueString("enable"), ValueBool(obj.enable)),
       (ValueString("enableClass1"), ValueBool(obj.enableClass1)),
       (ValueString("enableClass2"), ValueBool(obj.enableClass2)),
-      (ValueString("enableClass3"), ValueBool(obj.enableClass3))))
+      (ValueString("enableClass3"), ValueBool(obj.enableClass3))
+    ))
 
     TaggedValue("Unsol", built)
   }
 }
 case class Unsol(doTask: Boolean, enable: Boolean, enableClass1: Boolean, enableClass2: Boolean, enableClass3: Boolean)
+
 

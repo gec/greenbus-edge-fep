@@ -1,21 +1,3 @@
-/**
- * Copyright 2011-2017 Green Energy Corp.
- *
- * Licensed to Green Energy Corp (www.greenenergycorp.com) under one or more
- * contributor license agreements. See the NOTICE file distributed with this
- * work for additional information regarding copyright ownership. Green Energy
- * Corp licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package io.greenbus.edge.fep.config.model
 
 import io.greenbus.edge.data.mapping._
@@ -48,7 +30,8 @@ object BooleanLabels {
   def write(obj: BooleanLabels): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("trueLabel"), ValueString(obj.trueLabel)),
-      (ValueString("falseLabel"), ValueString(obj.falseLabel))))
+      (ValueString("falseLabel"), ValueString(obj.falseLabel))
+    ))
 
     TaggedValue("BooleanLabels", built)
   }
@@ -71,14 +54,15 @@ object DataKeyConfig {
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, DataKeyConfig] = {
     val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
     val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val metadata = MappingLibrary.getMapField("metadata", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx))
     val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "SeriesDescriptor", io.greenbus.edge.fep.config.model.SeriesDescriptor.read, ctx))
     val transforms = MappingLibrary.getMapField("transforms", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.TransformDescriptor](elem, io.greenbus.edge.fep.config.model.TransformDescriptor.read, ctx))
     val filter = MappingLibrary.optMapField("filter", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.FilterDescriptor.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
 
-    if (gatewayKey.isRight && path.isRight && descriptor.isRight && transforms.isRight && filter.isRight) {
-      Right(DataKeyConfig(gatewayKey.right.get, path.right.get, descriptor.right.get, transforms.right.get, filter.right.get))
+    if (gatewayKey.isRight && path.isRight && metadata.isRight && descriptor.isRight && transforms.isRight && filter.isRight) {
+      Right(DataKeyConfig(gatewayKey.right.get, path.right.get, metadata.right.get, descriptor.right.get, transforms.right.get, filter.right.get))
     } else {
-      Left(Seq(gatewayKey.left.toOption, path.left.toOption, descriptor.left.toOption, transforms.left.toOption, filter.left.toOption).flatten.mkString(", "))
+      Left(Seq(gatewayKey.left.toOption, path.left.toOption, metadata.left.toOption, descriptor.left.toOption, transforms.left.toOption, filter.left.toOption).flatten.mkString(", "))
     }
   }
 
@@ -86,14 +70,16 @@ object DataKeyConfig {
     val built = ValueMap(Map(
       (ValueString("gatewayKey"), ValueString(obj.gatewayKey)),
       (ValueString("path"), io.greenbus.edge.fep.config.model.Path.write(obj.path)),
+      (ValueString("metadata"), MappingLibrary.writeList(obj.metadata, io.greenbus.edge.fep.config.model.MetadataKeyValue.write)),
       (ValueString("descriptor"), io.greenbus.edge.fep.config.model.SeriesDescriptor.write(obj.descriptor)),
       (ValueString("transforms"), MappingLibrary.writeList(obj.transforms, io.greenbus.edge.fep.config.model.TransformDescriptor.write)),
-      (ValueString("filter"), obj.filter.map(p => io.greenbus.edge.fep.config.model.FilterDescriptor.write(p)).getOrElse(ValueNone))))
+      (ValueString("filter"), obj.filter.map(p => io.greenbus.edge.fep.config.model.FilterDescriptor.write(p)).getOrElse(ValueNone))
+    ))
 
     TaggedValue("DataKeyConfig", built)
   }
 }
-case class DataKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, descriptor: io.greenbus.edge.fep.config.model.SeriesDescriptor, transforms: Seq[io.greenbus.edge.fep.config.model.TransformDescriptor], filter: Option[io.greenbus.edge.fep.config.model.FilterDescriptor])
+case class DataKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, metadata: Seq[io.greenbus.edge.fep.config.model.MetadataKeyValue], descriptor: io.greenbus.edge.fep.config.model.SeriesDescriptor, transforms: Seq[io.greenbus.edge.fep.config.model.TransformDescriptor], filter: Option[io.greenbus.edge.fep.config.model.FilterDescriptor])
 
 object FilterDescriptor {
 
@@ -122,7 +108,8 @@ object FilterDescriptor {
   def write(obj: FilterDescriptor): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("suppressDuplicates"), obj.suppressDuplicates.map(p => ValueBool(p)).getOrElse(ValueNone)),
-      (ValueString("deadband"), obj.deadband.map(p => ValueDouble(p)).getOrElse(ValueNone))))
+      (ValueString("deadband"), obj.deadband.map(p => ValueDouble(p)).getOrElse(ValueNone))
+    ))
 
     TaggedValue("FilterDescriptor", built)
   }
@@ -144,26 +131,29 @@ object FrontendConfiguration {
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, FrontendConfiguration] = {
     val endpointId = MappingLibrary.getMapField("endpointId", element).flatMap(elem => MappingLibrary.readFieldSubStruct("endpointId", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val metadata = MappingLibrary.getMapField("metadata", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx))
     val dataKeys = MappingLibrary.getMapField("dataKeys", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.DataKeyConfig](elem, io.greenbus.edge.fep.config.model.DataKeyConfig.read, ctx))
     val outputKeys = MappingLibrary.getMapField("outputKeys", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.OutputKeyConfig](elem, io.greenbus.edge.fep.config.model.OutputKeyConfig.read, ctx))
 
-    if (endpointId.isRight && dataKeys.isRight && outputKeys.isRight) {
-      Right(FrontendConfiguration(endpointId.right.get, dataKeys.right.get, outputKeys.right.get))
+    if (endpointId.isRight && metadata.isRight && dataKeys.isRight && outputKeys.isRight) {
+      Right(FrontendConfiguration(endpointId.right.get, metadata.right.get, dataKeys.right.get, outputKeys.right.get))
     } else {
-      Left(Seq(endpointId.left.toOption, dataKeys.left.toOption, outputKeys.left.toOption).flatten.mkString(", "))
+      Left(Seq(endpointId.left.toOption, metadata.left.toOption, dataKeys.left.toOption, outputKeys.left.toOption).flatten.mkString(", "))
     }
   }
 
   def write(obj: FrontendConfiguration): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("endpointId"), io.greenbus.edge.fep.config.model.Path.write(obj.endpointId)),
+      (ValueString("metadata"), MappingLibrary.writeList(obj.metadata, io.greenbus.edge.fep.config.model.MetadataKeyValue.write)),
       (ValueString("dataKeys"), MappingLibrary.writeList(obj.dataKeys, io.greenbus.edge.fep.config.model.DataKeyConfig.write)),
-      (ValueString("outputKeys"), MappingLibrary.writeList(obj.outputKeys, io.greenbus.edge.fep.config.model.OutputKeyConfig.write))))
+      (ValueString("outputKeys"), MappingLibrary.writeList(obj.outputKeys, io.greenbus.edge.fep.config.model.OutputKeyConfig.write))
+    ))
 
     TaggedValue("FrontendConfiguration", built)
   }
 }
-case class FrontendConfiguration(endpointId: io.greenbus.edge.fep.config.model.Path, dataKeys: Seq[io.greenbus.edge.fep.config.model.DataKeyConfig], outputKeys: Seq[io.greenbus.edge.fep.config.model.OutputKeyConfig])
+case class FrontendConfiguration(endpointId: io.greenbus.edge.fep.config.model.Path, metadata: Seq[io.greenbus.edge.fep.config.model.MetadataKeyValue], dataKeys: Seq[io.greenbus.edge.fep.config.model.DataKeyConfig], outputKeys: Seq[io.greenbus.edge.fep.config.model.OutputKeyConfig])
 
 object IntegerLabel {
 
@@ -192,7 +182,8 @@ object IntegerLabel {
   def write(obj: IntegerLabel): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("value"), ValueInt32(obj.value)),
-      (ValueString("label"), ValueString(obj.label))))
+      (ValueString("label"), ValueString(obj.label))
+    ))
 
     TaggedValue("IntegerLabel", built)
   }
@@ -250,12 +241,207 @@ object LinearTransform {
   def write(obj: LinearTransform): TaggedValue = {
     val built = ValueMap(Map(
       (ValueString("scale"), ValueDouble(obj.scale)),
-      (ValueString("offset"), ValueDouble(obj.offset))))
+      (ValueString("offset"), ValueDouble(obj.offset))
+    ))
 
     TaggedValue("LinearTransform", built)
   }
 }
 case class LinearTransform(scale: Double, offset: Double) extends TransformDescriptor
+
+object MetadataBoolValue {
+
+  def read(element: Value, ctx: ReaderContext): Either[String, MetadataBoolValue] = {
+    element match {
+      case data: ValueMap => readMap(data, ctx)
+      case tagged: TaggedValue =>
+        tagged.value match {
+          case data: ValueMap => readMap(data, ctx)
+          case other => Left("Type MetadataBoolValue did not recognize value type " + other)
+        }
+      case other => Left("Type MetadataBoolValue did not recognize value type " + other)
+    }
+  }
+  def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataBoolValue] = {
+    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readBool(elem, ctx))
+
+    if (value.isRight) {
+      Right(MetadataBoolValue(value.right.get))
+    } else {
+      Left(Seq(value.left.toOption).flatten.mkString(", "))
+    }
+  }
+
+  def write(obj: MetadataBoolValue): TaggedValue = {
+    val built = ValueMap(Map(
+      (ValueString("value"), ValueBool(obj.value))
+    ))
+
+    TaggedValue("MetadataBoolValue", built)
+  }
+}
+case class MetadataBoolValue(value: Boolean) extends MetadataValue
+
+object MetadataDoubleValue {
+
+  def read(element: Value, ctx: ReaderContext): Either[String, MetadataDoubleValue] = {
+    element match {
+      case data: ValueMap => readMap(data, ctx)
+      case tagged: TaggedValue =>
+        tagged.value match {
+          case data: ValueMap => readMap(data, ctx)
+          case other => Left("Type MetadataDoubleValue did not recognize value type " + other)
+        }
+      case other => Left("Type MetadataDoubleValue did not recognize value type " + other)
+    }
+  }
+  def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataDoubleValue] = {
+    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readDouble(elem, ctx))
+
+    if (value.isRight) {
+      Right(MetadataDoubleValue(value.right.get))
+    } else {
+      Left(Seq(value.left.toOption).flatten.mkString(", "))
+    }
+  }
+
+  def write(obj: MetadataDoubleValue): TaggedValue = {
+    val built = ValueMap(Map(
+      (ValueString("value"), ValueDouble(obj.value))
+    ))
+
+    TaggedValue("MetadataDoubleValue", built)
+  }
+}
+case class MetadataDoubleValue(value: Double) extends MetadataValue
+
+object MetadataIntegerValue {
+
+  def read(element: Value, ctx: ReaderContext): Either[String, MetadataIntegerValue] = {
+    element match {
+      case data: ValueMap => readMap(data, ctx)
+      case tagged: TaggedValue =>
+        tagged.value match {
+          case data: ValueMap => readMap(data, ctx)
+          case other => Left("Type MetadataIntegerValue did not recognize value type " + other)
+        }
+      case other => Left("Type MetadataIntegerValue did not recognize value type " + other)
+    }
+  }
+  def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataIntegerValue] = {
+    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readLong(elem, ctx))
+
+    if (value.isRight) {
+      Right(MetadataIntegerValue(value.right.get))
+    } else {
+      Left(Seq(value.left.toOption).flatten.mkString(", "))
+    }
+  }
+
+  def write(obj: MetadataIntegerValue): TaggedValue = {
+    val built = ValueMap(Map(
+      (ValueString("value"), ValueInt64(obj.value))
+    ))
+
+    TaggedValue("MetadataIntegerValue", built)
+  }
+}
+case class MetadataIntegerValue(value: Long) extends MetadataValue
+
+object MetadataKeyValue {
+
+  def read(element: Value, ctx: ReaderContext): Either[String, MetadataKeyValue] = {
+    element match {
+      case data: ValueMap => readMap(data, ctx)
+      case tagged: TaggedValue =>
+        tagged.value match {
+          case data: ValueMap => readMap(data, ctx)
+          case other => Left("Type MetadataKeyValue did not recognize value type " + other)
+        }
+      case other => Left("Type MetadataKeyValue did not recognize value type " + other)
+    }
+  }
+  def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataKeyValue] = {
+    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readFieldSubStruct("value", elem, "MetadataValue", io.greenbus.edge.fep.config.model.MetadataValue.read, ctx))
+
+    if (path.isRight && value.isRight) {
+      Right(MetadataKeyValue(path.right.get, value.right.get))
+    } else {
+      Left(Seq(path.left.toOption, value.left.toOption).flatten.mkString(", "))
+    }
+  }
+
+  def write(obj: MetadataKeyValue): TaggedValue = {
+    val built = ValueMap(Map(
+      (ValueString("path"), io.greenbus.edge.fep.config.model.Path.write(obj.path)),
+      (ValueString("value"), io.greenbus.edge.fep.config.model.MetadataValue.write(obj.value))
+    ))
+
+    TaggedValue("MetadataKeyValue", built)
+  }
+}
+case class MetadataKeyValue(path: io.greenbus.edge.fep.config.model.Path, value: io.greenbus.edge.fep.config.model.MetadataValue)
+
+object MetadataStringValue {
+
+  def read(element: Value, ctx: ReaderContext): Either[String, MetadataStringValue] = {
+    element match {
+      case data: ValueMap => readMap(data, ctx)
+      case tagged: TaggedValue =>
+        tagged.value match {
+          case data: ValueMap => readMap(data, ctx)
+          case other => Left("Type MetadataStringValue did not recognize value type " + other)
+        }
+      case other => Left("Type MetadataStringValue did not recognize value type " + other)
+    }
+  }
+  def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataStringValue] = {
+    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
+
+    if (value.isRight) {
+      Right(MetadataStringValue(value.right.get))
+    } else {
+      Left(Seq(value.left.toOption).flatten.mkString(", "))
+    }
+  }
+
+  def write(obj: MetadataStringValue): TaggedValue = {
+    val built = ValueMap(Map(
+      (ValueString("value"), ValueString(obj.value))
+    ))
+
+    TaggedValue("MetadataStringValue", built)
+  }
+}
+case class MetadataStringValue(value: String) extends MetadataValue
+
+object MetadataValue {
+
+  def read(element: Value, ctx: ReaderContext): Either[String, MetadataValue] = {
+    element match {
+      case t: TaggedValue => 
+        t.tag match {
+          case "MetadataStringValue" => io.greenbus.edge.fep.config.model.MetadataStringValue.read(element, ctx)
+          case "MetadataIntegerValue" => io.greenbus.edge.fep.config.model.MetadataIntegerValue.read(element, ctx)
+          case "MetadataBoolValue" => io.greenbus.edge.fep.config.model.MetadataBoolValue.read(element, ctx)
+          case "MetadataDoubleValue" => io.greenbus.edge.fep.config.model.MetadataDoubleValue.read(element, ctx)
+          case other => throw new IllegalArgumentException("Type MetadataValue did not union type tag " + other)
+        }
+      case other => throw new IllegalArgumentException("Type MetadataValue did not recognize " + other)
+    }
+  }
+  def write(obj: MetadataValue): TaggedValue = {
+    obj match {
+      case data: io.greenbus.edge.fep.config.model.MetadataStringValue => io.greenbus.edge.fep.config.model.MetadataStringValue.write(data)
+      case data: io.greenbus.edge.fep.config.model.MetadataIntegerValue => io.greenbus.edge.fep.config.model.MetadataIntegerValue.write(data)
+      case data: io.greenbus.edge.fep.config.model.MetadataBoolValue => io.greenbus.edge.fep.config.model.MetadataBoolValue.write(data)
+      case data: io.greenbus.edge.fep.config.model.MetadataDoubleValue => io.greenbus.edge.fep.config.model.MetadataDoubleValue.write(data)
+      case other => throw new IllegalArgumentException("Type MetadataValue did not recognize " + other)
+    }
+  }
+}
+sealed trait MetadataValue
 
 object OutputDescriptor {
 
@@ -290,7 +476,8 @@ object OutputDescriptor {
       (ValueString("requestScale"), obj.requestScale.map(p => ValueDouble(p)).getOrElse(ValueNone)),
       (ValueString("requestOffset"), obj.requestOffset.map(p => ValueDouble(p)).getOrElse(ValueNone)),
       (ValueString("requestIntegerLabels"), obj.requestIntegerLabels.map(p => io.greenbus.edge.fep.config.model.IntegerLabelSet.write(p)).getOrElse(ValueNone)),
-      (ValueString("requestBooleanLabels"), obj.requestBooleanLabels.map(p => io.greenbus.edge.fep.config.model.BooleanLabels.write(p)).getOrElse(ValueNone))))
+      (ValueString("requestBooleanLabels"), obj.requestBooleanLabels.map(p => io.greenbus.edge.fep.config.model.BooleanLabels.write(p)).getOrElse(ValueNone))
+    ))
 
     TaggedValue("OutputDescriptor", built)
   }
@@ -313,12 +500,13 @@ object OutputKeyConfig {
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputKeyConfig] = {
     val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
     val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val metadata = MappingLibrary.getMapField("metadata", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx))
     val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "OutputDescriptor", io.greenbus.edge.fep.config.model.OutputDescriptor.read, ctx))
 
-    if (gatewayKey.isRight && path.isRight && descriptor.isRight) {
-      Right(OutputKeyConfig(gatewayKey.right.get, path.right.get, descriptor.right.get))
+    if (gatewayKey.isRight && path.isRight && metadata.isRight && descriptor.isRight) {
+      Right(OutputKeyConfig(gatewayKey.right.get, path.right.get, metadata.right.get, descriptor.right.get))
     } else {
-      Left(Seq(gatewayKey.left.toOption, path.left.toOption, descriptor.left.toOption).flatten.mkString(", "))
+      Left(Seq(gatewayKey.left.toOption, path.left.toOption, metadata.left.toOption, descriptor.left.toOption).flatten.mkString(", "))
     }
   }
 
@@ -326,12 +514,14 @@ object OutputKeyConfig {
     val built = ValueMap(Map(
       (ValueString("gatewayKey"), ValueString(obj.gatewayKey)),
       (ValueString("path"), io.greenbus.edge.fep.config.model.Path.write(obj.path)),
-      (ValueString("descriptor"), io.greenbus.edge.fep.config.model.OutputDescriptor.write(obj.descriptor))))
+      (ValueString("metadata"), MappingLibrary.writeList(obj.metadata, io.greenbus.edge.fep.config.model.MetadataKeyValue.write)),
+      (ValueString("descriptor"), io.greenbus.edge.fep.config.model.OutputDescriptor.write(obj.descriptor))
+    ))
 
     TaggedValue("OutputKeyConfig", built)
   }
 }
-case class OutputKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, descriptor: io.greenbus.edge.fep.config.model.OutputDescriptor)
+case class OutputKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, metadata: Seq[io.greenbus.edge.fep.config.model.MetadataKeyValue], descriptor: io.greenbus.edge.fep.config.model.OutputDescriptor)
 
 object OutputType {
 
@@ -490,7 +680,8 @@ object SeriesDescriptor {
       (ValueString("unit"), obj.unit.map(p => ValueString(p)).getOrElse(ValueNone)),
       (ValueString("decimalPoints"), obj.decimalPoints.map(p => ValueUInt32(p)).getOrElse(ValueNone)),
       (ValueString("integerLabels"), obj.integerLabels.map(p => io.greenbus.edge.fep.config.model.IntegerLabelSet.write(p)).getOrElse(ValueNone)),
-      (ValueString("booleanLabels"), obj.booleanLabels.map(p => io.greenbus.edge.fep.config.model.BooleanLabels.write(p)).getOrElse(ValueNone))))
+      (ValueString("booleanLabels"), obj.booleanLabels.map(p => io.greenbus.edge.fep.config.model.BooleanLabels.write(p)).getOrElse(ValueNone))
+    ))
 
     TaggedValue("SeriesDescriptor", built)
   }
@@ -572,7 +763,8 @@ object SimpleTransform {
 
   def write(obj: SimpleTransform): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("transformType"), io.greenbus.edge.fep.config.model.SimpleTransformType.write(obj.transformType))))
+      (ValueString("transformType"), io.greenbus.edge.fep.config.model.SimpleTransformType.write(obj.transformType))
+    ))
 
     TaggedValue("SimpleTransform", built)
   }
@@ -618,7 +810,7 @@ object TransformDescriptor {
 
   def read(element: Value, ctx: ReaderContext): Either[String, TransformDescriptor] = {
     element match {
-      case t: TaggedValue =>
+      case t: TaggedValue => 
         t.tag match {
           case "TypeCast" => io.greenbus.edge.fep.config.model.TypeCast.read(element, ctx)
           case "LinearTransform" => io.greenbus.edge.fep.config.model.LinearTransform.read(element, ctx)
@@ -664,10 +856,12 @@ object TypeCast {
 
   def write(obj: TypeCast): TaggedValue = {
     val built = ValueMap(Map(
-      (ValueString("target"), io.greenbus.edge.fep.config.model.SampleType.write(obj.target))))
+      (ValueString("target"), io.greenbus.edge.fep.config.model.SampleType.write(obj.target))
+    ))
 
     TaggedValue("TypeCast", built)
   }
 }
 case class TypeCast(target: io.greenbus.edge.fep.config.model.SampleType) extends TransformDescriptor
+
 
