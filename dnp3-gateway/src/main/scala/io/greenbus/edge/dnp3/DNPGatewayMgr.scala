@@ -20,8 +20,8 @@ package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.Path
-import io.greenbus.edge.api.stream.{EndpointBuilder, ProducerHandle}
-import io.greenbus.edge.data.{SampleValue, ValueString}
+import io.greenbus.edge.api.stream.{ EndpointBuilder, ProducerHandle }
+import io.greenbus.edge.data.{ SampleValue, ValueString }
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.fep.FrontendPublisher
 import io.greenbus.edge.peer.ProducerServices

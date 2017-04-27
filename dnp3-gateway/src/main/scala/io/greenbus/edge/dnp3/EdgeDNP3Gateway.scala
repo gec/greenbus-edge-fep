@@ -18,7 +18,7 @@
  */
 package io.greenbus.edge.dnp3
 
-import io.greenbus.edge.api.{EndpointId, Path}
+import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.dnp3.sub.ConfigSubscriber
 import io.greenbus.edge.peer.AmqpEdgeService
