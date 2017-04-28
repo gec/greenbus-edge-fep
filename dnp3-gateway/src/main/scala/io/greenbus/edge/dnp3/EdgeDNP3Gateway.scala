@@ -99,11 +99,11 @@ object EdgeDNP3Gateway {
 
     val gatewayId = "local"
 
-    val publisher = new GatewayEndpointPublisher(producerServices.endpointBuilder(EndpointId(Path(Seq("dnp", gatewayId)))))
+    val publisher = new GatewayEndpointPublisher(eventThread, producerServices.endpointBuilder(EndpointId(Path(Seq("dnp", gatewayId)))))
 
     val gatewayMgr = new DNPGatewayMgr(eventThread, gatewayId, producerServices, publisher)
 
-    val configSubscriber = new ConfigSubscriber(eventThread, services.consumer, gatewayMgr)
+    val configSubscriber = new ConfigSubscriber(eventThread, services.consumer, gatewayMgr, publisher)
 
     System.in.read()
 

@@ -25,15 +25,16 @@ import io.greenbus.edge.api._
 import io.greenbus.edge.data.mapping.{ RootCtx, SimpleReaderContext }
 import io.greenbus.edge.data.xml.XmlReader
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueBytes, ValueString }
-import io.greenbus.edge.dnp3.DNPGatewayHandler
+import io.greenbus.edge.dnp3.{ DNPGatewayHandler, EventSink, GatewayEndpointPublisher }
 import io.greenbus.edge.dnp3.config.DnpGatewaySchema
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.peer.ConsumerServices
 import io.greenbus.edge.thread.CallMarshaller
 
-class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerServices, handler: DNPGatewayHandler) extends LazyLogging {
+class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerServices, handler: DNPGatewayHandler, eventSink: EventSink) extends LazyLogging {
 
   private val endpointPath = EndpointPath(EndpointId(Path("configuration_server")), Path("dnp3"))
+  private var connected = false
 
   private val sub = consumerServices.subscriptionClient.subscribe(
     SubscriptionParams(dataKeys =
@@ -47,6 +48,7 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
   private var current = Map.empty[String, DNP3Gateway]
 
   private def onUpdates(updates: Seq[IdentifiedEdgeUpdate]): Unit = {
+
     logger.debug("updates: " + updates)
     updates.foreach {
       case idUp: IdDataKeyUpdate => {
@@ -56,6 +58,11 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
             case DataUnresolved =>
             case ResolvedAbsent =>
             case ResolvedValue(update) => {
+              if (!connected) {
+                eventSink.publishEvent(Seq("configuration", "subscription"), s"Configuration subscription established")
+                connected = true
+              }
+
               update.value match {
                 case asu: ActiveSetUpdate =>
                   processUpdate(asu.value)
@@ -66,10 +73,12 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
             case Disconnected =>
           }
         } else {
+          //eventSink.publishEvent(Seq("error", "internal"), s"Unexpected endpoint path in subscription: ${idUp.id}")
           logger.warn(s"Unexpected endpoint path in subscription: ${idUp.id}")
         }
       }
       case other =>
+        //eventSink.publishEvent(Seq("error", "internal"), s"Unexpected endpoint path in subscription")
         logger.warn(s"Wrong kind of update in active set subscription: " + other)
     }
   }
@@ -94,6 +103,7 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
             DNP3Gateway.read(value, SimpleReaderContext(Vector(RootCtx("DNP3Gateway")))) match {
               case Left(err) =>
                 logger.warn(s"Could not parse value object: $err")
+                eventSink.publishEvent(Seq("configuration", "subscription"), s"Parse error: $err")
                 None
               case Right(obj) => Some(obj)
             }
@@ -101,6 +111,7 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
         } catch {
           case ex: Throwable =>
             logger.warn(s"Parse error: " + ex)
+            eventSink.publishEvent(Seq("configuration", "subscription"), s"Parse exception: ${ex.getMessage}")
             None
         }
 

@@ -23,9 +23,9 @@ import java.util.UUID
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
 import io.greenbus.edge.api.stream.{ KeyMetadata, OutputStatusHandle, ProducerHandle, SeriesValueHandle }
-import io.greenbus.edge.data.SampleValue
+import io.greenbus.edge.data._
 import io.greenbus.edge.edm.core.EdgeCoreModel
-import io.greenbus.edge.fep.config.model.{ FrontendConfiguration, IntegerLabelSet, OutputType, SeriesType }
+import io.greenbus.edge.fep.config.model.{ Path => _, _ }
 import io.greenbus.edge.flow.{ Receiver, Sink }
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
@@ -45,9 +45,25 @@ object FrontendPublisher {
     labels.value.map(l => (l.value.toLong, l.label)).toMap
   }
 
+  def mapMetadataValue(mv: MetadataValue): Value = {
+    mv match {
+      case v: MetadataBoolValue => ValueBool(v.value)
+      case v: MetadataIntegerValue => ValueInt64(v.value)
+      case v: MetadataDoubleValue => ValueDouble(v.value)
+      case v: MetadataStringValue => ValueString(v.value)
+    }
+  }
+
+  def mapMetadata(mkv: MetadataKeyValue): (Path, Value) = {
+    (Path(mkv.path.value), mapMetadataValue(mkv.value))
+  }
+
   def load(eventThread: CallMarshaller, services: ProducerServices, delegate: FrontendOutputDelegate, config: FrontendConfiguration): FrontendPublisher = {
 
     val builder = services.endpointBuilder(EndpointId(Path(config.endpointId.value)))
+
+    val configuredMeta = config.metadata.map(mapMetadata)
+    builder.setMetadata(configuredMeta.toMap)
 
     val dataKeyMap = config.dataKeys.map { fdk =>
 
@@ -65,7 +81,9 @@ object FrontendPublisher {
       val intLabelMetaOpt = fdk.descriptor.integerLabels.map(labels => readLabels(labels)).map(EdgeCoreModel.labeledIntegerMetadata)
       val decimalOpt = fdk.descriptor.decimalPoints.map(EdgeCoreModel.analogDecimalPoints)
 
-      val metadata = (Seq(seriesMeta) ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt, decimalOpt).flatten).toMap
+      val configuredMeta = fdk.metadata.map(mapMetadata)
+
+      val metadata: Map[Path, Value] = (Seq(seriesMeta) ++ configuredMeta ++ Seq(unitMetaOpt, boolLabelMetaOpt, intLabelMetaOpt, decimalOpt).flatten).toMap
 
       val keyMetadata = KeyMetadata(Map(), metadata)
 
@@ -92,7 +110,9 @@ object FrontendPublisher {
       val reqScaleOpt = fok.descriptor.requestScale.map(EdgeCoreModel.requestScale)
       val reqOffsetOpt = fok.descriptor.requestOffset.map(EdgeCoreModel.requestOffset)
 
-      val metadata = (Seq(typMeta) ++ Seq(boolLabelOpt, intLabelOpt, reqScaleOpt, reqOffsetOpt).flatten).toMap
+      val configuredMeta = fok.metadata.map(mapMetadata)
+
+      val metadata = (Seq(typMeta) ++ configuredMeta ++ Seq(boolLabelOpt, intLabelOpt, reqScaleOpt, reqOffsetOpt).flatten).toMap
 
       val keyMetadata = KeyMetadata(Map(), metadata)
 

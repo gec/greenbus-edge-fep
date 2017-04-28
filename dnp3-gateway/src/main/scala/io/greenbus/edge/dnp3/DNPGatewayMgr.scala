@@ -44,17 +44,28 @@ trait DNPGatewayHandler {
   def onGatewayRemoved(key: String): Unit
 }
 
-class GatewayEndpointPublisher(b: EndpointBuilder) {
+trait EventSink {
+  def publishEvent(topic: Seq[String], event: String): Unit
+}
+
+class GatewayEndpointPublisher(eventThread: CallMarshaller, b: EndpointBuilder) extends EventSink {
 
   val events = b.topicEventValue(Path("events"))
-
   private val handle = b.build(100, 100)
+
+  def publishEvent(topic: Seq[String], event: String): Unit = {
+    eventThread.marshal {
+      events.update(Path(topic), ValueString(event), System.currentTimeMillis())
+      flush()
+    }
+  }
+
   def flush(): Unit = {
     handle.flush()
   }
 }
 
-class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, publisher: GatewayEndpointPublisher) extends DNPGatewayHandler with LazyLogging {
+class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends DNPGatewayHandler with LazyLogging {
 
   private val mgr = new Dnp3Mgr[String]
   private var resources = Map.empty[String, (RawDnpEndpoint, FrontendPublisher)]
@@ -63,9 +74,7 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
   def onGatewayConfigured(key: String, config: DNP3Gateway): Unit = {
     logger.info(s"Gateway configured: $key")
     eventThread.marshal {
-
-      publisher.events.update(Path(Seq("source", "updated")), ValueString(s"Gateway configured: $key"), System.currentTimeMillis())
-      publisher.flush()
+      eventSink.publishEvent(Seq("source", "updated"), s"Gateway configured: $key")
 
       remove(key)
 
@@ -93,8 +102,9 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
   def onGatewayRemoved(key: String): Unit = {
     logger.info(s"Gateway removed: $key")
     eventThread.marshal {
-      publisher.events.update(Path(Seq("source", "removed")), ValueString(s"Gateway removed: $key"), System.currentTimeMillis())
-      publisher.flush()
+      eventSink.publishEvent(Seq("source", "updated"), s"Gateway removed: $key")
+      /*publisher.events.update(Path(Seq("source", "removed")), ValueString(s"Gateway removed: $key"), System.currentTimeMillis())
+      publisher.flush()*/
       remove(key)
     }
   }
