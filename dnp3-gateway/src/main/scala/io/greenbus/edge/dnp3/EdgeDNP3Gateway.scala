@@ -21,7 +21,7 @@ package io.greenbus.edge.dnp3
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.dnp3.sub.ConfigSubscriber
-import io.greenbus.edge.peer.AmqpEdgeService
+import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
 import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -91,15 +91,21 @@ object EdgeDNP3Gateway {
 
   def main(args: Array[String]): Unit = {
 
-    val services = AmqpEdgeService.build("127.0.0.1", 50001, 10000)
+    val baseDir = Option(System.getProperty("io.greenbus.config.base")).getOrElse("")
+    val amqpConfigPath = Option(System.getProperty("io.greenbus.edge.config.client")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.edge.peer.client.cfg")
+    val nodeConfig = Option(System.getProperty("io.greenbus.edge.config.node")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.edge.node.cfg")
+    val clientSettings = PeerClientSettings.load(amqpConfigPath)
+    val nodeSettings = NodeSettings.load(nodeConfig)
+
+    val services = AmqpEdgeService.build(clientSettings.host, clientSettings.port, retryIntervalMs = clientSettings.retryIntervalMs, connectTimeoutMs = clientSettings.connectTimeoutMs)
     services.start()
     val producerServices = services.producer
 
     val eventThread = EventThreadService.build("DNP MGR")
 
-    val gatewayId = "local"
+    val gatewayId = nodeSettings.name
 
-    val publisher = new GatewayEndpointPublisher(eventThread, producerServices.endpointBuilder(EndpointId(Path(Seq("dnp", gatewayId)))))
+    val publisher = new GatewayEndpointPublisher(eventThread, producerServices.endpointBuilder(EndpointId(Path(Seq("dnpgateway", gatewayId)))))
 
     val gatewayMgr = new DNPGatewayMgr(eventThread, gatewayId, producerServices, publisher)
 

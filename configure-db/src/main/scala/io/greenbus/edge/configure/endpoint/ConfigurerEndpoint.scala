@@ -23,7 +23,7 @@ import java.util.concurrent.Executors
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.configure.server.WebServer
 import io.greenbus.edge.configure.sql.{ JooqTransactable, ModuleDb, PostgresDataPool, SqlSettings }
-import io.greenbus.edge.peer.AmqpEdgeService
+import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
 import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -31,10 +31,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object ConfigurerEndpoint {
 
   def main(args: Array[String]): Unit = {
-    //val sqlSettings =
 
     val baseDir = Option(System.getProperty("io.greenbus.config.base")).getOrElse("")
     val sqlConfigPath = Option(System.getProperty("io.greenbus.config.sql")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.sql.cfg")
+    val amqpConfigPath = Option(System.getProperty("io.greenbus.edge.config.client")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.edge.peer.client.cfg")
+    val appConfigPath = Option(System.getProperty("io.greenbus.edge.config.moduleconfig")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.edge.moduleconfig.cfg")
+
+    val clientSettings = PeerClientSettings.load(amqpConfigPath)
+    val appSettings = ModuleConfigurerSettings.load(appConfigPath)
 
     val settings = SqlSettings.load(sqlConfigPath)
     val ds = PostgresDataPool.dataSource(settings)
@@ -44,14 +48,14 @@ object ConfigurerEndpoint {
 
     val moduleDb = ModuleDb.build(db)
 
-    val services = AmqpEdgeService.build("127.0.0.1", 50001, 10000)
+    val services = AmqpEdgeService.build(clientSettings.host, clientSettings.port, retryIntervalMs = clientSettings.retryIntervalMs, connectTimeoutMs = clientSettings.connectTimeoutMs)
     services.start()
     val producerServices = services.producer
     val eventThread = EventThreadService.build("DNP MGR")
 
     val mgr = FepConfigurerMgr.load(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices, moduleDb)
 
-    val server = WebServer.build(mgr, 8809)
+    val server = WebServer.build(mgr, appSettings.port)
     server.start()
     server.join()
     s.shutdown()
