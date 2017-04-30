@@ -117,7 +117,9 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
 
         gatewayOpt.flatMap { value =>
           current.get(module) match {
-            case None => Some(module -> value)
+            case None =>
+              current = current.updated(module, value)
+              Some(module -> value)
             case Some(prev) =>
               if (prev != value) {
                 current = current.updated(module, value)

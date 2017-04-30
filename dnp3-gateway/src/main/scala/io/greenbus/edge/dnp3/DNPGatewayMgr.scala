@@ -113,8 +113,8 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
     mgr.remove(key)
     resources.get(key).foreach {
       case (handle1, handle2) =>
-      //handle1.close()
-      //handle2.close()
+        handle1.close()
+        handle2.close()
     }
   }
 

@@ -189,4 +189,8 @@ class FrontendPublisher(eventThread: CallMarshaller, handle: ProducerHandle, del
       }
     }
   }
+
+  def close(): Unit = {
+    handle.close()
+  }
 }

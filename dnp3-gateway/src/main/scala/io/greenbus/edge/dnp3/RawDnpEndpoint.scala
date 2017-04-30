@@ -178,5 +178,9 @@ class RawDnpEndpoint(eventThread: CallMarshaller,
     }
     handle.flush()
   }
+
+  def close(): Unit = {
+    handle.close()
+  }
 }
 

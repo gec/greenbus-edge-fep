@@ -103,4 +103,50 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
     }
 
   }
+
+  override def doDelete(req: HttpServletRequest, resp: HttpServletResponse): Unit = {
+    logger.debug("DELETE: " + req)
+
+    val namesEnum = req.getHeaderNames
+    while (namesEnum.hasMoreElements) {
+      val name = namesEnum.nextElement()
+      logger.debug(name + " : " + req.getHeader(name))
+    }
+
+    val moduleOpt = Option(req.getHeader("EdgeModule"))
+
+    moduleOpt match {
+      case None => resp.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+      case Some(module) => {
+
+        val ctx = req.startAsync()
+        val prom = Promise[Boolean]
+        handler.removeModule(module, prom)
+
+        val future = prom.future
+
+        future.foreach { result =>
+          ctx.getResponse match {
+            case r: HttpServletResponse =>
+              if (result) {
+                r.setStatus(HttpServletResponse.SC_OK)
+              } else {
+                r.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+              }
+            case _ =>
+          }
+          ctx.complete()
+        }
+        future.failed.foreach { ex =>
+          ctx.getResponse match {
+            case r: HttpServletResponse =>
+              r.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage)
+            case _ =>
+          }
+          ctx.complete()
+        }
+      }
+    }
+
+  }
 }
