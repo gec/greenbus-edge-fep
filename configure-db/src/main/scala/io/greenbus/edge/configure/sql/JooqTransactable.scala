@@ -38,23 +38,32 @@ trait JooqTransactable {
 
 class JooqTransactableImpl(ds: DataSource, exe: Executor) extends JooqTransactable {
   def transaction[A](f: DSLContext => A): Future[A] = {
-    val jooq = DSL.using(ds.getConnection)
+
     val prom = Promise[A]
 
     exe.execute(new Runnable {
       def run(): Unit = {
         var result = Option.empty[Try[A]]
-        jooq.transaction(new TransactionalRunnable {
-          def run(configuration: Configuration): Unit = {
-            val inTrans: DSLContext = DSL.using(configuration)
-            result = try {
-              Some(Success(f(inTrans)))
-            } catch {
-              case ex: Throwable =>
-                Some(Failure(ex))
+        val connection = ds.getConnection
+        try {
+          val jooq = DSL.using(connection)
+          jooq.transaction(new TransactionalRunnable {
+            def run(configuration: Configuration): Unit = {
+              val inTrans: DSLContext = DSL.using(configuration)
+              result = try {
+                Some(Success(f(inTrans)))
+              } catch {
+                case ex: Throwable =>
+                  Some(Failure(ex))
+              }
             }
-          }
-        })
+          })
+        } catch {
+          case ex: Throwable => prom.failure(ex)
+        } finally {
+          connection.close()
+        }
+
         prom.complete(result.getOrElse(Failure(new IllegalStateException("no transaction result"))))
       }
     })
