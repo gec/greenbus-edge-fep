@@ -46,7 +46,7 @@ trait MeasObserver {
 object Dnp3Mgr {
   case class StackRecord(name: String, portName: String, measObserver: MeasAdapter, stackAdapter: StackAdapter)
 }
-class Dnp3Mgr[A] {
+class Dnp3Mgr {
   import Dnp3Mgr._
 
   private val stackManager = new StackManager
@@ -54,12 +54,13 @@ class Dnp3Mgr[A] {
 
   stackManager.AddLogHook(logAdapter)
 
-  private var map = Map.empty[A, StackRecord]
+  private var map = Map.empty[String, StackRecord]
 
-  def add(key: A, name: String, config: Dnp3MasterConfig, measObserver: MeasObserver, commsObserver: Boolean => Unit): ICommandAcceptor = {
+  def add(key: String, config: Dnp3MasterConfig, measObserver: MeasObserver, commsObserver: Boolean => Unit): ICommandAcceptor = {
     remove(key)
 
-    val portName = s"$name-${config.address}:${config.port}"
+    val portName = s"$key-${config.address}:${config.port}"
+    println("PORT NAME: " + portName)
     val settings = new PhysLayerSettings(config.logLevel, config.retryMs)
     stackManager.AddTCPClient(portName, settings, config.address, config.port)
 
@@ -68,14 +69,14 @@ class Dnp3Mgr[A] {
     val stackAdapter = new StackAdapter(commsObserver)
     config.stack.getMaster.setMpObserver(stackAdapter)
 
-    val commandAcceptor = stackManager.AddMaster(portName, name, config.logLevel, measAdapter, config.stack)
+    val commandAcceptor = stackManager.AddMaster(portName, key, config.logLevel, measAdapter, config.stack)
 
-    map += (key -> StackRecord(name, portName, measAdapter, stackAdapter))
+    map += (key -> StackRecord(key, portName, measAdapter, stackAdapter))
 
     commandAcceptor
   }
 
-  def remove(key: A): Unit = {
+  def remove(key: String): Unit = {
     map.get(key).foreach { record =>
       stackManager.RemoveStack(record.name)
       stackManager.RemovePort(record.portName)

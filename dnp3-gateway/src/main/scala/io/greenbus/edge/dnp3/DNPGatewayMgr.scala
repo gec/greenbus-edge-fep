@@ -67,7 +67,7 @@ class GatewayEndpointPublisher(eventThread: CallMarshaller, b: EndpointBuilder) 
 
 class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends DNPGatewayHandler with LazyLogging {
 
-  private val mgr = new Dnp3Mgr[String]
+  private val mgr = new Dnp3Mgr
   private var resources = Map.empty[String, (RawDnpEndpoint, FrontendPublisher)]
 
   // TODO: close producers
@@ -81,7 +81,10 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
       val stackConfig = Dnp3MasterConfig.load(config)
 
       val (rawDnpEndpoint, controlAdapter) = RawDnpEndpoint.build(eventThread, localId, producerServices, config)
-      def commsObs(value: Boolean): Unit = println("got comms: " + value)
+      def commsObs(value: Boolean): Unit = {
+        val commsStr = if (value) "COMMS_UP" else "COMMS_DOWN"
+        eventSink.publishEvent(Seq("comms", "status"), s"Stack $key communications status: $commsStr")
+      }
 
       val gatewayPub = FrontendPublisher.load(eventThread, producerServices, rawDnpEndpoint, config.endpoint)
 
@@ -89,8 +92,7 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
         rawDnpEndpoint,
         new FrontendAdapter(gatewayPub)))
 
-      val name = config.client.host + ":" + config.client.port
-      val cmdAcceptor = mgr.add(key, name, stackConfig, observer, commsObs)
+      val cmdAcceptor = mgr.add(key, stackConfig, observer, commsObs)
 
       val stackCmdMgr = new DNP3ControlHandleImpl(eventThread, cmdAcceptor)
       controlAdapter.setHandle(stackCmdMgr)
@@ -103,8 +105,6 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
     logger.info(s"Gateway removed: $key")
     eventThread.marshal {
       eventSink.publishEvent(Seq("source", "updated"), s"Gateway removed: $key")
-      /*publisher.events.update(Path(Seq("source", "removed")), ValueString(s"Gateway removed: $key"), System.currentTimeMillis())
-      publisher.flush()*/
       remove(key)
     }
   }
