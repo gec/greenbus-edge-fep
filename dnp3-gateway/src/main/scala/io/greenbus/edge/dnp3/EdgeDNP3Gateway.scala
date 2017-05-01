@@ -18,6 +18,7 @@
  */
 package io.greenbus.edge.dnp3
 
+import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.dnp3.sub.ConfigSubscriber
@@ -26,7 +27,8 @@ import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object EdgeDNP3Gateway {
+object EdgeDNP3Gateway extends LazyLogging {
+  logger.info("Initializing slf4j")
 
   def buildMaster: Master = {
     Master(
@@ -111,10 +113,12 @@ object EdgeDNP3Gateway {
 
     val configSubscriber = new ConfigSubscriber(eventThread, services.consumer, gatewayMgr, publisher)
 
-    System.in.read()
-
-    gatewayMgr.close()
-    services.shutdown()
-    eventThread.close()
+    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+      def run(): Unit = {
+        gatewayMgr.close()
+        services.shutdown()
+        eventThread.close()
+      }
+    }))
   }
 }
