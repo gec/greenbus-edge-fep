@@ -23,6 +23,18 @@ import io.greenbus.edge.data._
 
 object EdgeCoreModel {
 
+  val seriesTypeKey = Path(Seq("edm", "core", "series_type"))
+  val unitKey = Path(Seq("edm", "core", "unit"))
+  val integerLabelKey = Path(Seq("edm", "core", "integer_label"))
+  val booleanLabelKey = Path(Seq("edm", "core", "boolean_label"))
+  val analogDecimalPointsKey = Path(Seq("edm", "core", "decimal_points"))
+
+  val outputTypeKey = Path(Seq("edm", "core", "output_type"))
+  val requestBooleansLabelsKey = Path(Seq("edm", "core", "request_boolean_labels"))
+  val requestIntegerLabelsKey = Path(Seq("edm", "core", "request_integer_labels"))
+  val requestScaleKey = Path(Seq("edm", "core", "request_scale"))
+  val requestOffsetKey = Path(Seq("edm", "core", "request_offset"))
+
   sealed abstract class SeriesType(val value: String)
   object SeriesType {
     case object AnalogStatus extends SeriesType("analog_status")
@@ -34,15 +46,15 @@ object EdgeCoreModel {
   }
 
   def seriesType(seriesType: SeriesType): (Path, Value) = {
-    (Path(Seq("edm", "core", "series_type")), ValueString(seriesType.value))
+    (seriesTypeKey, ValueString(seriesType.value))
   }
 
   def unitMetadata(unit: String): (Path, Value) = {
-    (Path(Seq("edm", "core", "unit")), ValueString(unit))
+    (unitKey, ValueString(unit))
   }
 
   def labeledBooleanMetadata(truthLabel: String, falseLabel: String): (Path, Value) = {
-    (Path(Seq("edm", "core", "boolean_label")),
+    (booleanLabelKey,
       ValueMap(Map(
         ValueBool(true) -> ValueString(truthLabel),
         ValueBool(false) -> ValueString(falseLabel))))
@@ -54,26 +66,13 @@ object EdgeCoreModel {
       case (k, v) => (ValueInt64(k), ValueString(v))
     }
 
-    (Path(Seq("edm", "core", "integer_label")),
-      ValueMap(vmap))
+    (integerLabelKey, ValueMap(vmap))
   }
 
   def analogDecimalPoints(decimalPoints: Int): (Path, Value) = {
-    (Path(Seq("edm", "core", "decimal_points")), ValueUInt32(decimalPoints))
+    (analogDecimalPointsKey, ValueUInt32(decimalPoints))
   }
 
-  /*
-  simple indication
-  parameterized indication
-  analog setpoint
-  boolean setpoint
-  enumeration setpoint
-
-  output scale
-  output offset
-  bool labels
-  integer labels
-   */
   sealed abstract class OutputType(val value: String)
   object OutputType {
     case object SimpleIndication extends OutputType("simple_indication")
@@ -84,11 +83,11 @@ object EdgeCoreModel {
   }
 
   def outputType(outputType: OutputType): (Path, Value) = {
-    (Path(Seq("edm", "core", "output_type")), ValueString(outputType.value))
+    (outputTypeKey, ValueString(outputType.value))
   }
 
   def requestBooleanLabels(truthLabel: String, falseLabel: String): (Path, Value) = {
-    (Path(Seq("edm", "core", "request_boolean_labels")),
+    (requestBooleansLabelsKey,
       ValueMap(Map(
         ValueBool(true) -> ValueString(truthLabel),
         ValueBool(false) -> ValueString(falseLabel))))
@@ -100,13 +99,12 @@ object EdgeCoreModel {
       case (k, v) => (ValueInt64(k), ValueString(v))
     }
 
-    (Path(Seq("edm", "core", "request_integer_labels")),
-      ValueMap(vmap))
+    (requestIntegerLabelsKey, ValueMap(vmap))
   }
   def requestScale(scale: Double): (Path, Value) = {
-    (Path(Seq("edm", "core", "request_scale")), ValueDouble(scale))
+    (requestScaleKey, ValueDouble(scale))
   }
   def requestOffset(offset: Double): (Path, Value) = {
-    (Path(Seq("edm", "core", "request_offset")), ValueDouble(offset))
+    (requestOffsetKey, ValueDouble(offset))
   }
 }

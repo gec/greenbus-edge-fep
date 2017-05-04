@@ -60,7 +60,6 @@ class Dnp3Mgr {
     remove(key)
 
     val portName = s"$key-${config.address}:${config.port}"
-    println("PORT NAME: " + portName)
     val settings = new PhysLayerSettings(config.logLevel, config.retryMs)
     stackManager.AddTCPClient(portName, settings, config.address, config.port)
 
