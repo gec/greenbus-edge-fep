@@ -112,7 +112,14 @@ object FrontendPublisher {
 
       val configuredMeta = fok.metadata.map(mapMetadata)
 
-      val metadata = (Seq(typMeta) ++ configuredMeta ++ Seq(boolLabelOpt, intLabelOpt, reqScaleOpt, reqOffsetOpt).flatten).toMap
+      val assocMeta = if (fok.associatedDataKeys.nonEmpty) {
+        val seqOfPaths = fok.associatedDataKeys.map(p => ValueList(p.value.map(ValueString)))
+        Seq((EdgeCoreModel.assocDataKeysKey, ValueList(seqOfPaths)))
+      } else {
+        Seq()
+      }
+
+      val metadata: Map[Path, Value] = (Seq(typMeta) ++ assocMeta ++ configuredMeta ++ Seq(boolLabelOpt, intLabelOpt, reqScaleOpt, reqOffsetOpt).flatten).toMap
 
       val keyMetadata = KeyMetadata(Map(), metadata)
 

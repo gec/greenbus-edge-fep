@@ -172,7 +172,8 @@ object FrontendSchema {
       StructFieldDef("gatewayKey", TString, 0),
       StructFieldDef("path", path, 1),
       StructFieldDef("metadata", TList(metadataItem), 2),
-      StructFieldDef("descriptor", outputDescriptor, 3))))
+      StructFieldDef("descriptor", outputDescriptor, 3),
+      StructFieldDef("associatedDataKeys", TList(path), 4))))
   }
 
   val frontendConfiguration: TExt = {

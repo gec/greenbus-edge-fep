@@ -35,6 +35,8 @@ object EdgeCoreModel {
   val requestScaleKey = Path(Seq("edm", "core", "request_scale"))
   val requestOffsetKey = Path(Seq("edm", "core", "request_offset"))
 
+  val assocDataKeysKey = Path(Seq("edm", "core", "assoc_data_keys"))
+
   sealed abstract class SeriesType(val value: String)
   object SeriesType {
     case object AnalogStatus extends SeriesType("analog_status")

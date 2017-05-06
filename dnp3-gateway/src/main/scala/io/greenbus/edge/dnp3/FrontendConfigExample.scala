@@ -79,7 +79,8 @@ object FrontendConfigExample {
             requestScale = Some(100),
             requestOffset = None,
             requestIntegerLabels = None,
-            requestBooleanLabels = None)),
+            requestBooleanLabels = None),
+          associatedDataKeys = Seq(Path(Seq("outputPower")))),
         OutputKeyConfig(
           gatewayKey = "setpoint_1",
           path = Path(Seq("SetMode")),
@@ -92,7 +93,8 @@ object FrontendConfigExample {
               IntegerLabel(0, "Constant"),
               IntegerLabel(1, "Smoothing"),
               IntegerLabel(2, "GridForming")))),
-            requestBooleanLabels = None))))
+            requestBooleanLabels = None),
+          associatedDataKeys = Seq(Path(Seq("mode"))))))
   }
 
 }

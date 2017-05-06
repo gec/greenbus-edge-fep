@@ -71,9 +71,9 @@ object DataKeyConfig {
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, DataKeyConfig] = {
     val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
     val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
-    val metadata = MappingLibrary.getMapField("metadata", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx))
+    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx)).getOrElse(Right(Seq()))
     val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "SeriesDescriptor", io.greenbus.edge.fep.config.model.SeriesDescriptor.read, ctx))
-    val transforms = MappingLibrary.getMapField("transforms", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.TransformDescriptor](elem, io.greenbus.edge.fep.config.model.TransformDescriptor.read, ctx))
+    val transforms = MappingLibrary.optMapField("transforms", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.TransformDescriptor](elem, io.greenbus.edge.fep.config.model.TransformDescriptor.read, ctx)).getOrElse(Right(Seq()))
     val filter = MappingLibrary.optMapField("filter", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.FilterDescriptor.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
 
     if (gatewayKey.isRight && path.isRight && metadata.isRight && descriptor.isRight && transforms.isRight && filter.isRight) {
@@ -146,9 +146,9 @@ object FrontendConfiguration {
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, FrontendConfiguration] = {
     val endpointId = MappingLibrary.getMapField("endpointId", element).flatMap(elem => MappingLibrary.readFieldSubStruct("endpointId", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
-    val metadata = MappingLibrary.getMapField("metadata", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx))
-    val dataKeys = MappingLibrary.getMapField("dataKeys", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.DataKeyConfig](elem, io.greenbus.edge.fep.config.model.DataKeyConfig.read, ctx))
-    val outputKeys = MappingLibrary.getMapField("outputKeys", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.OutputKeyConfig](elem, io.greenbus.edge.fep.config.model.OutputKeyConfig.read, ctx))
+    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx)).getOrElse(Right(Seq()))
+    val dataKeys = MappingLibrary.optMapField("dataKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.DataKeyConfig](elem, io.greenbus.edge.fep.config.model.DataKeyConfig.read, ctx)).getOrElse(Right(Seq()))
+    val outputKeys = MappingLibrary.optMapField("outputKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.OutputKeyConfig](elem, io.greenbus.edge.fep.config.model.OutputKeyConfig.read, ctx)).getOrElse(Right(Seq()))
 
     if (endpointId.isRight && metadata.isRight && dataKeys.isRight && outputKeys.isRight) {
       Right(FrontendConfiguration(endpointId.right.get, metadata.right.get, dataKeys.right.get, outputKeys.right.get))
@@ -506,13 +506,14 @@ object OutputKeyConfig {
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputKeyConfig] = {
     val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
     val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
-    val metadata = MappingLibrary.getMapField("metadata", element).flatMap(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx))
+    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx)).getOrElse(Right(Seq()))
     val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "OutputDescriptor", io.greenbus.edge.fep.config.model.OutputDescriptor.read, ctx))
+    val associatedDataKeys = MappingLibrary.optMapField("associatedDataKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.Path](elem, io.greenbus.edge.fep.config.model.Path.read, ctx)).getOrElse(Right(Seq()))
 
-    if (gatewayKey.isRight && path.isRight && metadata.isRight && descriptor.isRight) {
-      Right(OutputKeyConfig(gatewayKey.right.get, path.right.get, metadata.right.get, descriptor.right.get))
+    if (gatewayKey.isRight && path.isRight && metadata.isRight && descriptor.isRight && associatedDataKeys.isRight) {
+      Right(OutputKeyConfig(gatewayKey.right.get, path.right.get, metadata.right.get, descriptor.right.get, associatedDataKeys.right.get))
     } else {
-      Left(Seq(gatewayKey.left.toOption, path.left.toOption, metadata.left.toOption, descriptor.left.toOption).flatten.mkString(", "))
+      Left(Seq(gatewayKey.left.toOption, path.left.toOption, metadata.left.toOption, descriptor.left.toOption, associatedDataKeys.left.toOption).flatten.mkString(", "))
     }
   }
 
@@ -521,12 +522,13 @@ object OutputKeyConfig {
       (ValueString("gatewayKey"), ValueString(obj.gatewayKey)),
       (ValueString("path"), io.greenbus.edge.fep.config.model.Path.write(obj.path)),
       (ValueString("metadata"), MappingLibrary.writeList(obj.metadata, io.greenbus.edge.fep.config.model.MetadataKeyValue.write)),
-      (ValueString("descriptor"), io.greenbus.edge.fep.config.model.OutputDescriptor.write(obj.descriptor))))
+      (ValueString("descriptor"), io.greenbus.edge.fep.config.model.OutputDescriptor.write(obj.descriptor)),
+      (ValueString("associatedDataKeys"), MappingLibrary.writeList(obj.associatedDataKeys, io.greenbus.edge.fep.config.model.Path.write))))
 
     TaggedValue("OutputKeyConfig", built)
   }
 }
-case class OutputKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, metadata: Seq[io.greenbus.edge.fep.config.model.MetadataKeyValue], descriptor: io.greenbus.edge.fep.config.model.OutputDescriptor)
+case class OutputKeyConfig(gatewayKey: String, path: io.greenbus.edge.fep.config.model.Path, metadata: Seq[io.greenbus.edge.fep.config.model.MetadataKeyValue], descriptor: io.greenbus.edge.fep.config.model.OutputDescriptor, associatedDataKeys: Seq[io.greenbus.edge.fep.config.model.Path])
 
 object OutputType {
 
