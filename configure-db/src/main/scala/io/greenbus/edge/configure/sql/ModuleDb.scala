@@ -104,7 +104,7 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
         .asScala
 
       if (current.nonEmpty) {
-        sql.update(Values.table).set(Values.data, value.data).execute()
+        sql.update(Values.table).set(Values.data, value.data).where(Values.module.eq(value.module)).execute()
       } else {
         sql.insertInto(Values.table,
           Values.module, Values.component, Values.data)

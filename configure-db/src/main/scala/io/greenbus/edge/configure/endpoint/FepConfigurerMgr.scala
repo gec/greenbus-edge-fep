@@ -92,7 +92,7 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
 
   private def load(): Unit = {
     db.valuesForComponent("dnpgateway").foreach { values =>
-      logger.debug(s"Module/components on launch: ${values.map(v => (v.module, v.component))}")
+      logger.debug(s"Module/components on launch: ${values.map(v => (v.module, v.component, v.data.length))}")
       eventThread.marshal {
         currentDnp = values.flatMap { mv =>
           FepConfigurerMgr.fromDbBytes(s"${mv.module}/${mv.component}", mv.data)
