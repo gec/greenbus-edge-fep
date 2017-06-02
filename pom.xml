@@ -45,6 +45,7 @@
         <module>sql-h2</module>
         <module>configure-db</module>
         <module>dnp3-gateway</module>
+        <module>modbus-gateway</module>
     </modules>
 
     <repositories>
