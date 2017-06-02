@@ -20,6 +20,7 @@ package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.data.{ SampleValue, ValueBool, ValueDouble, ValueInt32 }
+import io.greenbus.edge.fep.MeasObserver
 import io.greenbus.edge.flow.Sink
 import org.totalgrid.dnp3._
 
@@ -37,10 +38,6 @@ class StackAdapter(obs: Boolean => Unit) extends IStackObserver {
 
 trait CommsObserver {
   def commsUp(value: Boolean): Unit
-}
-
-trait MeasObserver {
-  def flush(batch: Seq[(String, SampleValue)]): Unit
 }
 
 object Dnp3Mgr {

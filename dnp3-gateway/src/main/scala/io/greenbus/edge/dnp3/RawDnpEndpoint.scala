@@ -26,7 +26,7 @@ import io.greenbus.edge.api.stream.{ KeyMetadata, OutputStatusHandle, ProducerHa
 import io.greenbus.edge.data._
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.edm.core.EdgeCoreModel
-import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate }
+import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate, MeasObserver }
 import io.greenbus.edge.flow
 import io.greenbus.edge.flow.Receiver
 import io.greenbus.edge.peer.ProducerServices

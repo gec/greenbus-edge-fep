@@ -16,8 +16,26 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.greenbus.edge.modbus
+package io.greenbus.edge.fep
 
-class ModbusGateway {
+import io.greenbus.edge.data.SampleValue
 
+trait MeasObserver {
+  def flush(batch: Seq[(String, SampleValue)]): Unit
+}
+
+class SplittingMeasObserver(observers: Seq[MeasObserver]) extends MeasObserver {
+  def flush(batch: Seq[(String, SampleValue)]): Unit = {
+    observers.foreach(_.flush(batch))
+  }
+}
+
+class FrontendAdapter(handle: FrontendPublisher) extends MeasObserver {
+  def flush(batch: Seq[(String, SampleValue)]): Unit = {
+    handle.batch(batch)
+  }
+}
+
+trait EventSink {
+  def publishEvent(topic: Seq[String], event: String): Unit
 }

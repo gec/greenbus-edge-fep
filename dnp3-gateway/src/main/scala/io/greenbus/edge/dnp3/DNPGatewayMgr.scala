@@ -23,29 +23,13 @@ import io.greenbus.edge.api.Path
 import io.greenbus.edge.api.stream.{ EndpointBuilder, ProducerHandle }
 import io.greenbus.edge.data.{ SampleValue, ValueString }
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
-import io.greenbus.edge.fep.FrontendPublisher
+import io.greenbus.edge.fep.{ EventSink, FrontendAdapter, FrontendPublisher, SplittingMeasObserver }
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
-
-class SplittingMeasObserver(observers: Seq[MeasObserver]) extends MeasObserver {
-  def flush(batch: Seq[(String, SampleValue)]): Unit = {
-    observers.foreach(_.flush(batch))
-  }
-}
-
-class FrontendAdapter(handle: FrontendPublisher) extends MeasObserver {
-  def flush(batch: Seq[(String, SampleValue)]): Unit = {
-    handle.batch(batch)
-  }
-}
 
 trait DNPGatewayHandler {
   def onGatewayConfigured(key: String, config: DNP3Gateway): Unit
   def onGatewayRemoved(key: String): Unit
-}
-
-trait EventSink {
-  def publishEvent(topic: Seq[String], event: String): Unit
 }
 
 class GatewayEndpointPublisher(eventThread: CallMarshaller, b: EndpointBuilder) extends EventSink {

@@ -25,9 +25,10 @@ import io.greenbus.edge.api._
 import io.greenbus.edge.data.mapping.{ RootCtx, SimpleReaderContext }
 import io.greenbus.edge.data.xml.XmlReader
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueBytes, ValueString }
-import io.greenbus.edge.dnp3.{ DNPGatewayHandler, EventSink, GatewayEndpointPublisher }
+import io.greenbus.edge.dnp3.{ DNPGatewayHandler, GatewayEndpointPublisher }
 import io.greenbus.edge.dnp3.config.DnpGatewaySchema
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
+import io.greenbus.edge.fep.EventSink
 import io.greenbus.edge.peer.ConsumerServices
 import io.greenbus.edge.thread.CallMarshaller
 
