@@ -32,23 +32,6 @@ trait DNPGatewayHandler {
   def onGatewayRemoved(key: String): Unit
 }
 
-class GatewayEndpointPublisher(eventThread: CallMarshaller, b: EndpointBuilder) extends EventSink {
-
-  val events = b.topicEventValue(Path("events"))
-  private val handle = b.build(100, 100)
-
-  def publishEvent(topic: Seq[String], event: String): Unit = {
-    eventThread.marshal {
-      events.update(Path(topic), ValueString(event), System.currentTimeMillis())
-      flush()
-    }
-  }
-
-  def flush(): Unit = {
-    handle.flush()
-  }
-}
-
 class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends DNPGatewayHandler with LazyLogging {
 
   private val mgr = new Dnp3Mgr

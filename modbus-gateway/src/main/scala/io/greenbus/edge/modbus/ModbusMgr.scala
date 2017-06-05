@@ -19,18 +19,17 @@
 package io.greenbus.edge.modbus
 
 import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.fep.{ EventSink, FrontendAdapter, FrontendPublisher, MeasObserver, SplittingMeasObserver }
+import io.greenbus.edge.fep._
 import io.greenbus.edge.modbus.config.model.{ ModbusGateway, ProtocolType }
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
 import org.totalgrid.modbus._
-import org.totalgrid.modbus.poll.Poll
 
-class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends LazyLogging {
+class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends ConfigurationHandler[ModbusGateway] with LazyLogging {
   private val modbus = ModbusManager.start(8192, 6)
   private var resources = Map.empty[String, (RawModbusEndpoint, FrontendPublisher, ModbusMaster)]
 
-  def onGatewayConfigured(key: String, config: ModbusGateway): Unit = {
+  def onConfigured(key: String, config: ModbusGateway): Unit = {
     eventThread.marshal {
       logger.info(s"Gateway configured: $key")
 
@@ -46,7 +45,7 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
       val connectionTimeoutMs = 5000
       val operationTimeoutMs = 5000
 
-      val polls: Seq[Poll] = PollConfigConverter.load(config)
+      val polls = PollConfigConverter.load(config)
 
       val mapper = new InputMapping(config.modbus.discreteInputs, config.modbus.coilStatuses, config.modbus.inputRegisters, config.modbus.holdingRegisters)
       val obs = new DeviceObserver(mapper, observer)
@@ -81,7 +80,7 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
     }
   }
 
-  def onGatewayRemoved(key: String): Unit = {
+  def onRemoved(key: String): Unit = {
     logger.info(s"Gateway removed: $key")
     eventThread.marshal {
       eventSink.publishEvent(Seq("source", "updated"), s"Gateway removed: $key")

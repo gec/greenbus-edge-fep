@@ -18,15 +18,25 @@
  */
 package io.greenbus.edge.modbus
 
-import io.greenbus.edge.fep.NodeSettings
+import io.greenbus.edge.api.{ EndpointId, EndpointPath, Path }
+import io.greenbus.edge.data.Value
+import io.greenbus.edge.data.mapping.SimpleReaderContext
+import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
+import io.greenbus.edge.modbus.config.model.ModbusGateway
 import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
 import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ModbusGatewayRunner {
+object EdgeModbusGateway {
+
+  def parseConfig(v: Value): Either[String, ModbusGateway] = {
+    val ctx = SimpleReaderContext(Vector())
+    ModbusGateway.read(v, ctx)
+  }
 
   def main(args: Array[String]): Unit = {
+
     val baseDir = Option(System.getProperty("io.greenbus.config.base")).getOrElse("")
     val amqpConfigPath = Option(System.getProperty("io.greenbus.edge.config.client")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.edge.peer.client.cfg")
     val nodeConfig = Option(System.getProperty("io.greenbus.edge.config.node")).map(baseDir + _).getOrElse(baseDir + "io.greenbus.edge.node.cfg")
@@ -37,8 +47,23 @@ class ModbusGatewayRunner {
     services.start()
     val producerServices = services.producer
 
-    val eventThread = EventThreadService.build("Modbus MGR")
+    val eventThread = EventThreadService.build("DNP MGR")
 
     val gatewayId = nodeSettings.name
+
+    val publisher = new GatewayEndpointPublisher(eventThread, producerServices.endpointBuilder(EndpointId(Path(Seq("modbusgateway", gatewayId)))))
+
+    val gatewayMgr = new ModbusMgr(eventThread, gatewayId, producerServices, publisher)
+
+    val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("modbus"))
+    val configSubscriber = new ConfigurationSubscriber(eventThread, services.consumer, configKey, parseConfig, gatewayMgr, publisher)
+
+    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+      def run(): Unit = {
+        gatewayMgr.close()
+        services.shutdown()
+        eventThread.close()
+      }
+    }))
   }
 }

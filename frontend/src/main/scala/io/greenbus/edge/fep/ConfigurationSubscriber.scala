@@ -16,25 +16,27 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.greenbus.edge.dnp3.sub
-
-import java.io.ByteArrayInputStream
+package io.greenbus.edge.fep
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
-import io.greenbus.edge.data.mapping.{ RootCtx, SimpleReaderContext }
-import io.greenbus.edge.data.xml.XmlReader
-import io.greenbus.edge.data.{ IndexableValue, Value, ValueBytes, ValueString }
-import io.greenbus.edge.dnp3.DNPGatewayHandler
-import io.greenbus.edge.dnp3.config.DnpGatewaySchema
-import io.greenbus.edge.dnp3.config.model.DNP3Gateway
-import io.greenbus.edge.fep.EventSink
+import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
 import io.greenbus.edge.peer.ConsumerServices
 import io.greenbus.edge.thread.CallMarshaller
 
-class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerServices, handler: DNPGatewayHandler, eventSink: EventSink) extends LazyLogging {
+trait ConfigurationHandler[A] {
+  def onConfigured(key: String, config: A): Unit
+  def onRemoved(key: String)
+}
 
-  private val endpointPath = EndpointPath(EndpointId(Path("configuration_server")), Path("dnp3"))
+class ConfigurationSubscriber[A](
+    eventThread: CallMarshaller,
+    consumerServices: ConsumerServices,
+    endpointPath: EndpointPath,
+    parser: Value => Either[String, A],
+    handler: ConfigurationHandler[A],
+    eventSink: EventSink) extends LazyLogging {
+
   private var connected = false
 
   private val sub = consumerServices.subscriptionClient.subscribe(
@@ -46,7 +48,7 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
     onUpdates(updates)
   })
 
-  private var current = Map.empty[String, DNP3Gateway]
+  private var current = Map.empty[String, A]
 
   private def onUpdates(updates: Seq[IdentifiedEdgeUpdate]): Unit = {
 
@@ -86,8 +88,8 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
 
   private def processUpdate(value: Map[IndexableValue, Value]): Unit = {
 
-    val map = value.flatMap {
-      case (ValueString(key), ValueBytes(data)) => Some((key, data))
+    val map: Map[String, Value] = value.flatMap {
+      case (ValueString(key), v) => Some((key, v))
       case (otherK, otherV) =>
         logger.warn(s"K/v types were unexpected was other than string: $otherK -> $otherV")
         None
@@ -95,19 +97,16 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
 
     val removedKeys = current.keySet -- map.keySet
 
-    val modified: Map[String, DNP3Gateway] = map.flatMap {
-      case (module, bytes) =>
-
-        val gatewayOpt = try {
-          val is = new ByteArrayInputStream(bytes)
-          XmlReader.read(is, DnpGatewaySchema.gateway).flatMap { value =>
-            DNP3Gateway.read(value, SimpleReaderContext(Vector(RootCtx("DNP3Gateway")))) match {
-              case Left(err) =>
-                logger.warn(s"Could not parse value object: $err")
-                eventSink.publishEvent(Seq("configuration", "subscription"), s"Parse error: $err")
-                None
-              case Right(obj) => Some(obj)
-            }
+    val modified: Map[String, A] = map.flatMap {
+      case (module, configValue) =>
+        val parsedObjOpt = try {
+          parser(configValue) match {
+            case Left(err) =>
+              logger.warn(s"Could not parse value object: $err")
+              eventSink.publishEvent(Seq("configuration", "subscription"), s"Parse error: $err")
+              None
+            case Right(obj) =>
+              Some(obj)
           }
         } catch {
           case ex: Throwable =>
@@ -116,15 +115,15 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
             None
         }
 
-        gatewayOpt.flatMap { value =>
+        parsedObjOpt.flatMap { obj =>
           current.get(module) match {
             case None =>
-              current = current.updated(module, value)
-              Some(module -> value)
+              current = current.updated(module, obj)
+              Some(module -> obj)
             case Some(prev) =>
-              if (prev != value) {
-                current = current.updated(module, value)
-                Some(module -> value)
+              if (prev != obj) {
+                current = current.updated(module, obj)
+                Some(module -> obj)
               } else {
                 None
               }
@@ -132,12 +131,9 @@ class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerSe
         }
     }
 
-    current = current -- removedKeys
-
-    removedKeys.foreach(k => handler.onGatewayRemoved(k))
+    removedKeys.foreach(k => handler.onRemoved(k))
     modified.foreach {
-      case (key, cfg) => handler.onGatewayConfigured(key, cfg)
+      case (key, cfg) => handler.onConfigured(key, cfg)
     }
-
   }
 }
