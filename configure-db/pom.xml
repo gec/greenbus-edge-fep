@@ -30,7 +30,11 @@
             <artifactId>h2</artifactId>
             <version>1.4.192</version>
         </dependency>-->
-
+        <dependency>
+            <groupId>io.greenbus.edge</groupId>
+            <artifactId>greenbus-edge-data-json</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>commons-pool</groupId>
             <artifactId>commons-pool</artifactId>

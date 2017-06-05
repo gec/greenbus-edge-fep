@@ -18,11 +18,13 @@
  */
 package io.greenbus.edge.configure.server
 
+import java.io.ByteArrayInputStream
 import javax.servlet.http.{ HttpServlet, HttpServletRequest, HttpServletResponse }
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.configure.endpoint.{ ModuleConfiguration, ModuleConfigurer }
-import io.greenbus.edge.data.ValueBytes
+import io.greenbus.edge.data.{ Value, ValueBytes }
+import io.greenbus.edge.data.json.EdgeJsonReader
 import org.apache.commons.io.IOUtils
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.{ ServletContextHandler, ServletHolder }
@@ -51,6 +53,9 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
     logger.debug("POST: " + req)
     logger.debug("content length: " + req.getContentLength)
 
+    logger.debug(s"Path: " + req.getRequestURI)
+    val uri = req.getRequestURI
+
     val bytes = IOUtils.readFully(req.getInputStream, req.getContentLength)
 
     val namesEnum = req.getHeaderNames
@@ -73,31 +78,50 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
       case None => resp.setStatus(HttpServletResponse.SC_BAD_REQUEST)
       case Some((module, component)) => {
 
-        val ctx = req.startAsync()
-        val prom = Promise[Boolean]
-        handler.updateModule(module, ModuleConfiguration(Map(component -> ValueBytes(bytes))), prom)
-
-        val future = prom.future
-
-        future.foreach { result =>
-          ctx.getResponse match {
-            case r: HttpServletResponse =>
-              if (result) {
-                r.setStatus(HttpServletResponse.SC_OK)
-              } else {
-                r.setStatus(HttpServletResponse.SC_BAD_REQUEST)
-              }
-            case _ =>
+        val valueOpt: Option[Value] = if (uri.startsWith("/json")) {
+          logger.debug(s"JSON: ")
+          try {
+            EdgeJsonReader.read(new ByteArrayInputStream(bytes))
+          } catch {
+            case ex: Throwable =>
+              logger.warn(s"Could not parse configuration: $ex")
+              None
           }
-          ctx.complete()
+        } else {
+          Some(ValueBytes(bytes))
         }
-        future.failed.foreach { ex =>
-          ctx.getResponse match {
-            case r: HttpServletResponse =>
-              r.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage)
-            case _ =>
+
+        valueOpt match {
+          case None => {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST)
           }
-          ctx.complete()
+          case Some(v) =>
+            val ctx = req.startAsync()
+            val prom = Promise[Boolean]
+            handler.updateModule(module, ModuleConfiguration(Map(component -> v)), prom)
+
+            val future = prom.future
+
+            future.foreach { result =>
+              ctx.getResponse match {
+                case r: HttpServletResponse =>
+                  if (result) {
+                    r.setStatus(HttpServletResponse.SC_OK)
+                  } else {
+                    r.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+                  }
+                case _ =>
+              }
+              ctx.complete()
+            }
+            future.failed.foreach { ex =>
+              ctx.getResponse match {
+                case r: HttpServletResponse =>
+                  r.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage)
+                case _ =>
+              }
+              ctx.complete()
+            }
         }
       }
     }
