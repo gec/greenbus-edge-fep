@@ -107,7 +107,7 @@ object ModbusGatewaySchema {
   }
 
   val master: TExt = {
-    TExt(ns, "Master", TStruct(Vector(
+    TExt(ns, "ModbusMaster", TStruct(Vector(
       StructFieldDef("tcpClient", tcpClient, 0),
       StructFieldDef("protocol", protocolTypeEnum, 1),
       StructFieldDef("address", TUInt32, 2),

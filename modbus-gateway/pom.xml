@@ -46,6 +46,11 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>io.greenbus.edge</groupId>
+            <artifactId>greenbus-edge-data-json</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.totalgrid.modbus</groupId>
             <artifactId>modbus-core</artifactId>
             <version>0.2.0</version>
