@@ -19,88 +19,96 @@
 package io.greenbus.edge.modbus
 
 import com.typesafe.scalalogging.LazyLogging
+import io.greenbus.edge.fep.{ EventSink, FrontendAdapter, FrontendPublisher, MeasObserver, SplittingMeasObserver }
 import io.greenbus.edge.modbus.config.model.{ ModbusGateway, ProtocolType }
 import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
 import org.totalgrid.modbus._
 import org.totalgrid.modbus.poll.Poll
 
-class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices) extends LazyLogging {
+class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends LazyLogging {
   private val modbus = ModbusManager.start(8192, 6)
+  private var resources = Map.empty[String, (RawModbusEndpoint, FrontendPublisher, ModbusMaster)]
 
   def onGatewayConfigured(key: String, config: ModbusGateway): Unit = {
-    logger.info(s"Gateway configured: $key")
+    eventThread.marshal {
+      logger.info(s"Gateway configured: $key")
 
-    val connectionTimeoutMs = 5000
-    val operationTimeoutMs = 5000
+      val (measObserver, cmdAdapter) = RawModbusEndpoint.build(eventThread, localId, producerServices, config)
+      val outputAdapter = new CommandAdapter(config.modbus.commandMappings)
 
-    val polls: Seq[Poll] = Seq()
+      val gatewayPub = FrontendPublisher.load(eventThread, producerServices, outputAdapter, config.endpoint)
 
-    val obs = new DeviceObserver
+      val observer = new SplittingMeasObserver(Seq(
+        measObserver,
+        new FrontendAdapter(gatewayPub)))
 
-    val master = config.modbus.protocol match {
-      case ProtocolType.RTU =>
-        modbus.addRtuMaster(
-          config.modbus.tcpClient.host,
-          config.modbus.tcpClient.port,
-          config.modbus.address.toByte,
-          obs,
-          obs,
-          polls,
-          connectionTimeoutMs,
-          config.modbus.tcpClient.retryMs,
-          operationTimeoutMs)
-      case ProtocolType.TCPIP =>
-        modbus.addTcpMaster(
-          config.modbus.tcpClient.host,
-          config.modbus.tcpClient.port,
-          config.modbus.address.toByte,
-          obs,
-          obs,
-          polls,
-          connectionTimeoutMs,
-          config.modbus.tcpClient.retryMs,
-          operationTimeoutMs)
+      val connectionTimeoutMs = 5000
+      val operationTimeoutMs = 5000
+
+      val polls: Seq[Poll] = PollConfigConverter.load(config)
+
+      val mapper = new InputMapping(config.modbus.discreteInputs, config.modbus.coilStatuses, config.modbus.inputRegisters, config.modbus.holdingRegisters)
+      val obs = new DeviceObserver(mapper, observer)
+
+      val master = config.modbus.protocol match {
+        case ProtocolType.RTU =>
+          modbus.addRtuMaster(
+            config.modbus.tcpClient.host,
+            config.modbus.tcpClient.port,
+            config.modbus.address.toByte,
+            obs,
+            obs,
+            polls,
+            connectionTimeoutMs,
+            config.modbus.tcpClient.retryMs,
+            operationTimeoutMs)
+        case ProtocolType.TCPIP =>
+          modbus.addTcpMaster(
+            config.modbus.tcpClient.host,
+            config.modbus.tcpClient.port,
+            config.modbus.address.toByte,
+            obs,
+            obs,
+            polls,
+            connectionTimeoutMs,
+            config.modbus.tcpClient.retryMs,
+            operationTimeoutMs)
+      }
+
+      cmdAdapter.setOps(master)
+      resources += (key -> (measObserver, gatewayPub, master))
     }
-
   }
 
   def onGatewayRemoved(key: String): Unit = {
-
-  }
-}
-
-class DeviceObserver extends ModbusDeviceObserver with ChannelObserver {
-
-  override def onReadDiscreteInput(list: Traversable[ModbusBit]): Unit = {
-
+    logger.info(s"Gateway removed: $key")
+    eventThread.marshal {
+      eventSink.publishEvent(Seq("source", "updated"), s"Gateway removed: $key")
+      remove(key)
+    }
   }
 
-  override def onReadCoilStatus(list: Traversable[ModbusBit]): Unit = {
-
+  private def remove(key: String): Unit = {
+    resources.get(key).foreach {
+      case (handle1, handle2, master) =>
+        master.close()
+        handle1.close()
+        handle2.close()
+    }
   }
 
-  override def onReadHoldingRegister(list: Traversable[ModbusRegister]): Unit = {
+  def close(): Unit = {
+    logger.info(s"Gateway mgr closed")
+    eventThread.marshal {
+      resources.foreach {
+        case (_, (handle1, handle2, master)) =>
+          master.close()
+          handle1.close()
+          handle2.close()
+      }
 
-  }
-
-  override def onReadInputRegister(list: Traversable[ModbusRegister]): Unit = {
-
-  }
-
-  override def onCommSuccess(): Unit = {}
-
-  override def onCommFailure(): Unit = {}
-
-  def onChannelOpening(): Unit = {
-
-  }
-
-  def onChannelOnline(): Unit = {
-    //statusUpdate(StackStatusUpdated(FrontEndConnectionStatus.Status.COMMS_UP))
-  }
-
-  def onChannelOffline(): Unit = {
-    //statusUpdate(StackStatusUpdated(FrontEndConnectionStatus.Status.COMMS_DOWN))
+      modbus.shutdown()
+    }
   }
 }

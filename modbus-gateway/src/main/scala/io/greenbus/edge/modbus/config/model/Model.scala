@@ -226,7 +226,7 @@ object Master {
     val discreteInputs = MappingLibrary.optMapField("discreteInputs", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.BooleanInput](elem, io.greenbus.edge.modbus.config.model.BooleanInput.read, ctx)).getOrElse(Right(Seq()))
     val coilStatuses = MappingLibrary.optMapField("coilStatuses", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.BooleanInput](elem, io.greenbus.edge.modbus.config.model.BooleanInput.read, ctx)).getOrElse(Right(Seq()))
     val inputRegisters = MappingLibrary.optMapField("inputRegisters", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.NumericInput](elem, io.greenbus.edge.modbus.config.model.NumericInput.read, ctx)).getOrElse(Right(Seq()))
-    val holdingRegisters = MappingLibrary.optMapField("holdingRegisters", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.BooleanInput](elem, io.greenbus.edge.modbus.config.model.BooleanInput.read, ctx)).getOrElse(Right(Seq()))
+    val holdingRegisters = MappingLibrary.optMapField("holdingRegisters", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.NumericInput](elem, io.greenbus.edge.modbus.config.model.NumericInput.read, ctx)).getOrElse(Right(Seq()))
     val commandMappings = MappingLibrary.optMapField("commandMappings", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.OutputMapping](elem, io.greenbus.edge.modbus.config.model.OutputMapping.read, ctx)).getOrElse(Right(Seq()))
 
     if (tcpClient.isRight && protocol.isRight && address.isRight && polls.isRight && discreteInputs.isRight && coilStatuses.isRight && inputRegisters.isRight && holdingRegisters.isRight && commandMappings.isRight) {
@@ -245,13 +245,13 @@ object Master {
       (ValueString("discreteInputs"), MappingLibrary.writeList(obj.discreteInputs, io.greenbus.edge.modbus.config.model.BooleanInput.write)),
       (ValueString("coilStatuses"), MappingLibrary.writeList(obj.coilStatuses, io.greenbus.edge.modbus.config.model.BooleanInput.write)),
       (ValueString("inputRegisters"), MappingLibrary.writeList(obj.inputRegisters, io.greenbus.edge.modbus.config.model.NumericInput.write)),
-      (ValueString("holdingRegisters"), MappingLibrary.writeList(obj.holdingRegisters, io.greenbus.edge.modbus.config.model.BooleanInput.write)),
+      (ValueString("holdingRegisters"), MappingLibrary.writeList(obj.holdingRegisters, io.greenbus.edge.modbus.config.model.NumericInput.write)),
       (ValueString("commandMappings"), MappingLibrary.writeList(obj.commandMappings, io.greenbus.edge.modbus.config.model.OutputMapping.write))))
 
     TaggedValue("Master", built)
   }
 }
-case class Master(tcpClient: io.greenbus.edge.modbus.config.model.TCPClient, protocol: io.greenbus.edge.modbus.config.model.ProtocolType, address: Int, polls: Seq[io.greenbus.edge.modbus.config.model.Poll], discreteInputs: Seq[io.greenbus.edge.modbus.config.model.BooleanInput], coilStatuses: Seq[io.greenbus.edge.modbus.config.model.BooleanInput], inputRegisters: Seq[io.greenbus.edge.modbus.config.model.NumericInput], holdingRegisters: Seq[io.greenbus.edge.modbus.config.model.BooleanInput], commandMappings: Seq[io.greenbus.edge.modbus.config.model.OutputMapping])
+case class Master(tcpClient: io.greenbus.edge.modbus.config.model.TCPClient, protocol: io.greenbus.edge.modbus.config.model.ProtocolType, address: Int, polls: Seq[io.greenbus.edge.modbus.config.model.Poll], discreteInputs: Seq[io.greenbus.edge.modbus.config.model.BooleanInput], coilStatuses: Seq[io.greenbus.edge.modbus.config.model.BooleanInput], inputRegisters: Seq[io.greenbus.edge.modbus.config.model.NumericInput], holdingRegisters: Seq[io.greenbus.edge.modbus.config.model.NumericInput], commandMappings: Seq[io.greenbus.edge.modbus.config.model.OutputMapping])
 
 object ModbusGateway {
 

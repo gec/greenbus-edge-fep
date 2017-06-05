@@ -115,7 +115,7 @@ object ModbusGatewaySchema {
       StructFieldDef("discreteInputs", TList(booleanInput), 4),
       StructFieldDef("coilStatuses", TList(booleanInput), 5),
       StructFieldDef("inputRegisters", TList(numericInput), 6),
-      StructFieldDef("holdingRegisters", TList(booleanInput), 7),
+      StructFieldDef("holdingRegisters", TList(numericInput), 7),
       StructFieldDef("commandMappings", TList(commandMapping), 8))))
   }
 
