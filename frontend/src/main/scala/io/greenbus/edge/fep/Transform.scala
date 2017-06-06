@@ -51,10 +51,10 @@ class LinearTransformStep(scale: Double, offset: Double) extends TransformStep {
     val result = v match {
       case ValueFloat(value) => ValueFloat((value * scale + offset).toFloat)
       case ValueDouble(value) => ValueDouble(value * scale + offset)
-      case ValueInt32(value) => ValueInt32((value * scale + offset).toInt)
-      case ValueUInt32(value) => ValueUInt32((value * scale + offset).toInt)
-      case ValueInt64(value) => ValueInt64((value * scale + offset).toLong)
-      case ValueUInt64(value) => ValueUInt64((value * scale + offset).toLong)
+      case ValueInt32(value) => ValueDouble(value.toDouble * scale + offset)
+      case ValueUInt32(value) => ValueDouble(value.toDouble * scale + offset)
+      case ValueInt64(value) => ValueDouble(value.toDouble * scale + offset)
+      case ValueUInt64(value) => ValueDouble(value.toDouble * scale + offset)
       case ValueBool(value) =>
         val v = if (value) 1 else 0
         ValueBool((v * scale + offset) != 0.0)
