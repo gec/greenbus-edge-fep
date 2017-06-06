@@ -48,6 +48,7 @@ trait ModuleConfigurer {
 class FepConfigureHandle(b: EndpointBuilder) {
 
   val dnpHandle = b.activeSet(Path("dnp3"))
+  val modbusHandle = b.activeSet(Path("modbus"))
 
   private val handle = b.build(100, 100)
   def flush(): Unit = {
@@ -83,6 +84,7 @@ object FepConfigurerMgr extends LazyLogging {
 class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, db: ModuleDb) extends ModuleConfigurer with LazyLogging {
 
   private var currentDnp = Map.empty[IndexableValue, Value]
+  private var currentModbus = Map.empty[IndexableValue, Value]
 
   eventThread.marshal {
     load()
@@ -99,6 +101,17 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
             .map(v => (ValueString(mv.module), v))
         }.toMap
         handle.dnpHandle.update(currentDnp)
+        handle.flush()
+      }
+    }
+    db.valuesForComponent("modbusgateway").foreach { values =>
+      logger.debug(s"Module/components on launch: ${values.map(v => (v.module, v.component, v.data.length))}")
+      eventThread.marshal {
+        currentModbus = values.flatMap { mv =>
+          FepConfigurerMgr.fromDbBytes(s"${mv.module}/${mv.component}", mv.data)
+            .map(v => (ValueString(mv.module), v))
+        }.toMap
+        handle.modbusHandle.update(currentModbus)
         handle.flush()
       }
     }
@@ -120,7 +133,9 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
 
   def onModuleRemove(module: String, promise: Promise[Boolean]): Unit = {
     currentDnp = currentDnp - ValueString(module)
+    currentModbus = currentModbus - ValueString(module)
     handle.dnpHandle.update(currentDnp)
+    handle.modbusHandle.update(currentModbus)
     handle.flush()
     promise.success(true)
   }
@@ -130,10 +145,13 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
       case (comp, value) => {
         if (comp == "dnpgateway") {
           currentDnp = currentDnp + (ValueString(module) -> value)
+          handle.dnpHandle.update(currentDnp)
+        } else if (comp == "modbusgateway") {
+          currentModbus = currentModbus + (ValueString(module) -> value)
+          handle.modbusHandle.update(currentModbus)
         }
       }
     }
-    handle.dnpHandle.update(currentDnp)
     handle.flush()
     promise.success(true)
   }
