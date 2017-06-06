@@ -32,6 +32,7 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
   def onConfigured(key: String, config: ModbusGateway): Unit = {
     eventThread.marshal {
       logger.info(s"Gateway configured: $key")
+      remove(key)
 
       val (measObserver, cmdAdapter) = RawModbusEndpoint.build(eventThread, localId, producerServices, config)
       val outputAdapter = new CommandAdapter(config.modbus.commandMappings)
