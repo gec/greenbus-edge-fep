@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.greenbus.edge</groupId>
         <artifactId>greenbus-edge-fep-parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -28,27 +28,27 @@
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-data</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-data-xml</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-data-proto</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-frontend</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-data-json</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.totalgrid.modbus</groupId>
@@ -58,17 +58,17 @@
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-amqp</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-streaming-provider</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-api</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
