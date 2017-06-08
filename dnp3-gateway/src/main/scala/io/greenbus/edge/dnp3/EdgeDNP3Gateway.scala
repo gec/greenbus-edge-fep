@@ -23,6 +23,7 @@ import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.dnp3.sub.ConfigSubscriber
 import io.greenbus.edge.fep.{ GatewayEndpointPublisher, NodeSettings }
+import io.greenbus.edge.peer.impl2.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
 import io.greenbus.edge.thread.EventThreadService
 
@@ -100,9 +101,15 @@ object EdgeDNP3Gateway extends LazyLogging {
     val clientSettings = PeerClientSettings.load(amqpConfigPath)
     val nodeSettings = NodeSettings.load(nodeConfig)
 
-    val services = AmqpEdgeService.build(clientSettings.host, clientSettings.port, retryIntervalMs = clientSettings.retryIntervalMs, connectTimeoutMs = clientSettings.connectTimeoutMs)
+    val services = AmqpEdgeConnectionManager.build(
+      clientSettings.host,
+      clientSettings.port,
+      retryIntervalMs = clientSettings.retryIntervalMs,
+      connectTimeoutMs = clientSettings.connectTimeoutMs)
+
+    val consumerServices = services.buildConsumerServices()
+    val producerServices = services.buildProducerServices()
     services.start()
-    val producerServices = services.producer
 
     val eventThread = EventThreadService.build("DNP MGR")
 
@@ -112,7 +119,7 @@ object EdgeDNP3Gateway extends LazyLogging {
 
     val gatewayMgr = new DNPGatewayMgr(eventThread, gatewayId, producerServices, publisher)
 
-    val configSubscriber = new ConfigSubscriber(eventThread, services.consumer, gatewayMgr, publisher)
+    val configSubscriber = new ConfigSubscriber(eventThread, consumerServices, gatewayMgr, publisher)
 
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run(): Unit = {

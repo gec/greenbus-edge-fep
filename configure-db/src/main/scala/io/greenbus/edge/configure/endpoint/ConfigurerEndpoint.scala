@@ -23,6 +23,7 @@ import java.util.concurrent.Executors
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.configure.server.WebServer
 import io.greenbus.edge.configure.sql.{ JooqTransactable, ModuleDb, PostgresDataPool, SqlSettings }
+import io.greenbus.edge.peer.impl2.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
 import io.greenbus.edge.thread.EventThreadService
 
@@ -48,12 +49,17 @@ object ConfigurerEndpoint {
 
     val moduleDb = ModuleDb.build(db)
 
-    val services = AmqpEdgeService.build(clientSettings.host, clientSettings.port, retryIntervalMs = clientSettings.retryIntervalMs, connectTimeoutMs = clientSettings.connectTimeoutMs)
-    services.start()
-    val producerServices = services.producer
+    val services = AmqpEdgeConnectionManager.build(
+      clientSettings.host,
+      clientSettings.port,
+      retryIntervalMs = clientSettings.retryIntervalMs,
+      connectTimeoutMs = clientSettings.connectTimeoutMs)
+
+    val producerServices = services.buildProducerServices()
     val eventThread = EventThreadService.build("DNP MGR")
 
     val mgr = FepConfigurerMgr.load(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices, moduleDb)
+    services.start()
 
     val server = WebServer.build(mgr, appSettings.port)
     server.start()

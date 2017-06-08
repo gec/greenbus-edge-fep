@@ -23,6 +23,7 @@ import io.greenbus.edge.data.Value
 import io.greenbus.edge.data.mapping.SimpleReaderContext
 import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
 import io.greenbus.edge.modbus.config.model.ModbusGateway
+import io.greenbus.edge.peer.impl2.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
 import io.greenbus.edge.thread.EventThreadService
 
@@ -43,9 +44,15 @@ object EdgeModbusGateway {
     val clientSettings = PeerClientSettings.load(amqpConfigPath)
     val nodeSettings = NodeSettings.load(nodeConfig)
 
-    val services = AmqpEdgeService.build(clientSettings.host, clientSettings.port, retryIntervalMs = clientSettings.retryIntervalMs, connectTimeoutMs = clientSettings.connectTimeoutMs)
+    val services = AmqpEdgeConnectionManager.build(
+      clientSettings.host,
+      clientSettings.port,
+      retryIntervalMs = clientSettings.retryIntervalMs,
+      connectTimeoutMs = clientSettings.connectTimeoutMs)
+
+    val producerServices = services.buildProducerServices()
+    val consumerServices = services.buildConsumerServices()
     services.start()
-    val producerServices = services.producer
 
     val eventThread = EventThreadService.build("DNP MGR")
 
@@ -56,7 +63,8 @@ object EdgeModbusGateway {
     val gatewayMgr = new ModbusMgr(eventThread, gatewayId, producerServices, publisher)
 
     val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("modbus"))
-    val configSubscriber = new ConfigurationSubscriber(eventThread, services.consumer, configKey, parseConfig, gatewayMgr, publisher)
+
+    val configSubscriber = new ConfigurationSubscriber(eventThread, consumerServices, configKey, parseConfig, gatewayMgr, publisher)
 
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run(): Unit = {
