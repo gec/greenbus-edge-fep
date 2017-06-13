@@ -23,8 +23,8 @@ import java.util.concurrent.Executors
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.configure.server.WebServer
 import io.greenbus.edge.configure.sql.{ JooqTransactable, ModuleDb, PostgresDataPool, SqlSettings }
-import io.greenbus.edge.peer.impl2.AmqpEdgeConnectionManager
-import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
+import io.greenbus.edge.peer.AmqpEdgeConnectionManager
+import io.greenbus.edge.peer.PeerClientSettings
 import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global

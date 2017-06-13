@@ -23,8 +23,8 @@ import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.dnp3.sub.ConfigSubscriber
 import io.greenbus.edge.fep.{ GatewayEndpointPublisher, NodeSettings }
-import io.greenbus.edge.peer.impl2.AmqpEdgeConnectionManager
-import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
+import io.greenbus.edge.peer.AmqpEdgeConnectionManager
+import io.greenbus.edge.peer.PeerClientSettings
 import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global

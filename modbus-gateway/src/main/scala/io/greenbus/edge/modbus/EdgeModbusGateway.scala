@@ -23,8 +23,8 @@ import io.greenbus.edge.data.Value
 import io.greenbus.edge.data.mapping.SimpleReaderContext
 import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
 import io.greenbus.edge.modbus.config.model.ModbusGateway
-import io.greenbus.edge.peer.impl2.AmqpEdgeConnectionManager
-import io.greenbus.edge.peer.{ AmqpEdgeService, PeerClientSettings }
+import io.greenbus.edge.peer.AmqpEdgeConnectionManager
+import io.greenbus.edge.peer.PeerClientSettings
 import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global

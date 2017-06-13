@@ -41,8 +41,7 @@ class ConfigurationSubscriber[A](
 
   private val sub = consumerServices.subscriptionClient.subscribe(
     SubscriptionParams(dataKeys =
-      DataKeySubscriptionParams(activeSet =
-        Seq(endpointPath))))
+      Set(endpointPath)))
 
   sub.updates.bind(updates => eventThread.marshal {
     onUpdates(updates)
@@ -73,7 +72,6 @@ class ConfigurationSubscriber[A](
                   logger.warn(s"Got wrong data key type: $other")
               }
             }
-            case Disconnected =>
           }
         } else {
           //eventSink.publishEvent(Seq("error", "internal"), s"Unexpected endpoint path in subscription: ${idUp.id}")

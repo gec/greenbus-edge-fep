@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.greenbus.edge</groupId>
         <artifactId>greenbus-edge-fep-parent</artifactId>
-        <version>0.0.2-SNAPSHOT</version>
+        <version>0.0.3-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-data-json</artifactId>
-            <version>0.0.2-SNAPSHOT</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>commons-pool</groupId>
@@ -69,7 +69,7 @@
         <dependency>
             <groupId>io.greenbus.edge</groupId>
             <artifactId>greenbus-edge-peer-relay</artifactId>
-            <version>0.0.2-SNAPSHOT</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
