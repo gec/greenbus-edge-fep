@@ -22,14 +22,12 @@ import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
-import io.greenbus.edge.api.stream.{ KeyMetadata, OutputStatusHandle, ProducerHandle, SeriesValueHandle }
 import io.greenbus.edge.data._
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.edm.core.EdgeCoreModel
 import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate, MeasObserver }
 import io.greenbus.edge.flow
 import io.greenbus.edge.flow.Receiver
-import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
@@ -43,7 +41,7 @@ case class DnpControlConfig(index: Int, function: FunctionType, options: Control
 case class DnpSetpointConfig(index: Int, function: FunctionType) extends DnpOutputTypeConfig
 
 object RawDnpEndpoint {
-  def build(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, config: DNP3Gateway): (RawDnpEndpoint, DNPKeyedControlAdapter) = {
+  def build(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, config: DNP3Gateway): (RawDnpEndpoint, DNPKeyedControlAdapter) = {
 
     val path = Path(Seq("dnp", localId, s"${config.client.host}_${config.client.port}"))
     val b = producerServices.endpointBuilder(EndpointId(path))
@@ -92,7 +90,7 @@ object RawDnpEndpoint {
       handleConfig += (setpoint.name -> DnpSetpointConfig(setpoint.index, setpoint.function))
     }
 
-    val built = b.build(100, 100)
+    val built = b.build()
 
     cfgKey.update(DNP3Gateway.write(config))
 

@@ -19,12 +19,9 @@
 package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.api.Path
-import io.greenbus.edge.api.stream.{ EndpointBuilder, ProducerHandle }
-import io.greenbus.edge.data.{ SampleValue, ValueString }
+import io.greenbus.edge.api.ProducerService
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.fep.{ EventSink, FrontendAdapter, FrontendPublisher, SplittingMeasObserver }
-import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
 
 trait DNPGatewayHandler {
@@ -32,7 +29,7 @@ trait DNPGatewayHandler {
   def onGatewayRemoved(key: String): Unit
 }
 
-class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends DNPGatewayHandler with LazyLogging {
+class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, eventSink: EventSink) extends DNPGatewayHandler with LazyLogging {
 
   private val mgr = new Dnp3Mgr
   private var resources = Map.empty[String, (RawDnpEndpoint, FrontendPublisher)]

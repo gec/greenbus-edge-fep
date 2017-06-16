@@ -18,15 +18,14 @@
  */
 package io.greenbus.edge.fep
 
-import io.greenbus.edge.api.Path
-import io.greenbus.edge.api.stream.EndpointBuilder
+import io.greenbus.edge.api.{ EndpointBuilder, Path }
 import io.greenbus.edge.data.ValueString
 import io.greenbus.edge.thread.CallMarshaller
 
 class GatewayEndpointPublisher(eventThread: CallMarshaller, b: EndpointBuilder) extends EventSink {
 
   val events = b.topicEventValue(Path("events"))
-  private val handle = b.build(100, 100)
+  private val handle = b.build()
 
   def publishEvent(topic: Seq[String], event: String): Unit = {
     eventThread.marshal {

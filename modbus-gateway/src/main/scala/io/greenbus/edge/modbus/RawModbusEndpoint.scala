@@ -21,7 +21,6 @@ package io.greenbus.edge.modbus
 import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.api.stream.{ KeyMetadata, OutputStatusHandle, ProducerHandle, SeriesValueHandle }
 import io.greenbus.edge.api._
 import io.greenbus.edge.data.{ FloatingPointValue, IntegerValue, SampleValue }
 import io.greenbus.edge.edm.core.EdgeCoreModel
@@ -29,13 +28,12 @@ import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate, MeasObserver
 import io.greenbus.edge.flow
 import io.greenbus.edge.flow.Receiver
 import io.greenbus.edge.modbus.config.model.{ BooleanInput, CommandType, ModbusGateway, NumericInput }
-import io.greenbus.edge.peer.ProducerServices
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
 
 object RawModbusEndpoint {
-  def build(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, config: ModbusGateway): (RawModbusEndpoint, CommandAdapter) = {
+  def build(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, config: ModbusGateway): (RawModbusEndpoint, CommandAdapter) = {
 
     val path = Path(Seq("modbus", localId, s"${config.modbus.tcpClient.host}_${config.modbus.tcpClient.port}"))
     val b = producerServices.endpointBuilder(EndpointId(path))
@@ -76,7 +74,7 @@ object RawModbusEndpoint {
       controlEntries += ControlEntry(path, outMap.name, status, rcv)
     }
 
-    val built = b.build(100, 100)
+    val built = b.build()
 
     cfgKey.update(ModbusGateway.write(config))
 

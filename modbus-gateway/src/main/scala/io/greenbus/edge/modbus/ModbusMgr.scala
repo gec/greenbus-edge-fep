@@ -21,11 +21,11 @@ package io.greenbus.edge.modbus
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.fep._
 import io.greenbus.edge.modbus.config.model.{ ModbusGateway, ProtocolType }
-import io.greenbus.edge.peer.ProducerServices
+import io.greenbus.edge.api.ProducerService
 import io.greenbus.edge.thread.CallMarshaller
 import org.totalgrid.modbus._
 
-class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerServices, eventSink: EventSink) extends ConfigurationHandler[ModbusGateway] with LazyLogging {
+class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, eventSink: EventSink) extends ConfigurationHandler[ModbusGateway] with LazyLogging {
   private val modbus = ModbusManager.start(8192, 6)
   private var resources = Map.empty[String, (RawModbusEndpoint, FrontendPublisher, ModbusMaster)]
 

@@ -22,12 +22,10 @@ import java.util.UUID
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
-import io.greenbus.edge.api.stream.{ KeyMetadata, OutputStatusHandle, ProducerHandle, SeriesValueHandle }
 import io.greenbus.edge.data._
 import io.greenbus.edge.edm.core.EdgeCoreModel
 import io.greenbus.edge.fep.config.model.{ Path => _, _ }
-import io.greenbus.edge.flow.{ Receiver, Sink }
-import io.greenbus.edge.peer.ProducerServices
+import io.greenbus.edge.flow.Receiver
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
@@ -58,7 +56,7 @@ object FrontendPublisher {
     (Path(mkv.path.value), mapMetadataValue(mkv.value))
   }
 
-  def load(eventThread: CallMarshaller, services: ProducerServices, delegate: FrontendOutputDelegate, config: FrontendConfiguration): FrontendPublisher = {
+  def load(eventThread: CallMarshaller, services: ProducerService, delegate: FrontendOutputDelegate, config: FrontendConfiguration): FrontendPublisher = {
 
     val builder = services.endpointBuilder(EndpointId(Path(config.endpointId.value)))
 
@@ -129,7 +127,7 @@ object FrontendPublisher {
       ControlEntry(Path(fok.path.value), fok.gatewayKey, keyHandle, rcv)
     }
 
-    val handle: ProducerHandle = builder.build(100, 100)
+    val handle: ProducerHandle = builder.build()
 
     new FrontendPublisher(eventThread, handle, delegate, dataKeyMap, outputEntries)
   }

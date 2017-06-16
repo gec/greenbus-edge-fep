@@ -29,10 +29,9 @@ import io.greenbus.edge.dnp3.DNPGatewayHandler
 import io.greenbus.edge.dnp3.config.DnpGatewaySchema
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.fep.EventSink
-import io.greenbus.edge.peer.ConsumerServices
 import io.greenbus.edge.thread.CallMarshaller
 
-class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerServices, handler: DNPGatewayHandler, eventSink: EventSink) extends LazyLogging {
+class ConfigSubscriber(eventThread: CallMarshaller, consumerServices: ConsumerService, handler: DNPGatewayHandler, eventSink: EventSink) extends LazyLogging {
 
   private val endpointPath = EndpointPath(EndpointId(Path("configuration_server")), Path("dnp3"))
   private var connected = false

@@ -20,11 +20,11 @@ package io.greenbus.edge.configure.endpoint
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.{ EndpointId, Path }
-import io.greenbus.edge.api.stream.EndpointBuilder
+import io.greenbus.edge.api.EndpointBuilder
 import io.greenbus.edge.configure.sql.{ ModuleComponentValue, ModuleDb }
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
-import io.greenbus.edge.peer.ProducerServices
+import io.greenbus.edge.api.ProducerService
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.concurrent.{ Future, Promise }
@@ -50,14 +50,14 @@ class FepConfigureHandle(b: EndpointBuilder) {
   val dnpHandle = b.activeSet(Path("dnp3"))
   val modbusHandle = b.activeSet(Path("modbus"))
 
-  private val handle = b.build(100, 100)
+  private val handle = b.build()
   def flush(): Unit = {
     handle.flush()
   }
 }
 
 object FepConfigurerMgr extends LazyLogging {
-  def load(eventThread: CallMarshaller, id: EndpointId, producerServices: ProducerServices, db: ModuleDb): FepConfigurerMgr = {
+  def load(eventThread: CallMarshaller, id: EndpointId, producerServices: ProducerService, db: ModuleDb): FepConfigurerMgr = {
 
     val b = producerServices.endpointBuilder(id)
 
