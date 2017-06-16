@@ -55,7 +55,7 @@ object ConfigurerEndpoint {
       retryIntervalMs = clientSettings.retryIntervalMs,
       connectTimeoutMs = clientSettings.connectTimeoutMs)
 
-    val producerServices = services.buildProducerServices()
+    val producerServices = services.bindProducerServices()
     val eventThread = EventThreadService.build("DNP MGR")
 
     val mgr = FepConfigurerMgr.load(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices, moduleDb)

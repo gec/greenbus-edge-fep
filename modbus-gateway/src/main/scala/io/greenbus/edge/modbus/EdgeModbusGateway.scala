@@ -50,8 +50,8 @@ object EdgeModbusGateway {
       retryIntervalMs = clientSettings.retryIntervalMs,
       connectTimeoutMs = clientSettings.connectTimeoutMs)
 
-    val producerServices = services.buildProducerServices()
-    val consumerServices = services.buildConsumerServices()
+    val producerServices = services.bindProducerServices()
+    val consumerServices = services.bindConsumerServices()
     services.start()
 
     val eventThread = EventThreadService.build("DNP MGR")

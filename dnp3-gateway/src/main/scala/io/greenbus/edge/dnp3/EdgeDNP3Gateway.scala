@@ -107,8 +107,8 @@ object EdgeDNP3Gateway extends LazyLogging {
       retryIntervalMs = clientSettings.retryIntervalMs,
       connectTimeoutMs = clientSettings.connectTimeoutMs)
 
-    val consumerServices = services.buildConsumerServices()
-    val producerServices = services.buildProducerServices()
+    val consumerServices = services.bindConsumerServices()
+    val producerServices = services.bindProducerServices()
     services.start()
 
     val eventThread = EventThreadService.build("DNP MGR")

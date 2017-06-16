@@ -21,7 +21,6 @@ package io.greenbus.edge.fep
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
-import io.greenbus.edge.peer.ConsumerServices
 import io.greenbus.edge.thread.CallMarshaller
 
 trait ConfigurationHandler[A] {
@@ -31,7 +30,7 @@ trait ConfigurationHandler[A] {
 
 class ConfigurationSubscriber[A](
     eventThread: CallMarshaller,
-    consumerServices: ConsumerServices,
+    consumerServices: ConsumerService,
     endpointPath: EndpointPath,
     parser: Value => Either[String, A],
     handler: ConfigurationHandler[A],
