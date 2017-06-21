@@ -21,7 +21,7 @@ package io.greenbus.edge.dnp3
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.ProducerService
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
-import io.greenbus.edge.fep.{ EventSink, FrontendAdapter, FrontendPublisher, SplittingMeasObserver }
+import io.greenbus.edge.fep._
 import io.greenbus.edge.thread.CallMarshaller
 
 trait DNPGatewayHandler {
@@ -29,13 +29,13 @@ trait DNPGatewayHandler {
   def onGatewayRemoved(key: String): Unit
 }
 
-class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, eventSink: EventSink) extends DNPGatewayHandler with LazyLogging {
+class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, eventSink: EventSink) extends ConfigurationHandler[DNP3Gateway] with LazyLogging {
 
   private val mgr = new Dnp3Mgr
   private var resources = Map.empty[String, (RawDnpEndpoint, FrontendPublisher)]
 
   // TODO: close producers
-  def onGatewayConfigured(key: String, config: DNP3Gateway): Unit = {
+  def onConfigured(key: String, config: DNP3Gateway): Unit = {
     logger.info(s"Gateway configured: $key")
     eventThread.marshal {
       eventSink.publishEvent(Seq("source", "updated"), s"Gateway configured: $key")
@@ -65,7 +65,7 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
     }
   }
 
-  def onGatewayRemoved(key: String): Unit = {
+  def onRemoved(key: String): Unit = {
     logger.info(s"Gateway removed: $key")
     eventThread.marshal {
       eventSink.publishEvent(Seq("source", "updated"), s"Gateway removed: $key")

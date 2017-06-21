@@ -19,10 +19,11 @@
 package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.api.{ EndpointId, Path }
+import io.greenbus.edge.api.{ EndpointId, EndpointPath, Path }
+import io.greenbus.edge.data.Value
+import io.greenbus.edge.data.mapping.SimpleReaderContext
 import io.greenbus.edge.dnp3.config.model._
-import io.greenbus.edge.dnp3.sub.ConfigSubscriber
-import io.greenbus.edge.fep.{ GatewayEndpointPublisher, NodeSettings }
+import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
 import io.greenbus.edge.peer.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.PeerClientSettings
 import io.greenbus.edge.thread.EventThreadService
@@ -32,65 +33,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object EdgeDNP3Gateway extends LazyLogging {
   logger.info("Initializing slf4j")
 
-  def buildMaster: Master = {
-    Master(
-      StackConfig(
-        LinkLayer(isMaster = true, localAddress = 100, remoteAddress = 1, userConfirmations = false, ackTimeoutMs = 1000, numRetries = 3),
-        AppLayer(timeoutMs = 5000, maxFragSize = 2048, numRetries = 0)),
-      MasterSettings(allowTimeSync = true, integrityPeriodMs = 300000, taskRetryMs = 5000),
-      Seq(Scan(
-        enableClass1 = true,
-        enableClass2 = true,
-        enableClass3 = true,
-        periodMs = 2000)),
-      Unsol(doTask = true, enable = true, enableClass1 = true, enableClass2 = true, enableClass3 = true))
-  }
-
-  def buildGateway: DNP3Gateway = {
-
-    DNP3Gateway(buildMaster,
-      TCPClient("127.0.0.1", 20000, 5000),
-      InputModel(
-        binaryInputs = IndexSet(Seq(IndexRange(0, 10))),
-        analogInputs = IndexSet(Seq(IndexRange(0, 10))),
-        counterInputs = IndexSet(Seq(IndexRange(0, 10))),
-        binaryOutputs = IndexSet(Seq(IndexRange(0, 10))),
-        analogOutputs = IndexSet(Seq(IndexRange(0, 10)))),
-      OutputModel(
-        controls = Seq(Control(
-          "control_0",
-          index = 0,
-          function = FunctionType.SelectBeforeOperate,
-          controlOptions = ControlOptions(
-            controlType = ControlType.PULSE,
-            onTime = Some(100),
-            offTime = Some(100),
-            count = Some(1))), Control(
-          "control_1_on",
-          index = 1,
-          function = FunctionType.SelectBeforeOperate,
-          controlOptions = ControlOptions(
-            controlType = ControlType.LATCH_ON,
-            onTime = None,
-            offTime = None,
-            count = None)), Control(
-          "control_1_off",
-          index = 1,
-          function = FunctionType.SelectBeforeOperate,
-          controlOptions = ControlOptions(
-            controlType = ControlType.LATCH_OFF,
-            onTime = None,
-            offTime = None,
-            count = None))),
-        setpoints = Seq(Setpoint(
-          "setpoint_0",
-          index = 0,
-          function = FunctionType.SelectBeforeOperate),
-          Setpoint(
-            "setpoint_1",
-            index = 1,
-            function = FunctionType.SelectBeforeOperate))),
-      FrontendConfigExample.build)
+  def parseConfig(v: Value): Either[String, DNP3Gateway] = {
+    val ctx = SimpleReaderContext(Vector())
+    DNP3Gateway.read(v, ctx)
   }
 
   def main(args: Array[String]): Unit = {
@@ -119,7 +64,9 @@ object EdgeDNP3Gateway extends LazyLogging {
 
     val gatewayMgr = new DNPGatewayMgr(eventThread, gatewayId, producerServices, publisher)
 
-    val configSubscriber = new ConfigSubscriber(eventThread, consumerServices, gatewayMgr, publisher)
+    val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("dnp3"))
+
+    val configSubscriber = new ConfigurationSubscriber(eventThread, consumerServices, configKey, parseConfig, gatewayMgr, publisher)
 
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run(): Unit = {

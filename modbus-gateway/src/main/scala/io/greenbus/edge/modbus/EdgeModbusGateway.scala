@@ -54,7 +54,7 @@ object EdgeModbusGateway {
     val consumerServices = services.bindConsumerServices()
     services.start()
 
-    val eventThread = EventThreadService.build("DNP MGR")
+    val eventThread = EventThreadService.build("Modbus MGR")
 
     val gatewayId = nodeSettings.name
 
