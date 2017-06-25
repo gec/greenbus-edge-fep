@@ -21,10 +21,10 @@ package io.greenbus.edge.configure.endpoint
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.{ EndpointId, Path }
 import io.greenbus.edge.api.EndpointBuilder
-import io.greenbus.edge.configure.sql.{ ModuleComponentValue, ModuleDb }
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
 import io.greenbus.edge.api.ProducerService
+import io.greenbus.edge.configure.sql.server.{ ModuleDbEntry, ModuleDb }
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.concurrent.{ Future, Promise }
@@ -38,7 +38,7 @@ push:
 
  */
 //case class ModuleComponent(kvs: Map[String, Value])
-case class ModuleConfiguration(components: Map[String, Value])
+case class ModuleConfiguration(components: Map[String, (Value, Option[String])])
 
 trait ModuleConfigurer {
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit
@@ -122,8 +122,8 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
   }
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
-    val updates = config.components.map { case (comp, v) => ModuleComponentValue(module, comp, ValueConversions.toProto(v).toByteArray) }
-    val futs = updates.map(v => db.insertValues(v))
+    val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleDbEntry(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
+    val futs = updates.map(v => db.insertValue(v))
     Future.sequence(futs).foreach { _ =>
       eventThread.marshal {
         onModuleUpdate(module, config, promise)
@@ -142,7 +142,7 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
 
   def onModuleUpdate(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
     config.components.foreach {
-      case (comp, value) => {
+      case (comp, (value, nodeOpt)) => {
         if (comp == "dnpgateway") {
           currentDnp = currentDnp + (ValueString(module) -> value)
           handle.dnpHandle.update(currentDnp)

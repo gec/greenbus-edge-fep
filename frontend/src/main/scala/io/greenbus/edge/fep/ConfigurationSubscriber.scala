@@ -31,7 +31,7 @@ trait ConfigurationHandler[A] {
 class ConfigurationSubscriber[A](
     eventThread: CallMarshaller,
     consumerServices: ConsumerService,
-    endpointPath: EndpointPath,
+    endpointPath: EndpointDynamicPath,
     parser: Value => Either[String, A],
     handler: ConfigurationHandler[A],
     eventSink: EventSink) extends LazyLogging {
@@ -39,7 +39,7 @@ class ConfigurationSubscriber[A](
   private var connected = false
 
   private val sub = consumerServices.subscriptionClient.subscribe(
-    SubscriptionParams(dataKeys =
+    SubscriptionParams(dynamicDataKeys =
       Set(endpointPath)))
 
   sub.updates.bind(updates => eventThread.marshal {
@@ -50,9 +50,8 @@ class ConfigurationSubscriber[A](
 
   private def onUpdates(updates: Seq[IdentifiedEdgeUpdate]): Unit = {
 
-    logger.debug("updates: " + updates)
     updates.foreach {
-      case idUp: IdDataKeyUpdate => {
+      case idUp: IdDynamicDataKeyUpdate => {
         if (idUp.id == endpointPath) {
           idUp.data match {
             case Pending =>
@@ -93,6 +92,7 @@ class ConfigurationSubscriber[A](
     }
 
     val removedKeys = current.keySet -- map.keySet
+    current --= removedKeys
 
     val modified: Map[String, A] = map.flatMap {
       case (module, configValue) =>

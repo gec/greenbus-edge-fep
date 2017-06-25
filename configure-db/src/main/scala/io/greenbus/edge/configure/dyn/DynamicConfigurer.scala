@@ -16,21 +16,21 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.greenbus.edge.configure.endpoint
+package io.greenbus.edge.configure.dyn
 
 import java.util.concurrent.Executors
 
 import io.greenbus.edge.api.{ EndpointId, Path }
+import io.greenbus.edge.configure.endpoint.ModuleConfigurerSettings
 import io.greenbus.edge.configure.server.WebServer
 import io.greenbus.edge.configure.sql.server.ModuleDb
 import io.greenbus.edge.configure.sql.{ JooqTransactable, PostgresDataPool, SqlSettings }
-import io.greenbus.edge.peer.AmqpEdgeConnectionManager
-import io.greenbus.edge.peer.PeerClientSettings
+import io.greenbus.edge.peer.{ AmqpEdgeConnectionManager, PeerClientSettings }
 import io.greenbus.edge.thread.EventThreadService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object ConfigurerEndpoint {
+object DynamicConfigurer {
 
   def main(args: Array[String]): Unit = {
 
@@ -57,9 +57,9 @@ object ConfigurerEndpoint {
       connectTimeoutMs = clientSettings.connectTimeoutMs)
 
     val producerServices = services.bindProducerServices()
-    val eventThread = EventThreadService.build("DNP MGR")
+    val eventThread = EventThreadService.build("Configurer Event")
 
-    val mgr = FepConfigurerMgr.load(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices, moduleDb)
+    val mgr = ConfigurationTable.build(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices, moduleDb)
     services.start()
 
     val server = WebServer.build(mgr, appSettings.port)
@@ -68,4 +68,3 @@ object ConfigurerEndpoint {
     s.shutdown()
   }
 }
-

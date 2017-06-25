@@ -33,6 +33,8 @@ create table module_component_values (
 ;
 create
  */
+
+/*
 object ModuleSchema {
 
   object Values {
@@ -123,3 +125,4 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
   }
 
 }
+*/ 

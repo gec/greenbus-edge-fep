@@ -23,43 +23,64 @@ import javax.servlet.http.{ HttpServlet, HttpServletRequest, HttpServletResponse
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.configure.endpoint.{ ModuleConfiguration, ModuleConfigurer }
-import io.greenbus.edge.data.{ Value, ValueBytes }
+import io.greenbus.edge.data._
 import io.greenbus.edge.data.json.EdgeJsonReader
+import io.greenbus.edge.util.EitherUtil
 import org.apache.commons.io.IOUtils
-import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.servlet.{ ServletContextHandler, ServletHolder }
 
-import scala.concurrent.Promise
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Promise
 
-object WebServer {
+object MultiServlet {
 
-  def build(handler: ModuleConfigurer, port: Int): Server = {
-    val server = new Server(port)
-    val context = new ServletContextHandler()
-    context.setContextPath("/")
+  def matchString(v: Value): Option[String] = {
+    v match {
+      case ValueString(s) => Some(s)
+      case _ => None
+    }
+  }
 
-    val holder = new ServletHolder(new AsyncServlet(handler))
-    holder.setAsyncSupported(true)
+  def handleComponentValueList(value: Value): Either[String, ModuleConfiguration] = {
+    value match {
+      case list: ValueList =>
+        val entries = list.value.map {
+          case map: ValueMap =>
+            val componentOpt = map.value.get(ValueString("component")).flatMap(matchString)
+            val nodeOpt = map.value.get(ValueString("node")).flatMap(matchString)
+            val valueOpt = map.value.get(ValueString("value"))
 
-    val multiHolder = new ServletHolder(new MultiServlet(handler))
-    multiHolder.setAsyncSupported(true)
+            val tupOpt = for {
+              component <- componentOpt
+              v <- valueOpt
+            } yield (component, v)
 
-    context.addServlet(holder, "/json")
-    context.addServlet(multiHolder, "/")
+            tupOpt match {
+              case Some((component, v)) =>
+                Right((component, v, nodeOpt))
+              case None => Left("Could not extract component and value.")
+            }
 
-    server.setHandler(context)
-    server
+          case _ => Left(s"List value was not a map of parameters.")
+        }
+
+        val all = EitherUtil.rightSequence(entries)
+
+        all.map { results =>
+          ModuleConfiguration(results.map {
+            case (component, v, nodeOpt) => (component, (v, nodeOpt))
+          }.toMap)
+        }
+      case _ => Left(s"Value was not a list.")
+    }
   }
 }
+class MultiServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLogging {
 
-class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLogging {
   override def doPost(req: HttpServletRequest, resp: HttpServletResponse): Unit = {
-    logger.debug("POST: " + req)
+    logger.debug("Multi POST: " + req)
     logger.debug("content length: " + req.getContentLength)
 
     logger.debug(s"Path: " + req.getRequestURI)
-    val uri = req.getRequestURI
 
     val bytes = IOUtils.readFully(req.getInputStream, req.getContentLength)
 
@@ -70,22 +91,12 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
     }
 
     val moduleOpt = Option(req.getHeader("EdgeModule"))
-    val componentOpt = Option(req.getHeader("EdgeComponent"))
-    val nodeOpt = Option(req.getHeader("EdgeNode"))
 
-    val cfgOpt = for {
-      module <- moduleOpt
-      component <- componentOpt
-    } yield {
-      (module, component)
-    }
-
-    cfgOpt match {
+    moduleOpt match {
       case None => resp.setStatus(HttpServletResponse.SC_BAD_REQUEST)
-      case Some((module, component)) => {
+      case Some(module) => {
 
-        val valueOpt: Option[Value] = if (uri.startsWith("/json")) {
-          logger.debug(s"JSON: ")
+        val valueOpt: Option[Value] = {
           try {
             EdgeJsonReader.read(new ByteArrayInputStream(bytes))
           } catch {
@@ -93,41 +104,50 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
               logger.warn(s"Could not parse configuration: $ex")
               None
           }
-        } else {
-          Some(ValueBytes(bytes))
         }
+
+        println(valueOpt)
 
         valueOpt match {
           case None => {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST)
           }
           case Some(v) =>
-            val ctx = req.startAsync()
-            val prom = Promise[Boolean]
-            handler.updateModule(module, ModuleConfiguration(Map(component -> (v, nodeOpt))), prom)
+            MultiServlet.handleComponentValueList(v) match {
+              case Left(err) =>
+                logger.debug(s"Got error: $err")
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, err)
+              case Right(config) =>
+                logger.trace(s"Got config: $config")
 
-            val future = prom.future
+                val ctx = req.startAsync()
+                val prom = Promise[Boolean]
+                handler.updateModule(module, config, prom)
 
-            future.foreach { result =>
-              ctx.getResponse match {
-                case r: HttpServletResponse =>
-                  if (result) {
-                    r.setStatus(HttpServletResponse.SC_OK)
-                  } else {
-                    r.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+                val future = prom.future
+
+                future.foreach { result =>
+                  ctx.getResponse match {
+                    case r: HttpServletResponse =>
+                      if (result) {
+                        r.setStatus(HttpServletResponse.SC_OK)
+                      } else {
+                        r.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+                      }
+                    case _ =>
                   }
-                case _ =>
-              }
-              ctx.complete()
+                  ctx.complete()
+                }
+                future.failed.foreach { ex =>
+                  ctx.getResponse match {
+                    case r: HttpServletResponse =>
+                      r.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage)
+                    case _ =>
+                  }
+                  ctx.complete()
+                }
             }
-            future.failed.foreach { ex =>
-              ctx.getResponse match {
-                case r: HttpServletResponse =>
-                  r.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage)
-                case _ =>
-              }
-              ctx.complete()
-            }
+            resp.setStatus(HttpServletResponse.SC_OK)
         }
       }
     }
