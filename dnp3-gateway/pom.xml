@@ -66,6 +66,11 @@
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>io.greenbus.edge</groupId>
+            <artifactId>greenbus-edge-data-json</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.annotation}</artifactId>
             <version>${scalatest.version}</version>
