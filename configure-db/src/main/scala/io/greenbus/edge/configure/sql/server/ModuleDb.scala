@@ -16,25 +16,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.greenbus.edge.configure.sql
+package io.greenbus.edge.configure.sql.server
 
+import io.greenbus.edge.configure.sql.JooqTransactable
 import org.jooq._
 import org.jooq.impl.DSL
 
 import scala.concurrent.Future
 
-/*
-create table module_component_values (
-  module text not null,
-  component text not null,
-  data bytea not null,
-  PRIMARY KEY (module, component)
-) WITH (OIDS = false)
-;
-create
- */
-
-/*
 object ModuleSchema {
 
   object Values {
@@ -43,11 +32,12 @@ object ModuleSchema {
 
     val module = DSL.field("module", classOf[String])
     val component = DSL.field("component", classOf[String])
+    val node = DSL.field("node", classOf[String])
     val data = DSL.field("data", classOf[Array[Byte]])
   }
 }
 
-case class ModuleComponentValue(module: String, component: String, data: Array[Byte])
+case class ModuleComponentValue(module: String, component: String, nodeOpt: Option[String], data: Array[Byte])
 
 object ModuleDb {
   def build(db: JooqTransactable): ModuleDb = {
@@ -69,13 +59,13 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
 
       import ModuleSchema.Values
 
-      val results: Result[Record2[String, Array[Byte]]] =
-        sql.select(Values.component, Values.data)
+      val results: Result[Record3[String, String, Array[Byte]]] =
+        sql.select(Values.component, Values.node, Values.data)
           .from(Values.table)
           .where(Values.module.eq(module))
           .fetch()
 
-      results.asScala.map(rec => ModuleComponentValue(module, rec.value1(), rec.value2())).toVector
+      results.asScala.map(rec => ModuleComponentValue(module, rec.value1(), Option(rec.value2()), rec.value3())).toVector
     }
   }
 
@@ -84,13 +74,13 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
 
       import ModuleSchema.Values
 
-      val results: Result[Record2[String, Array[Byte]]] =
-        sql.select(Values.module, Values.data)
+      val results: Result[Record3[String, String, Array[Byte]]] =
+        sql.select(Values.module, Values.node, Values.data)
           .from(Values.table)
           .where(Values.component.eq(component))
           .fetch()
 
-      results.asScala.map(rec => ModuleComponentValue(rec.value1(), component, rec.value2())).toVector
+      results.asScala.map(rec => ModuleComponentValue(rec.value1(), component, Option(rec.value2()), rec.value3())).toVector
     }
   }
 
@@ -106,11 +96,14 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
         .asScala
 
       if (current.nonEmpty) {
-        sql.update(Values.table).set(Values.data, value.data).where(Values.module.eq(value.module)).execute()
+        sql.update(Values.table)
+          .set(Values.data, value.data)
+          .where(Values.module.eq(value.module).and(Values.component.eq(value.component)))
+          .execute()
       } else {
         sql.insertInto(Values.table,
-          Values.module, Values.component, Values.data)
-          .values(value.module, value.component, value.data)
+          Values.module, Values.component, Values.node, Values.data)
+          .values(value.module, value.component, value.nodeOpt.orNull, value.data)
           .execute()
       }
     }
@@ -125,4 +118,3 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
   }
 
 }
-*/ 

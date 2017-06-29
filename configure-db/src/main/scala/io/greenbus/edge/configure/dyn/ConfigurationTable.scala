@@ -20,14 +20,13 @@ package io.greenbus.edge.configure.dyn
 
 import io.greenbus.edge.api._
 import io.greenbus.edge.configure.endpoint.{ FepConfigurerMgr, ModuleConfiguration, ModuleConfigurer }
-import io.greenbus.edge.configure.sql.{ ModuleComponentValue, ModuleDb }
+import io.greenbus.edge.configure.sql.server.{ ModuleComponentValue, ModuleDb }
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
 import scala.concurrent.{ Future, Promise }
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /*
@@ -92,7 +91,7 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
   }
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
-    val updates = config.components.map { case (comp, v) => ModuleComponentValue(module, comp, ValueConversions.toProto(v).toByteArray) }
+    val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
     val futs = updates.map(v => db.insertValues(v))
     Future.sequence(futs).foreach { _ =>
       eventThread.marshal {

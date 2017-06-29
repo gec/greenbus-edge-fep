@@ -66,6 +66,7 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
 
     val moduleOpt = Option(req.getHeader("EdgeModule"))
     val componentOpt = Option(req.getHeader("EdgeComponent"))
+    val nodeOpt = Option(req.getHeader("EdgeNode"))
 
     val cfgOpt = for {
       module <- moduleOpt
@@ -98,7 +99,7 @@ class AsyncServlet(handler: ModuleConfigurer) extends HttpServlet with LazyLoggi
           case Some(v) =>
             val ctx = req.startAsync()
             val prom = Promise[Boolean]
-            handler.updateModule(module, ModuleConfiguration(Map(component -> v)), prom)
+            handler.updateModule(module, ModuleConfiguration(Map(component -> (v, nodeOpt))), prom)
 
             val future = prom.future
 

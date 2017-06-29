@@ -1,7 +1,7 @@
 create table module_component_values (
-  node text not null,
   module text not null,
   component text not null,
+  node text NULL,
   data bytea not null,
   PRIMARY KEY (module, component)
 ) WITH (OIDS = false)
