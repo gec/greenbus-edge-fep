@@ -123,7 +123,7 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
     val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
-    val futs = updates.map(v => db.insertValues(v))
+    val futs = updates.map(v => db.insertValue(v))
     Future.sequence(futs).foreach { _ =>
       eventThread.marshal {
         onModuleUpdate(module, config, promise)

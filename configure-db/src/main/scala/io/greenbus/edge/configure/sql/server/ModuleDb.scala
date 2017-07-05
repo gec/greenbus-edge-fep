@@ -47,7 +47,8 @@ object ModuleDb {
 trait ModuleDb {
   def valuesForModule(module: String): Future[Seq[ModuleComponentValue]]
   def valuesForComponent(component: String): Future[Seq[ModuleComponentValue]]
-  def insertValues(value: ModuleComponentValue): Future[Int]
+  def valuesForNodeComponent(node: String, component: String): Future[Seq[ModuleComponentValue]]
+  def insertValue(value: ModuleComponentValue): Future[Int]
   def removeModule(module: String): Future[Int]
 }
 
@@ -84,7 +85,22 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
     }
   }
 
-  def insertValues(value: ModuleComponentValue): Future[Int] = {
+  def valuesForNodeComponent(node: String, component: String): Future[Seq[ModuleComponentValue]] = {
+    db.transaction { sql =>
+
+      import ModuleSchema.Values
+
+      val results: Result[Record3[String, String, Array[Byte]]] =
+        sql.select(Values.module, Values.node, Values.data)
+          .from(Values.table)
+          .where(Values.component.eq(component).and(Values.node.eq(node)))
+          .fetch()
+
+      results.asScala.map(rec => ModuleComponentValue(rec.value1(), component, Option(rec.value2()), rec.value3())).toVector
+    }
+  }
+
+  def insertValue(value: ModuleComponentValue): Future[Int] = {
     db.transaction { sql =>
 
       import ModuleSchema.Values

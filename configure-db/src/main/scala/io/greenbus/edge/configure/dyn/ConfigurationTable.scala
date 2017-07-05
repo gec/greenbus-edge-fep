@@ -44,6 +44,72 @@ c) subscribe to component/node for modules, active set is module -> hash, then h
 class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: EndpointId, producerService: ProducerService) extends ModuleConfigurer {
 
   // component -> (module -> value)
+  //private val subscribedMap = mutable.Map.empty[String, ActiveSetHandle]
+
+  private var dynSetHandleOpt = Option.empty[DynamicActiveSetHandle]
+  private var producerHandleOpt = Option.empty[ProducerHandle]
+
+  private val index = new ModuleIndex(eventThread, db)
+
+  eventThread.marshal {
+    init()
+  }
+
+  private def init(): Unit = {
+    val builder = producerService.endpointBuilder(endpointId)
+
+    val setHandle = builder.activeSetDynamicSet("configuration", new DynamicDataKey {
+      def subscribed(path: Path): Unit = {
+        eventThread.marshal(onSubscribed(path))
+      }
+
+      def unsubscribed(path: Path): Unit = {
+        eventThread.marshal(onUnsubscribed(path))
+      }
+    })
+
+    dynSetHandleOpt = Some(setHandle)
+    producerHandleOpt = Some(builder.build())
+  }
+
+  private def onSubscribed(path: Path): Unit = {
+    if (path.parts.size > 2) {
+      val node = path.parts(0)
+      val component = path.parts(1)
+
+      dynSetHandleOpt.foreach { dynHandle =>
+        val handle: ActiveSetHandle = dynHandle.add(path)
+        index.register(node, component, handle)
+      }
+    }
+  }
+
+  private def onUnsubscribed(path: Path): Unit = {
+    dynSetHandleOpt.foreach { h => h.remove(path) }
+  }
+
+  def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
+    val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
+    val futs = updates.map(v => db.insertValue(v))
+    Future.sequence(futs).foreach { _ =>
+      eventThread.marshal {
+        onModuleUpdate(module, config, promise)
+      }
+    }
+  }
+
+  def removeModule(module: String, promise: Promise[Boolean]): Unit = {
+
+  }
+
+  private def onModuleUpdate(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
+  }
+}
+
+/*
+class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: EndpointId, producerService: ProducerService) extends ModuleConfigurer {
+
+  // component -> (module -> value)
   private val subscribedMap = mutable.Map.empty[String, ActiveSetHandle]
 
   private var dynSetHandleOpt = Option.empty[DynamicActiveSetHandle]
@@ -92,7 +158,7 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
     val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
-    val futs = updates.map(v => db.insertValues(v))
+    val futs = updates.map(v => db.insertValue(v))
     Future.sequence(futs).foreach { _ =>
       eventThread.marshal {
         onModuleUpdate(module, config, promise)
@@ -107,3 +173,4 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
   private def onModuleUpdate(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
   }
 }
+*/
