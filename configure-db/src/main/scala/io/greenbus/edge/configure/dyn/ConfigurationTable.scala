@@ -20,7 +20,7 @@ package io.greenbus.edge.configure.dyn
 
 import io.greenbus.edge.api._
 import io.greenbus.edge.configure.endpoint.{ FepConfigurerMgr, ModuleConfiguration, ModuleConfigurer }
-import io.greenbus.edge.configure.sql.server.{ ModuleComponentValue, ModuleDb }
+import io.greenbus.edge.configure.sql.server.{ ModuleDbEntry, ModuleDb }
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.thread.CallMarshaller
@@ -85,17 +85,35 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
   }
 
   private def onUnsubscribed(path: Path): Unit = {
+    if (path.parts.size > 2) {
+      val node = path.parts(0)
+      val component = path.parts(1)
+      index.unregister(node, component)
+    }
     dynSetHandleOpt.foreach { h => h.remove(path) }
   }
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
-    val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
+
+    val updates: Map[String, (Option[String], Array[Byte])] = config.components.mapValues { case (v, nodeOpt) => (nodeOpt, ValueConversions.toProto(v).toByteArray) }
+
+    db.valuesForModule(module).map { values =>
+
+      db.insertValue()
+
+    }
+
+
+
+    index.onModuleUpdates(module, Seq(), )
+
+    /*val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
     val futs = updates.map(v => db.insertValue(v))
     Future.sequence(futs).foreach { _ =>
       eventThread.marshal {
         onModuleUpdate(module, config, promise)
       }
-    }
+    }*/
   }
 
   def removeModule(module: String, promise: Promise[Boolean]): Unit = {

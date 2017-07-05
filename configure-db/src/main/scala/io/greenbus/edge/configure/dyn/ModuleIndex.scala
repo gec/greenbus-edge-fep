@@ -20,7 +20,7 @@ package io.greenbus.edge.configure.dyn
 
 import io.greenbus.edge.api.ActiveSetHandle
 import io.greenbus.edge.configure.endpoint.FepConfigurerMgr
-import io.greenbus.edge.configure.sql.server.{ ModuleComponentValue, ModuleDb }
+import io.greenbus.edge.configure.sql.server.{ ModuleDbEntry, ModuleDb }
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
 import io.greenbus.edge.thread.CallMarshaller
 
@@ -33,7 +33,7 @@ case class ModuleValueRemove(component: String, nodeOpt: Option[String])
 
 object ModuleIndex {
 
-  def toActiveSetMap(values: Seq[ModuleComponentValue]): Map[IndexableValue, Value] = {
+  def toActiveSetMap(values: Seq[ModuleDbEntry]): Map[IndexableValue, Value] = {
     val activeSet: Map[IndexableValue, Value] = values.flatMap { mv =>
       FepConfigurerMgr.fromDbBytes(s"${mv.module}/${mv.component}", mv.data)
         .map(v => (ValueString(mv.module), v))

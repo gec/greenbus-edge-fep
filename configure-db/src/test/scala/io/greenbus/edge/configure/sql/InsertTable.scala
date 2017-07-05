@@ -20,7 +20,7 @@ package io.greenbus.edge.configure.sql
 
 import java.util.concurrent.Executors
 
-import io.greenbus.edge.configure.sql.server.{ ModuleComponentValue, ModuleDb }
+import io.greenbus.edge.configure.sql.server.{ ModuleDbEntry, ModuleDb }
 import org.jooq.impl.DSL
 
 import scala.concurrent.Await
@@ -55,8 +55,8 @@ object InsertTable {
       println(result)
     }
 
-    Await.result(moduleDb.insertValue(ModuleComponentValue("mode01", "dnpgateway", None, "content01".getBytes("UTF-8"))), 5000.milliseconds)
-    Await.result(moduleDb.insertValue(ModuleComponentValue("mode02", "dnpgateway", Some("node01"), "content02".getBytes("UTF-8"))), 5000.milliseconds)
+    Await.result(moduleDb.insertValue(ModuleDbEntry("mode01", "dnpgateway", None, "content01".getBytes("UTF-8"))), 5000.milliseconds)
+    Await.result(moduleDb.insertValue(ModuleDbEntry("mode02", "dnpgateway", Some("node01"), "content02".getBytes("UTF-8"))), 5000.milliseconds)
 
     {
       println("INSERTED 2: ")

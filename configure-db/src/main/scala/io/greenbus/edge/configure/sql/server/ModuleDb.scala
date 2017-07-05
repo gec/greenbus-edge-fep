@@ -18,6 +18,7 @@
  */
 package io.greenbus.edge.configure.sql.server
 
+import io.greenbus.edge.configure.dyn.{ModuleValueRemove, ModuleValueUpdate}
 import io.greenbus.edge.configure.sql.JooqTransactable
 import org.jooq._
 import org.jooq.impl.DSL
@@ -37,7 +38,8 @@ object ModuleSchema {
   }
 }
 
-case class ModuleComponentValue(module: String, component: String, nodeOpt: Option[String], data: Array[Byte])
+case class ModuleDbEntry(module: String, component: String, nodeOpt: Option[String], data: Array[Byte])
+case class ModuleValue(component: String, nodeOpt: Option[String], data: Array[Byte])
 
 object ModuleDb {
   def build(db: JooqTransactable): ModuleDb = {
@@ -45,32 +47,36 @@ object ModuleDb {
   }
 }
 trait ModuleDb {
-  def valuesForModule(module: String): Future[Seq[ModuleComponentValue]]
-  def valuesForComponent(component: String): Future[Seq[ModuleComponentValue]]
-  def valuesForNodeComponent(node: String, component: String): Future[Seq[ModuleComponentValue]]
-  def insertValue(value: ModuleComponentValue): Future[Int]
+  def valuesForModule(module: String): Future[Seq[ModuleDbEntry]]
+  def valuesForComponent(component: String): Future[Seq[ModuleDbEntry]]
+  def valuesForNodeComponent(node: String, component: String): Future[Seq[ModuleDbEntry]]
+  def insertValue(value: ModuleDbEntry): Future[Int]
+  def moduleUpdates(module: String, values: Seq[ModuleValue]): Future[(Seq[ModuleValueRemove], Seq[ModuleValueUpdate])]
   def removeModule(module: String): Future[Int]
 }
 
 import scala.collection.JavaConverters._
 class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
 
-  def valuesForModule(module: String): Future[Seq[ModuleComponentValue]] = {
+  def valuesForModule(module: String): Future[Seq[ModuleDbEntry]] = {
     db.transaction { sql =>
-
-      import ModuleSchema.Values
-
-      val results: Result[Record3[String, String, Array[Byte]]] =
-        sql.select(Values.component, Values.node, Values.data)
-          .from(Values.table)
-          .where(Values.module.eq(module))
-          .fetch()
-
-      results.asScala.map(rec => ModuleComponentValue(module, rec.value1(), Option(rec.value2()), rec.value3())).toVector
+      inTransValueForModule(sql, module)
     }
   }
 
-  def valuesForComponent(component: String): Future[Seq[ModuleComponentValue]] = {
+  private def inTransValueForModule(sql: DSLContext, module: String): Seq[ModuleDbEntry] = {
+    import ModuleSchema.Values
+
+    val results: Result[Record3[String, String, Array[Byte]]] =
+      sql.select(Values.component, Values.node, Values.data)
+        .from(Values.table)
+        .where(Values.module.eq(module))
+        .fetch()
+
+    results.asScala.map(rec => ModuleDbEntry(module, rec.value1(), Option(rec.value2()), rec.value3())).toVector
+  }
+
+  def valuesForComponent(component: String): Future[Seq[ModuleDbEntry]] = {
     db.transaction { sql =>
 
       import ModuleSchema.Values
@@ -81,11 +87,11 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
           .where(Values.component.eq(component))
           .fetch()
 
-      results.asScala.map(rec => ModuleComponentValue(rec.value1(), component, Option(rec.value2()), rec.value3())).toVector
+      results.asScala.map(rec => ModuleDbEntry(rec.value1(), component, Option(rec.value2()), rec.value3())).toVector
     }
   }
 
-  def valuesForNodeComponent(node: String, component: String): Future[Seq[ModuleComponentValue]] = {
+  def valuesForNodeComponent(node: String, component: String): Future[Seq[ModuleDbEntry]] = {
     db.transaction { sql =>
 
       import ModuleSchema.Values
@@ -96,11 +102,11 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
           .where(Values.component.eq(component).and(Values.node.eq(node)))
           .fetch()
 
-      results.asScala.map(rec => ModuleComponentValue(rec.value1(), component, Option(rec.value2()), rec.value3())).toVector
+      results.asScala.map(rec => ModuleDbEntry(rec.value1(), component, Option(rec.value2()), rec.value3())).toVector
     }
   }
 
-  def insertValue(value: ModuleComponentValue): Future[Int] = {
+  def insertValue(value: ModuleDbEntry): Future[Int] = {
     db.transaction { sql =>
 
       import ModuleSchema.Values
@@ -122,6 +128,15 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
           .values(value.module, value.component, value.nodeOpt.orNull, value.data)
           .execute()
       }
+    }
+  }
+
+
+  def moduleUpdates(module: String, values: Seq[ModuleValue]): Future[(Seq[ModuleValueRemove], Seq[ModuleValueUpdate])] = {
+    db.transaction { sql =>
+
+      val current: Seq[ModuleDbEntry] = inTransValueForModule(sql, module)
+
     }
   }
 

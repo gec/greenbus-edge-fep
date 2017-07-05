@@ -24,7 +24,7 @@ import io.greenbus.edge.api.EndpointBuilder
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
 import io.greenbus.edge.api.ProducerService
-import io.greenbus.edge.configure.sql.server.{ ModuleComponentValue, ModuleDb }
+import io.greenbus.edge.configure.sql.server.{ ModuleDbEntry, ModuleDb }
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.concurrent.{ Future, Promise }
@@ -122,7 +122,7 @@ class FepConfigurerMgr(eventThread: CallMarshaller, handle: FepConfigureHandle, 
   }
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
-    val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
+    val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleDbEntry(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
     val futs = updates.map(v => db.insertValue(v))
     Future.sequence(futs).foreach { _ =>
       eventThread.marshal {
