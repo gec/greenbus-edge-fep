@@ -19,15 +19,13 @@
 package io.greenbus.edge.configure.dyn
 
 import io.greenbus.edge.api._
-import io.greenbus.edge.configure.endpoint.{ FepConfigurerMgr, ModuleConfiguration, ModuleConfigurer }
-import io.greenbus.edge.configure.sql.server.{ ModuleDbEntry, ModuleDb }
-import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
+import io.greenbus.edge.configure.endpoint.{ ModuleConfiguration, ModuleConfigurer }
+import io.greenbus.edge.configure.sql.server.{ ModuleDb, ModuleValue }
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.thread.CallMarshaller
 
-import scala.collection.mutable
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Promise
 
 /*
 
@@ -95,32 +93,32 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
 
-    val updates: Map[String, (Option[String], Array[Byte])] = config.components.mapValues { case (v, nodeOpt) => (nodeOpt, ValueConversions.toProto(v).toByteArray) }
+    val moduleValues = config.components.map {
+      case (component, (v, nodeOpt)) =>
+        ModuleValue(component, nodeOpt, ValueConversions.toProto(v).toByteArray)
+    }.toSeq
 
-    db.valuesForModule(module).map { values =>
+    val resultsFut = db.moduleUpdates(module, moduleValues)
 
-      db.insertValue()
-
+    resultsFut.foreach {
+      case (removes, updates) =>
+        eventThread.marshal {
+          index.onModuleUpdates(module, removes, updates)
+        }
     }
 
-
-
-    index.onModuleUpdates(module, Seq(), )
-
-    /*val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
-    val futs = updates.map(v => db.insertValue(v))
-    Future.sequence(futs).foreach { _ =>
-      eventThread.marshal {
-        onModuleUpdate(module, config, promise)
-      }
-    }*/
+    promise.completeWith(resultsFut.map(_ => true))
   }
 
   def removeModule(module: String, promise: Promise[Boolean]): Unit = {
 
-  }
+    val removeFut = db.getAndRemoveModule(module)
 
-  private def onModuleUpdate(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
+    removeFut.foreach { removes =>
+      index.onModuleUpdates(module, removes, Seq())
+    }
+
+    promise.completeWith(removeFut.map(_ => true))
   }
 }
 

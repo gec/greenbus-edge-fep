@@ -18,8 +18,9 @@
  */
 package io.greenbus.edge.configure.sql.server
 
-import io.greenbus.edge.configure.dyn.{ModuleValueRemove, ModuleValueUpdate}
+import io.greenbus.edge.configure.dyn.{ ModuleValueRemove, ModuleValueUpdate }
 import io.greenbus.edge.configure.sql.JooqTransactable
+import io.greenbus.edge.stream.gateway.MapDiffCalc
 import org.jooq._
 import org.jooq.impl.DSL
 
@@ -53,6 +54,7 @@ trait ModuleDb {
   def insertValue(value: ModuleDbEntry): Future[Int]
   def moduleUpdates(module: String, values: Seq[ModuleValue]): Future[(Seq[ModuleValueRemove], Seq[ModuleValueUpdate])]
   def removeModule(module: String): Future[Int]
+  def getAndRemoveModule(module: String): Future[Seq[ModuleValueRemove]]
 }
 
 import scala.collection.JavaConverters._
@@ -131,12 +133,64 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
     }
   }
 
-
   def moduleUpdates(module: String, values: Seq[ModuleValue]): Future[(Seq[ModuleValueRemove], Seq[ModuleValueUpdate])] = {
     db.transaction { sql =>
 
+      import ModuleSchema.Values
+
       val current: Seq[ModuleDbEntry] = inTransValueForModule(sql, module)
 
+      val currentMap = current.map(entry => (entry.component, (entry.nodeOpt, entry.data))).toMap
+      val updateMap = values.map(entry => (entry.component, (entry.nodeOpt, entry.data))).toMap
+
+      val (removed, added, modified) = MapDiffCalc.calculate(currentMap, updateMap)
+
+      val addedAndModified = added ++ modified
+
+      sql.deleteFrom(Values.table)
+        .where(Values.module.eq(module).and(Values.component.in((removed ++ modified.map(_._1)).asJava)))
+        .execute()
+
+      val insert: InsertValuesStep4[Record, String, String, String, Array[Byte]] = sql.insertInto(Values.table)
+        .columns(Values.module, Values.component, Values.node, Values.data)
+
+      val allInserts = (added ++ modified).foldLeft(insert) {
+        case (ins, (component, (nodeOpt, bytes))) =>
+          ins.values(module, component, nodeOpt.orNull, bytes)
+      }
+
+      allInserts.execute()
+
+      val removeResults = removed.flatMap { component =>
+        currentMap.get(component).map({
+          case (nodeOpt, _) => ModuleValueRemove(component, nodeOpt)
+        })
+      }.toSeq
+
+      val updateResults = addedAndModified.map {
+        case (component, (nodeOpt, bytes)) => ModuleValueUpdate(component, nodeOpt, bytes)
+      }.toSeq
+
+      (removeResults, updateResults)
+    }
+  }
+
+  def getAndRemoveModule(module: String): Future[Seq[ModuleValueRemove]] = {
+    db.transaction { sql =>
+
+      import ModuleSchema.Values
+
+      val results: Result[Record2[String, String]] =
+        sql.select(Values.module, Values.node)
+          .from(Values.table)
+          .where(Values.module.eq(module))
+          .fetch()
+
+      val removes = results.asScala.map(rec => ModuleValueRemove(rec.value1(), Option(rec.value2()))).toVector
+
+      sql.deleteFrom(Values.table).where(Values.module.eq(module)).execute()
+
+      removes
     }
   }
 
