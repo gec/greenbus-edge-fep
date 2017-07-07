@@ -19,11 +19,11 @@
 package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.api.{ EndpointId, EndpointPath, Path }
+import io.greenbus.edge.api._
 import io.greenbus.edge.data.Value
 import io.greenbus.edge.data.mapping.SimpleReaderContext
 import io.greenbus.edge.dnp3.config.model._
-import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
+import io.greenbus.edge.fep.{ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings}
 import io.greenbus.edge.peer.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.PeerClientSettings
 import io.greenbus.edge.thread.EventThreadService
@@ -64,7 +64,8 @@ object EdgeDNP3Gateway extends LazyLogging {
 
     val gatewayMgr = new DNPGatewayMgr(eventThread, gatewayId, producerServices, publisher)
 
-    val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("dnp3"))
+    //val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("dnp3"))
+    val configKey = EndpointDynamicPath(EndpointId(Path("configuration_server")), DynamicPath("configuration", Path(Seq("node01", "dnpgateway"))))
 
     val configSubscriber = new ConfigurationSubscriber(eventThread, consumerServices, configKey, parseConfig, gatewayMgr, publisher)
 

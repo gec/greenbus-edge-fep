@@ -18,10 +18,10 @@
  */
 package io.greenbus.edge.modbus
 
-import io.greenbus.edge.api.{ EndpointId, EndpointPath, Path }
+import io.greenbus.edge.api._
 import io.greenbus.edge.data.Value
 import io.greenbus.edge.data.mapping.SimpleReaderContext
-import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
+import io.greenbus.edge.fep.{ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings}
 import io.greenbus.edge.modbus.config.model.ModbusGateway
 import io.greenbus.edge.peer.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.PeerClientSettings
@@ -62,7 +62,8 @@ object EdgeModbusGateway {
 
     val gatewayMgr = new ModbusMgr(eventThread, gatewayId, producerServices, publisher)
 
-    val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("modbus"))
+    //val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("modbus"))
+    val configKey = EndpointDynamicPath(EndpointId(Path("configuration_server")), DynamicPath("configuration", Path(Seq("node01", "modbusgateway"))))
 
     val configSubscriber = new ConfigurationSubscriber(eventThread, consumerServices, configKey, parseConfig, gatewayMgr, publisher)
 

@@ -18,14 +18,14 @@
  */
 package io.greenbus.edge.configure.dyn
 
-import io.greenbus.edge.api.ActiveSetHandle
+import com.typesafe.scalalogging.LazyLogging
+import io.greenbus.edge.api.{ActiveSetHandle, ProducerHandle}
 import io.greenbus.edge.configure.endpoint.FepConfigurerMgr
-import io.greenbus.edge.configure.sql.server.{ ModuleDbEntry, ModuleDb }
-import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
+import io.greenbus.edge.configure.sql.server.{ModuleDb, ModuleDbEntry}
+import io.greenbus.edge.data.{IndexableValue, Value, ValueString}
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 case class ModuleValueUpdate(component: String, nodeOpt: Option[String], data: Array[Byte])
@@ -51,11 +51,17 @@ object ModuleIndex {
   }
 
 }
-class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) {
+class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) extends LazyLogging {
   private var sequence: Long = 0
   private val nodeComponentMap = mutable.Map.empty[String, mutable.Map[String, NodeComponentSubject]]
+  private var producerHandleOpt = Option.empty[ProducerHandle]
+
+  def setProducerHandle(handle: ProducerHandle): Unit = {
+    producerHandleOpt = Some(handle)
+  }
 
   def register(node: String, component: String, handle: ActiveSetHandle): Unit = {
+    logger.info(s"Registered: $node - $component")
     val seq = sequence
     sequence += 1
 
@@ -64,11 +70,13 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) {
 
     db.valuesForNodeComponent(node, component).foreach { componentValues =>
       eventThread.marshal {
+        logger.debug(s"valuesForNodeComponent: $componentValues")
         nodeComponentMap.get(node).foreach { componentMap =>
           componentMap.get(component).foreach { subj =>
             if (subj.sequence == seq) {
               val simpleMap = componentValues.map(cv => (cv.module, cv.data)).toMap
               subj.original(simpleMap)
+              producerHandleOpt.foreach(_.flush())
             }
           }
         }
@@ -76,6 +84,8 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) {
     }
   }
   def unregister(node: String, component: String): Unit = {
+    logger.info(s"Unregistered: $node - $component")
+
     nodeComponentMap.get(node).foreach { componentMap =>
       componentMap -= component
     }
@@ -91,7 +101,10 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) {
         node <- mvr.nodeOpt
         componentMap <- nodeComponentMap.get(node)
         subj <- componentMap.get(mvr.component)
-      } subj.updates(Set(module), Seq())
+      } {
+        subj.updates(Set(module), Seq())
+        producerHandleOpt.foreach(_.flush())
+      }
     }
 
     updates.foreach { mvu =>
@@ -99,7 +112,10 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) {
         node <- mvu.nodeOpt
         componentMap <- nodeComponentMap.get(node)
         subj <- componentMap.get(mvu.component)
-      } subj.updates(Set(), Seq((module, mvu.data)))
+      } {
+        subj.updates(Set(), Seq((module, mvu.data)))
+        producerHandleOpt.foreach(_.flush())
+      }
     }
   }
 }

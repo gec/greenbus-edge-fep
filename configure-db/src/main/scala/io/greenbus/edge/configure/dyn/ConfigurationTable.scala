@@ -18,9 +18,10 @@
  */
 package io.greenbus.edge.configure.dyn
 
+import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
-import io.greenbus.edge.configure.endpoint.{ ModuleConfiguration, ModuleConfigurer }
-import io.greenbus.edge.configure.sql.server.{ ModuleDb, ModuleValue }
+import io.greenbus.edge.configure.endpoint.{ModuleConfiguration, ModuleConfigurer}
+import io.greenbus.edge.configure.sql.server.{ModuleDb, ModuleValue}
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.thread.CallMarshaller
 
@@ -39,7 +40,12 @@ c) subscribe to component/node for modules, active set is module -> hash, then h
 
  */
 
-class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: EndpointId, producerService: ProducerService) extends ModuleConfigurer {
+object ConfigurationTable {
+  def build(eventThread: CallMarshaller, id: EndpointId, producerServices: ProducerService, db: ModuleDb): ConfigurationTable = {
+    new ConfigurationTable(eventThread, db, id, producerServices)
+  }
+}
+class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: EndpointId, producerService: ProducerService) extends ModuleConfigurer with LazyLogging {
 
   // component -> (module -> value)
   //private val subscribedMap = mutable.Map.empty[String, ActiveSetHandle]
@@ -67,28 +73,34 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
     })
 
     dynSetHandleOpt = Some(setHandle)
-    producerHandleOpt = Some(builder.build())
+    val producerHandle = builder.build()
+    producerHandleOpt = Some(producerHandle)
+    index.setProducerHandle(producerHandle)
   }
 
   private def onSubscribed(path: Path): Unit = {
-    if (path.parts.size > 2) {
+    logger.debug(s"onSubscribed: $path")
+    if (path.parts.size >= 2) {
       val node = path.parts(0)
       val component = path.parts(1)
 
       dynSetHandleOpt.foreach { dynHandle =>
         val handle: ActiveSetHandle = dynHandle.add(path)
         index.register(node, component, handle)
+        producerHandleOpt.foreach(_.flush())
       }
     }
   }
 
   private def onUnsubscribed(path: Path): Unit = {
-    if (path.parts.size > 2) {
+    logger.debug(s"onUnsubscribed: $path")
+    if (path.parts.size >= 2) {
       val node = path.parts(0)
       val component = path.parts(1)
       index.unregister(node, component)
     }
     dynSetHandleOpt.foreach { h => h.remove(path) }
+    producerHandleOpt.foreach(_.flush())
   }
 
   def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
@@ -104,6 +116,7 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
       case (removes, updates) =>
         eventThread.marshal {
           index.onModuleUpdates(module, removes, updates)
+          producerHandleOpt.foreach(_.flush())
         }
     }
 
@@ -116,6 +129,7 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
 
     removeFut.foreach { removes =>
       index.onModuleUpdates(module, removes, Seq())
+      producerHandleOpt.foreach(_.flush())
     }
 
     promise.completeWith(removeFut.map(_ => true))
