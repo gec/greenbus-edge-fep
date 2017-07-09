@@ -23,7 +23,7 @@ import io.greenbus.edge.api._
 import io.greenbus.edge.data.Value
 import io.greenbus.edge.data.mapping.SimpleReaderContext
 import io.greenbus.edge.dnp3.config.model._
-import io.greenbus.edge.fep.{ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings}
+import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
 import io.greenbus.edge.peer.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.PeerClientSettings
 import io.greenbus.edge.thread.EventThreadService

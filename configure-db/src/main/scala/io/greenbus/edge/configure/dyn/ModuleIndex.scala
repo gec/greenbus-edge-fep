@@ -19,10 +19,10 @@
 package io.greenbus.edge.configure.dyn
 
 import com.typesafe.scalalogging.LazyLogging
-import io.greenbus.edge.api.{ActiveSetHandle, ProducerHandle}
+import io.greenbus.edge.api.{ ActiveSetHandle, ProducerHandle }
 import io.greenbus.edge.configure.endpoint.FepConfigurerMgr
-import io.greenbus.edge.configure.sql.server.{ModuleDb, ModuleDbEntry}
-import io.greenbus.edge.data.{IndexableValue, Value, ValueString}
+import io.greenbus.edge.configure.sql.server.{ ModuleDb, ModuleDbEntry }
+import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
@@ -119,63 +119,3 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) extends LazyLogging
     }
   }
 }
-
-/*
-class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) {
-  private var sequence: Long = 0
-  private val nodeComponentMap = mutable.Map.empty[String, mutable.Map[String, (Long, ActiveSetHandle, Map[String, Array[Byte]])]]
-
-  //def getNodeComponent(node: String, component: String)
-
-  def register(node: String, component: String, handle: ActiveSetHandle): Unit = {
-    val seq = sequence
-    sequence += 1
-
-    val componentMap = nodeComponentMap.getOrElseUpdate(node, mutable.Map.empty[String, (Long, ActiveSetHandle, Map[String, Array[Byte]])])
-    componentMap.update(component, (seq, handle, Map()))
-
-    db.valuesForNodeComponent(node, component).foreach { componentValues =>
-      eventThread.marshal {
-        nodeComponentMap.get(node).foreach { componentMap =>
-          componentMap.get(component).foreach {
-            case (regSeq, _, _) =>
-              if (regSeq == seq) {
-
-                val simpleMap = componentValues.map(cv => (cv.module, cv.data)).toMap
-
-                val value = ModuleIndex.toActiveSetMap(simpleMap)
-                componentMap.put(component, (regSeq, handle, simpleMap))
-                handle.update(value)
-              }
-          }
-        }
-      }
-    }
-  }
-  def unregister(node: String, component: String): Unit = {
-    nodeComponentMap.get(node).foreach { componentMap =>
-      componentMap -= component
-    }
-    if (!nodeComponentMap.get(node).exists(_.nonEmpty)) {
-      nodeComponentMap -= node
-    }
-  }
-
-  //case class ModuleConfiguration(components: Map[String, (Value, Option[String])])
-
-  def onModuleUpdates(module: String, removes: Seq[ModuleValueRemove], updates: Seq[ModuleValueUpdate]): Unit = {
-
-
-
-  }
-
-  /*def onModuleUpdate(module: String, config: ModuleConfiguration): Unit = {
-    config.components.foreach {
-      case (component, (value, nodeOpt)) =>
-
-
-
-    }
-  }*/
-
-}*/

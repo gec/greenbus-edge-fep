@@ -20,25 +20,13 @@ package io.greenbus.edge.configure.dyn
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
-import io.greenbus.edge.configure.endpoint.{ModuleConfiguration, ModuleConfigurer}
-import io.greenbus.edge.configure.sql.server.{ModuleDb, ModuleValue}
+import io.greenbus.edge.configure.endpoint.{ ModuleConfiguration, ModuleConfigurer }
+import io.greenbus.edge.configure.sql.server.{ ModuleDb, ModuleValue }
 import io.greenbus.edge.data.proto.convert.ValueConversions
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Promise
-
-/*
-
-gateway (component) boots up
-- asks for all for component/node
-
-a) subscribe component/node for modules, then individual kv subscribes for modules
-b) subscribe to component/node active set, get module -> file
-c) subscribe to component/node for modules, active set is module -> hash, then http get
-
-
- */
 
 object ConfigurationTable {
   def build(eventThread: CallMarshaller, id: EndpointId, producerServices: ProducerService, db: ModuleDb): ConfigurationTable = {
@@ -46,9 +34,6 @@ object ConfigurationTable {
   }
 }
 class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: EndpointId, producerService: ProducerService) extends ModuleConfigurer with LazyLogging {
-
-  // component -> (module -> value)
-  //private val subscribedMap = mutable.Map.empty[String, ActiveSetHandle]
 
   private var dynSetHandleOpt = Option.empty[DynamicActiveSetHandle]
   private var producerHandleOpt = Option.empty[ProducerHandle]
@@ -135,72 +120,3 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
     promise.completeWith(removeFut.map(_ => true))
   }
 }
-
-/*
-class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: EndpointId, producerService: ProducerService) extends ModuleConfigurer {
-
-  // component -> (module -> value)
-  private val subscribedMap = mutable.Map.empty[String, ActiveSetHandle]
-
-  private var dynSetHandleOpt = Option.empty[DynamicActiveSetHandle]
-  private var producerHandleOpt = Option.empty[ProducerHandle]
-
-  eventThread.marshal {
-    init()
-  }
-
-  private def init(): Unit = {
-    val builder = producerService.endpointBuilder(endpointId)
-
-    val setHandle = builder.activeSetDynamicSet("configuration", new DynamicDataKey {
-      def subscribed(path: Path): Unit = {
-        eventThread.marshal(onSubscribed(path))
-      }
-
-      def unsubscribed(path: Path): Unit = {
-        eventThread.marshal(onUnsubscribed(path))
-      }
-    })
-
-    dynSetHandleOpt = Some(setHandle)
-    producerHandleOpt = Some(builder.build())
-  }
-
-  private def onSubscribed(path: Path): Unit = {
-    val componentName = path.parts.mkString("/")
-    db.valuesForComponent(componentName).foreach { values =>
-      eventThread.marshal {
-        dynSetHandleOpt.foreach { h =>
-          val handle: ActiveSetHandle = h.add(path)
-          val activeSet: Map[IndexableValue, Value] = values.flatMap { mv =>
-            FepConfigurerMgr.fromDbBytes(s"${mv.module}/${mv.component}", mv.data)
-              .map(v => (ValueString(mv.module), v))
-          }.toMap
-          handle.update(activeSet)
-        }
-      }
-    }
-  }
-
-  private def onUnsubscribed(path: Path): Unit = {
-    dynSetHandleOpt.foreach { h => h.remove(path) }
-  }
-
-  def updateModule(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
-    val updates = config.components.map { case (comp, (v, nodeOpt)) => ModuleComponentValue(module, comp, nodeOpt, ValueConversions.toProto(v).toByteArray) }
-    val futs = updates.map(v => db.insertValue(v))
-    Future.sequence(futs).foreach { _ =>
-      eventThread.marshal {
-        onModuleUpdate(module, config, promise)
-      }
-    }
-  }
-
-  def removeModule(module: String, promise: Promise[Boolean]): Unit = {
-
-  }
-
-  private def onModuleUpdate(module: String, config: ModuleConfiguration, promise: Promise[Boolean]): Unit = {
-  }
-}
-*/

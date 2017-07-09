@@ -21,7 +21,7 @@ package io.greenbus.edge.modbus
 import io.greenbus.edge.api._
 import io.greenbus.edge.data.Value
 import io.greenbus.edge.data.mapping.SimpleReaderContext
-import io.greenbus.edge.fep.{ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings}
+import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
 import io.greenbus.edge.modbus.config.model.ModbusGateway
 import io.greenbus.edge.peer.AmqpEdgeConnectionManager
 import io.greenbus.edge.peer.PeerClientSettings
