@@ -47,7 +47,7 @@ object RawDnpEndpoint {
     val b = producerServices.endpointBuilder(EndpointId(path))
 
     def loadRange(prefix: String, range: IndexRange): Seq[(String, SeriesValueHandle)] = {
-      Range(range.start, range.count).map { i =>
+      Range(range.start, range.start + range.count).map { i =>
         val key = MeasAdapter.id(prefix, i)
         (key, b.seriesValue(Path(Seq(key))))
       }
