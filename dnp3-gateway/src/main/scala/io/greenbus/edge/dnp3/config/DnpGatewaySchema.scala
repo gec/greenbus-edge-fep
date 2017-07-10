@@ -158,7 +158,7 @@ object DnpGatewaySchema {
   def all = Seq(
     linkLayer, appLayer, stackConfig, masterSettings, scan, unsol, master,
     tcpClient,
-    selectIndex,
+    /*selectIndex,*/
     selectRange,
     indexSet,
     inputModel,
