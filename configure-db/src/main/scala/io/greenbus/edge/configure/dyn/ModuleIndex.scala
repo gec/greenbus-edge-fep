@@ -20,9 +20,9 @@ package io.greenbus.edge.configure.dyn
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.{ ActiveSetHandle, ProducerHandle }
-import io.greenbus.edge.configure.endpoint.FepConfigurerMgr
+import io.greenbus.edge.configure.endpoint.{ FepConfigurerMgr, ModuleConfiguration }
 import io.greenbus.edge.configure.sql.server.{ ModuleDb, ModuleDbEntry }
-import io.greenbus.edge.data.{ IndexableValue, Value, ValueString }
+import io.greenbus.edge.data.{ IndexableValue, Value, ValueMap, ValueString }
 import io.greenbus.edge.thread.CallMarshaller
 
 import scala.collection.mutable
@@ -30,6 +30,85 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 case class ModuleValueUpdate(component: String, nodeOpt: Option[String], data: Array[Byte])
 case class ModuleValueRemove(component: String, nodeOpt: Option[String])
+
+object SummarySubject {
+
+  sealed trait Updates
+  case class RemoveModule(module: String) extends Updates
+  case class UpdateModule(module: String, removed: Set[String], updated: Map[String, Option[String]]) extends Updates
+
+  sealed trait State
+  case class Pending(buffer: mutable.ArrayBuffer[Updates]) extends State
+  case class Resolved(current: Map[String, Map[String, Option[String]]]) extends State
+
+  def toUpdate(current: Map[String, Map[String, Option[String]]]): Map[IndexableValue, Value] = {
+    current.map {
+      case (component, moduleMap) =>
+        val value: Map[Value, Value] = moduleMap.map {
+          case (module, nodeOpt) =>
+            (ValueString(module), nodeOpt.map(ValueString).getOrElse(ValueString("")))
+        }
+        (ValueString(component), ValueMap(value))
+    }
+  }
+}
+class SummarySubject(handle: ActiveSetHandle) {
+  import SummarySubject._
+
+  private var state: State = Pending(mutable.ArrayBuffer.empty[Updates])
+
+  def original(current: Map[String, Map[String, Option[String]]]): Unit = {
+    state match {
+      case Pending(buffer) => {
+
+        buffer.foldLeft(current) {
+          case (curr, RemoveModule(module)) => curr - module
+          case (curr, UpdateModule(module, removed, updated)) =>
+            curr.get(module) match {
+              case None => curr + (module -> updated)
+              case Some(prev) => curr + (module -> ((prev -- removed) ++ updated))
+            }
+
+        }
+
+        val map = toUpdate(current)
+        handle.update(map)
+        state = Resolved(current)
+      }
+      case Resolved(_) =>
+    }
+  }
+
+  def moduleRemoved(module: String): Unit = {
+    state match {
+      case Pending(buffer) => {
+        buffer += RemoveModule(module)
+      }
+      case Resolved(current) =>
+        val updated = current - module
+        val map = toUpdate(updated)
+        handle.update(map)
+        state = Resolved(updated)
+    }
+  }
+
+  def moduleUpdated(module: String, removed: Set[String], updates: Map[String, Option[String]]): Unit = {
+    state match {
+      case Pending(buffer) => {
+        buffer += UpdateModule(module, removed, updates)
+      }
+      case Resolved(current) =>
+        val updated = current.get(module) match {
+          case None => current + (module -> updates)
+          case Some(prev) => current + (module -> ((prev -- removed) ++ updates))
+        }
+
+        val map = toUpdate(updated)
+        handle.update(map)
+        state = Resolved(updated)
+    }
+  }
+}
 
 object ModuleIndex {
 
@@ -54,10 +133,22 @@ object ModuleIndex {
 class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) extends LazyLogging {
   private var sequence: Long = 0
   private val nodeComponentMap = mutable.Map.empty[String, mutable.Map[String, NodeComponentSubject]]
+  private var moduleSummarySubject = Option.empty[SummarySubject]
   private var producerHandleOpt = Option.empty[ProducerHandle]
 
   def setProducerHandle(handle: ProducerHandle): Unit = {
     producerHandleOpt = Some(handle)
+  }
+
+  def setSummary(summaryHandle: ActiveSetHandle): Unit = {
+    moduleSummarySubject = Some(new SummarySubject(summaryHandle))
+
+    db.componentSummary().foreach { summaries =>
+      eventThread.marshal {
+        val current = summaries.groupBy(_.module).mapValues(values => values.map(v => (v.component, v.nodeOpt)).toMap)
+        moduleSummarySubject.foreach(_.original(current))
+      }
+    }
   }
 
   def register(node: String, component: String, handle: ActiveSetHandle): Unit = {
@@ -94,7 +185,27 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) extends LazyLogging
     }
   }
 
+  def onModuleRemoved(module: String, removes: Seq[ModuleValueRemove]): Unit = {
+
+    moduleSummarySubject.foreach(_.moduleRemoved(module))
+
+    removes.foreach { mvr =>
+
+      for {
+        node <- mvr.nodeOpt
+        componentMap <- nodeComponentMap.get(node)
+        subj <- componentMap.get(mvr.component)
+      } {
+        subj.updates(Set(module), Seq())
+      }
+    }
+
+    producerHandleOpt.foreach(_.flush())
+  }
+
   def onModuleUpdates(module: String, removes: Seq[ModuleValueRemove], updates: Seq[ModuleValueUpdate]): Unit = {
+
+    moduleSummarySubject.foreach(_.moduleUpdated(module, removes.map(_.component).toSet, updates.map(mvu => (mvu.component, mvu.nodeOpt)).toMap))
 
     removes.foreach { mvr =>
       for {
@@ -103,7 +214,6 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) extends LazyLogging
         subj <- componentMap.get(mvr.component)
       } {
         subj.updates(Set(module), Seq())
-        producerHandleOpt.foreach(_.flush())
       }
     }
 
@@ -114,8 +224,8 @@ class ModuleIndex(eventThread: CallMarshaller, db: ModuleDb) extends LazyLogging
         subj <- componentMap.get(mvu.component)
       } {
         subj.updates(Set(), Seq((module, mvu.data)))
-        producerHandleOpt.foreach(_.flush())
       }
     }
+    producerHandleOpt.foreach(_.flush())
   }
 }

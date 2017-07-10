@@ -50,7 +50,6 @@ class ConfigurationSubscriber[A](
 
   private def onUpdates(updates: Seq[IdentifiedEdgeUpdate]): Unit = {
 
-    logger.debug("updates: " + updates)
     updates.foreach {
       case idUp: IdDynamicDataKeyUpdate => {
         if (idUp.id == endpointPath) {
@@ -93,6 +92,7 @@ class ConfigurationSubscriber[A](
     }
 
     val removedKeys = current.keySet -- map.keySet
+    current --= removedKeys
 
     val modified: Map[String, A] = map.flatMap {
       case (module, configValue) =>

@@ -57,10 +57,14 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
       }
     })
 
+    val modulesHandle = builder.activeSet(Path("modules"))
+
     dynSetHandleOpt = Some(setHandle)
     val producerHandle = builder.build()
     producerHandleOpt = Some(producerHandle)
     index.setProducerHandle(producerHandle)
+
+    index.setSummary(modulesHandle)
   }
 
   private def onSubscribed(path: Path): Unit = {
@@ -113,7 +117,7 @@ class ConfigurationTable(eventThread: CallMarshaller, db: ModuleDb, endpointId: 
     val removeFut = db.getAndRemoveModule(module)
 
     removeFut.foreach { removes =>
-      index.onModuleUpdates(module, removes, Seq())
+      index.onModuleRemoved(module, removes)
       producerHandleOpt.foreach(_.flush())
     }
 

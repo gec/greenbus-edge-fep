@@ -39,6 +39,7 @@ object ModuleSchema {
   }
 }
 
+case class ModuleEntrySummary(module: String, component: String, nodeOpt: Option[String])
 case class ModuleDbEntry(module: String, component: String, nodeOpt: Option[String], data: Array[Byte])
 case class ModuleValue(component: String, nodeOpt: Option[String], data: Array[Byte])
 
@@ -50,6 +51,7 @@ object ModuleDb {
 trait ModuleDb {
   def valuesForModule(module: String): Future[Seq[ModuleDbEntry]]
   def valuesForComponent(component: String): Future[Seq[ModuleDbEntry]]
+  def componentSummary(): Future[Seq[ModuleEntrySummary]]
   def valuesForNodeComponent(node: String, component: String): Future[Seq[ModuleDbEntry]]
   def insertValue(value: ModuleDbEntry): Future[Int]
   def moduleUpdates(module: String, values: Seq[ModuleValue]): Future[(Seq[ModuleValueRemove], Seq[ModuleValueUpdate])]
@@ -90,6 +92,19 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
           .fetch()
 
       results.asScala.map(rec => ModuleDbEntry(rec.value1(), component, Option(rec.value2()), rec.value3())).toVector
+    }
+  }
+
+  def componentSummary(): Future[Seq[ModuleEntrySummary]] = {
+    db.transaction { sql =>
+      import ModuleSchema.Values
+
+      val results: Result[Record3[String, String, String]] =
+        sql.select(Values.module, Values.component, Values.node)
+          .from(Values.table)
+          .fetch()
+
+      results.asScala.map(rec => ModuleEntrySummary(rec.value1(), rec.value2(), Option(rec.value3()))).toVector
     }
   }
 
@@ -181,7 +196,7 @@ class ModuleDbImpl(db: JooqTransactable) extends ModuleDb {
       import ModuleSchema.Values
 
       val results: Result[Record2[String, String]] =
-        sql.select(Values.module, Values.node)
+        sql.select(Values.component, Values.node)
           .from(Values.table)
           .where(Values.module.eq(module))
           .fetch()
