@@ -170,7 +170,7 @@ object DnpGatewaySchema {
       StructFieldDef("inputModel", inputModel, 2, """Ranges of DNP3 data objects made available for endpoint mapping."""),
       StructFieldDef("outputModel", outputModel, 3, """Configuration of DNP3 controls and setpoints for endpoint mapping."""),
       StructFieldDef("endpoint", FrontendSchema.frontendConfiguration, 4, """Endpoint mapping configuration."""))),
-      """Configuration of a DNP3 endpoint mapped to an endpoint.""")
+      """Configuration of a DNP3 master mapped to an endpoint.""")
   }
 
   def all = Seq(
