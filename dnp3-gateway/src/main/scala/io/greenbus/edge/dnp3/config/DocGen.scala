@@ -18,22 +18,21 @@
  */
 package io.greenbus.edge.dnp3.config
 
-import java.io.PrintWriter
+import java.io.{OutputStream, PrintWriter}
 
-import io.greenbus.edge.data.schema.{ TExt, TOption, TStruct, VTValueElem }
+import io.greenbus.edge.data.schema._
+
 
 object DocGen {
 
   def main(args: Array[String]): Unit = {
 
-    generate(DnpGatewaySchema.all)
+    generate(DnpGatewaySchema.all, System.out)
   }
 
-  def generate(userTypes: Seq[TExt]): Unit = {
-    val w = new PrintWriter(System.out)
+  def generate(userTypes: Seq[TExt], os: OutputStream): Unit = {
+    val w = new PrintWriter(os)
     val sorted = userTypes.sortBy(_.tag)
-
-    //println(sorted.map(_.tag).mkString("\n"))
 
     sorted.foreach(t => typeEntry(w, t))
 
@@ -42,9 +41,37 @@ object DocGen {
 
   def typeEntry(w: PrintWriter, typ: TExt): Unit = {
     typ.reprType match {
-      case s: TStruct => structEntry(w, typ.tag, s)
+      case t: TStruct => structEntry(w, typ.tag, t)
+      case t: TEnum => enumEntry(w, typ.tag, t)
+      case t: BasicValueType => aliasEntry(w, typ.tag, t)
       case _ =>
     }
+  }
+
+  def aliasEntry(w: PrintWriter, tag: String, t: BasicValueType): Unit = {
+    w.println()
+    w.println(s"### $tag")
+    w.println()
+    w.println(s"Alias: ${fieldDefName(t)}>")
+    w.println()
+  }
+
+  def enumEntry(w: PrintWriter, tag: String, enum: TEnum): Unit = {
+
+    w.println()
+    w.println(s"### $tag")
+    w.println()
+    w.println("...")
+    w.println()
+    w.println("Values:")
+    w.println()
+
+    val table = enum.enumDefs.map { d =>
+      Vector(s"`${d.label}`", d.value.toString, "description")
+    }
+
+    printTable(w, Vector("Label", "Value", "Description"), table)
+    w.println()
   }
 
   def structEntry(w: PrintWriter, tag: String, struct: TStruct): Unit = {
@@ -62,12 +89,24 @@ object DocGen {
     }
 
     printTable(w, Vector("Name", "Type", "Description"), table)
+    w.println()
   }
 
   def fieldDefName(fieldType: VTValueElem): String = {
     fieldType match {
       case ext: TExt => ext.tag
-      case opt: TOption => "opt"
+      case opt: TOption => fieldDefName(opt.paramType) + " (optional)"
+      case list: TList => s"List<${fieldDefName(list.paramType)}>"
+      case map: TMap => s"Map<${fieldDefName(map.keyType)}, ${fieldDefName(map.valueType)}>"
+      case TByte => "byte"
+      case TBool => "boolean"
+      case TInt32 => "int32"
+      case TInt64 => "int64"
+      case TUInt32 => "uint32"
+      case TUInt64 => "uint64"
+      case TFloat => "float"
+      case TDouble => "double"
+      case TString => "string"
       case _ => "unknown"
     }
   }
