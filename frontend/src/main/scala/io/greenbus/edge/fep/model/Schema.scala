@@ -51,10 +51,11 @@ object FrontendSchema {
   }
   val outputTypeEnum: TExt = {
     TExt(ns, "OutputType", TEnum(Seq(
-      EnumDef("SimpleIndication", 0),
-      EnumDef("AnalogSetpoint", 1),
-      EnumDef("BooleanSetpoint", 2),
-      EnumDef("EnumerationSetpoint", 3))))
+      EnumDef("SimpleIndication", 0, "An indication that does not carry a value."),
+      EnumDef("AnalogSetpoint", 1, "A setpoint that carries and analog (integer or floating-point) value."),
+      EnumDef("BooleanSetpoint", 2, "A setpoint that carries a boolean value."),
+      EnumDef("EnumerationSetpoint", 3, "A setpoint that carries an integer that represents a discrete enumerated set of states."))),
+      """Core type of output.""")
   }
 
   val path: TExt = {
@@ -150,12 +151,13 @@ object FrontendSchema {
 
   val frontendDataKey: TExt = {
     TExt(ns, "DataKeyConfig", TStruct(Vector(
-      StructFieldDef("gatewayKey", TString, 0),
-      StructFieldDef("path", path, 1),
-      StructFieldDef("metadata", TList(metadataItem), 2),
-      StructFieldDef("descriptor", seriesDescriptor, 3),
-      StructFieldDef("transforms", TList(transformDescriptor), 4),
-      StructFieldDef("filter", TOption(filterDescriptor), 5))))
+      StructFieldDef("gatewayKey", TString, 0, "Name of configured input to supply values for data key."),
+      StructFieldDef("path", path, 1, "ID of data key."),
+      StructFieldDef("metadata", TList(metadataItem), 2, "Metadata key values of data key."),
+      StructFieldDef("descriptor", seriesDescriptor, 3, "Descriptor of data key value type."),
+      StructFieldDef("transforms", TList(transformDescriptor), 4, "Transforms of data values performed before publishing."),
+      StructFieldDef("filter", TOption(filterDescriptor), 5, "Filter settings for publishing values."))),
+      """Configuration of an endpoint data key.""")
   }
 
   val outputDescriptor: TExt = {
@@ -169,19 +171,21 @@ object FrontendSchema {
 
   val frontendOutputKey: TExt = {
     TExt(ns, "OutputKeyConfig", TStruct(Vector(
-      StructFieldDef("gatewayKey", TString, 0),
-      StructFieldDef("path", path, 1),
-      StructFieldDef("metadata", TList(metadataItem), 2),
-      StructFieldDef("descriptor", outputDescriptor, 3),
-      StructFieldDef("associatedDataKeys", TList(path), 4))))
+      StructFieldDef("gatewayKey", TString, 0, "Name of configured output to target."),
+      StructFieldDef("path", path, 1, "ID of output key."),
+      StructFieldDef("metadata", TList(metadataItem), 2, "Metadata key values of output key."),
+      StructFieldDef("descriptor", outputDescriptor, 3, "Descriptor of output key."),
+      StructFieldDef("associatedDataKeys", TList(path), 4, "Data keys associated with output key."))),
+      """Configuration of an endpoint output key.""")
   }
 
   val frontendConfiguration: TExt = {
     TExt(ns, "FrontendConfiguration", TStruct(Vector(
-      StructFieldDef("endpointId", path, 0),
-      StructFieldDef("metadata", TList(metadataItem), 1),
-      StructFieldDef("dataKeys", TList(frontendDataKey), 2),
-      StructFieldDef("outputKeys", TList(frontendOutputKey), 3))))
+      StructFieldDef("endpointId", path, 0, "ID of published endpoint."),
+      StructFieldDef("metadata", TList(metadataItem), 1, "Metadata key values of published endpoint."),
+      StructFieldDef("dataKeys", TList(frontendDataKey), 2, "Data keys of published endpoint."),
+      StructFieldDef("outputKeys", TList(frontendOutputKey), 3, "Output keys of published endpoint."))),
+      """Defines an endpoint to be published based on a set of configured inputs and outputs.""")
   }
 
   val all = Seq(
