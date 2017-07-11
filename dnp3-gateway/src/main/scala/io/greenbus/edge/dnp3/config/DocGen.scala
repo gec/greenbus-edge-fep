@@ -18,10 +18,9 @@
  */
 package io.greenbus.edge.dnp3.config
 
-import java.io.{OutputStream, PrintWriter}
+import java.io.{ OutputStream, PrintWriter }
 
 import io.greenbus.edge.data.schema._
-
 
 object DocGen {
 
@@ -41,8 +40,8 @@ object DocGen {
 
   def typeEntry(w: PrintWriter, typ: TExt): Unit = {
     typ.reprType match {
-      case t: TStruct => structEntry(w, typ.tag, t)
-      case t: TEnum => enumEntry(w, typ.tag, t)
+      case t: TStruct => structEntry(w, typ.tag, t, typ.doc)
+      case t: TEnum => enumEntry(w, typ.tag, t, typ.doc)
       case t: BasicValueType => aliasEntry(w, typ.tag, t)
       case _ =>
     }
@@ -52,40 +51,44 @@ object DocGen {
     w.println()
     w.println(s"### $tag")
     w.println()
-    w.println(s"Alias: ${fieldDefName(t)}>")
+    w.println(s"Alias: ${fieldDefName(t)}")
     w.println()
   }
 
-  def enumEntry(w: PrintWriter, tag: String, enum: TEnum): Unit = {
+  def enumEntry(w: PrintWriter, tag: String, enum: TEnum, doc: String): Unit = {
 
     w.println()
     w.println(s"### $tag")
-    w.println()
-    w.println("...")
+    if (doc.trim.length > 0) {
+      w.println()
+      w.println(doc)
+    }
     w.println()
     w.println("Values:")
     w.println()
 
     val table = enum.enumDefs.map { d =>
-      Vector(s"`${d.label}`", d.value.toString, "description")
+      Vector(s"`${d.label}`", d.value.toString, d.doc)
     }
 
     printTable(w, Vector("Label", "Value", "Description"), table)
     w.println()
   }
 
-  def structEntry(w: PrintWriter, tag: String, struct: TStruct): Unit = {
+  def structEntry(w: PrintWriter, tag: String, struct: TStruct, doc: String): Unit = {
 
     w.println()
     w.println(s"### $tag")
-    w.println()
-    w.println("...")
+    if (doc.trim.length > 0) {
+      w.println()
+      w.println(doc)
+    }
     w.println()
     w.println("Fields:")
     w.println()
 
     val table = struct.fields.map { s =>
-      Vector(s"`${s.name}`", fieldDefName(s.typ), "description")
+      Vector(s"`${s.name}`", fieldDefName(s.typ), s.doc)
     }
 
     printTable(w, Vector("Name", "Type", "Description"), table)
@@ -96,8 +99,8 @@ object DocGen {
     fieldType match {
       case ext: TExt => ext.tag
       case opt: TOption => fieldDefName(opt.paramType) + " (optional)"
-      case list: TList => s"List<${fieldDefName(list.paramType)}>"
-      case map: TMap => s"Map<${fieldDefName(map.keyType)}, ${fieldDefName(map.valueType)}>"
+      case list: TList => s"List[${fieldDefName(list.paramType)}]"
+      case map: TMap => s"Map[${fieldDefName(map.keyType)}, ${fieldDefName(map.valueType)}]"
       case TByte => "byte"
       case TBool => "boolean"
       case TInt32 => "int32"
