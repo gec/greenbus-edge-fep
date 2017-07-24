@@ -29,14 +29,14 @@ object BooleanLabels {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type BooleanLabels did not recognize value type " + other)
+          case other => Left(ctx.context + "type BooleanLabels did not recognize value type " + other)
         }
-      case other => Left("Type BooleanLabels did not recognize value type " + other)
+      case other => Left(ctx.context + "type BooleanLabels did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, BooleanLabels] = {
-    val trueLabel = MappingLibrary.getMapField("trueLabel", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val falseLabel = MappingLibrary.getMapField("falseLabel", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val trueLabel = MappingLibrary.getMapField("trueLabel", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val falseLabel = MappingLibrary.getMapField("falseLabel", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
 
     if (trueLabel.isRight && falseLabel.isRight) {
       Right(BooleanLabels(trueLabel.right.get, falseLabel.right.get))
@@ -63,18 +63,18 @@ object DataKeyConfig {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type DataKeyConfig did not recognize value type " + other)
+          case other => Left(ctx.context + "type DataKeyConfig did not recognize value type " + other)
         }
-      case other => Left("Type DataKeyConfig did not recognize value type " + other)
+      case other => Left(ctx.context + "type DataKeyConfig did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, DataKeyConfig] = {
-    val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
-    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx)).getOrElse(Right(Seq()))
-    val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "SeriesDescriptor", io.greenbus.edge.fep.config.model.SeriesDescriptor.read, ctx))
-    val transforms = MappingLibrary.optMapField("transforms", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.TransformDescriptor](elem, io.greenbus.edge.fep.config.model.TransformDescriptor.read, ctx)).getOrElse(Right(Seq()))
-    val filter = MappingLibrary.optMapField("filter", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.FilterDescriptor.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val gatewayKey = MappingLibrary.getMapField("gatewayKey", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val path = MappingLibrary.getMapField("path", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx.field("metadata"))).getOrElse(Right(Seq()))
+    val descriptor = MappingLibrary.getMapField("descriptor", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "SeriesDescriptor", io.greenbus.edge.fep.config.model.SeriesDescriptor.read, ctx))
+    val transforms = MappingLibrary.optMapField("transforms", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.TransformDescriptor](elem, io.greenbus.edge.fep.config.model.TransformDescriptor.read, ctx.field("transforms"))).getOrElse(Right(Seq()))
+    val filter = MappingLibrary.optMapField("filter", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.FilterDescriptor.read(elem, ctx.field("filter")).map(r => Some(r))).getOrElse(Right(None))
 
     if (gatewayKey.isRight && path.isRight && metadata.isRight && descriptor.isRight && transforms.isRight && filter.isRight) {
       Right(DataKeyConfig(gatewayKey.right.get, path.right.get, metadata.right.get, descriptor.right.get, transforms.right.get, filter.right.get))
@@ -105,14 +105,14 @@ object FilterDescriptor {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type FilterDescriptor did not recognize value type " + other)
+          case other => Left(ctx.context + "type FilterDescriptor did not recognize value type " + other)
         }
-      case other => Left("Type FilterDescriptor did not recognize value type " + other)
+      case other => Left(ctx.context + "type FilterDescriptor did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, FilterDescriptor] = {
-    val suppressDuplicates = MappingLibrary.optMapField("suppressDuplicates", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readBool(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val deadband = MappingLibrary.optMapField("deadband", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val suppressDuplicates = MappingLibrary.optMapField("suppressDuplicates", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readBool(elem, ctx.field("suppressDuplicates")).map(r => Some(r))).getOrElse(Right(None))
+    val deadband = MappingLibrary.optMapField("deadband", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx.field("deadband")).map(r => Some(r))).getOrElse(Right(None))
 
     if (suppressDuplicates.isRight && deadband.isRight) {
       Right(FilterDescriptor(suppressDuplicates.right.get, deadband.right.get))
@@ -139,16 +139,16 @@ object FrontendConfiguration {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type FrontendConfiguration did not recognize value type " + other)
+          case other => Left(ctx.context + "type FrontendConfiguration did not recognize value type " + other)
         }
-      case other => Left("Type FrontendConfiguration did not recognize value type " + other)
+      case other => Left(ctx.context + "type FrontendConfiguration did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, FrontendConfiguration] = {
-    val endpointId = MappingLibrary.getMapField("endpointId", element).flatMap(elem => MappingLibrary.readFieldSubStruct("endpointId", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
-    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx)).getOrElse(Right(Seq()))
-    val dataKeys = MappingLibrary.optMapField("dataKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.DataKeyConfig](elem, io.greenbus.edge.fep.config.model.DataKeyConfig.read, ctx)).getOrElse(Right(Seq()))
-    val outputKeys = MappingLibrary.optMapField("outputKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.OutputKeyConfig](elem, io.greenbus.edge.fep.config.model.OutputKeyConfig.read, ctx)).getOrElse(Right(Seq()))
+    val endpointId = MappingLibrary.getMapField("endpointId", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("endpointId", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx.field("metadata"))).getOrElse(Right(Seq()))
+    val dataKeys = MappingLibrary.optMapField("dataKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.DataKeyConfig](elem, io.greenbus.edge.fep.config.model.DataKeyConfig.read, ctx.field("dataKeys"))).getOrElse(Right(Seq()))
+    val outputKeys = MappingLibrary.optMapField("outputKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.OutputKeyConfig](elem, io.greenbus.edge.fep.config.model.OutputKeyConfig.read, ctx.field("outputKeys"))).getOrElse(Right(Seq()))
 
     if (endpointId.isRight && metadata.isRight && dataKeys.isRight && outputKeys.isRight) {
       Right(FrontendConfiguration(endpointId.right.get, metadata.right.get, dataKeys.right.get, outputKeys.right.get))
@@ -177,14 +177,14 @@ object IntegerLabel {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type IntegerLabel did not recognize value type " + other)
+          case other => Left(ctx.context + "type IntegerLabel did not recognize value type " + other)
         }
-      case other => Left("Type IntegerLabel did not recognize value type " + other)
+      case other => Left(ctx.context + "type IntegerLabel did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, IntegerLabel] = {
-    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val label = MappingLibrary.getMapField("label", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val value = MappingLibrary.getMapField("value", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val label = MappingLibrary.getMapField("label", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
 
     if (value.isRight && label.isRight) {
       Right(IntegerLabel(value.right.get, label.right.get))
@@ -211,9 +211,9 @@ object IntegerLabelSet {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueList => readRepr(data, ctx)
-          case other => Left("Type IntegerLabelSet did not recognize value type " + other)
+          case other => Left(ctx.context + " type IntegerLabelSet did not recognize value type " + other)
         }
-      case other => Left("Type IntegerLabelSet did not recognize value type " + other)
+      case other => Left(ctx.context + " type IntegerLabelSet did not recognize value type " + other)
     }
   }
   def readRepr(element: ValueList, ctx: ReaderContext): Either[String, IntegerLabelSet] = {
@@ -235,14 +235,14 @@ object LinearTransform {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type LinearTransform did not recognize value type " + other)
+          case other => Left(ctx.context + "type LinearTransform did not recognize value type " + other)
         }
-      case other => Left("Type LinearTransform did not recognize value type " + other)
+      case other => Left(ctx.context + "type LinearTransform did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, LinearTransform] = {
-    val scale = MappingLibrary.getMapField("scale", element).flatMap(elem => MappingLibrary.readDouble(elem, ctx))
-    val offset = MappingLibrary.getMapField("offset", element).flatMap(elem => MappingLibrary.readDouble(elem, ctx))
+    val scale = MappingLibrary.getMapField("scale", element, ctx).flatMap(elem => MappingLibrary.readDouble(elem, ctx))
+    val offset = MappingLibrary.getMapField("offset", element, ctx).flatMap(elem => MappingLibrary.readDouble(elem, ctx))
 
     if (scale.isRight && offset.isRight) {
       Right(LinearTransform(scale.right.get, offset.right.get))
@@ -269,13 +269,13 @@ object MetadataBoolValue {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type MetadataBoolValue did not recognize value type " + other)
+          case other => Left(ctx.context + "type MetadataBoolValue did not recognize value type " + other)
         }
-      case other => Left("Type MetadataBoolValue did not recognize value type " + other)
+      case other => Left(ctx.context + "type MetadataBoolValue did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataBoolValue] = {
-    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readBool(elem, ctx))
+    val value = MappingLibrary.getMapField("value", element, ctx).flatMap(elem => MappingLibrary.readBool(elem, ctx))
 
     if (value.isRight) {
       Right(MetadataBoolValue(value.right.get))
@@ -301,13 +301,13 @@ object MetadataDoubleValue {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type MetadataDoubleValue did not recognize value type " + other)
+          case other => Left(ctx.context + "type MetadataDoubleValue did not recognize value type " + other)
         }
-      case other => Left("Type MetadataDoubleValue did not recognize value type " + other)
+      case other => Left(ctx.context + "type MetadataDoubleValue did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataDoubleValue] = {
-    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readDouble(elem, ctx))
+    val value = MappingLibrary.getMapField("value", element, ctx).flatMap(elem => MappingLibrary.readDouble(elem, ctx))
 
     if (value.isRight) {
       Right(MetadataDoubleValue(value.right.get))
@@ -333,13 +333,13 @@ object MetadataIntegerValue {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type MetadataIntegerValue did not recognize value type " + other)
+          case other => Left(ctx.context + "type MetadataIntegerValue did not recognize value type " + other)
         }
-      case other => Left("Type MetadataIntegerValue did not recognize value type " + other)
+      case other => Left(ctx.context + "type MetadataIntegerValue did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataIntegerValue] = {
-    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readLong(elem, ctx))
+    val value = MappingLibrary.getMapField("value", element, ctx).flatMap(elem => MappingLibrary.readLong(elem, ctx))
 
     if (value.isRight) {
       Right(MetadataIntegerValue(value.right.get))
@@ -365,14 +365,14 @@ object MetadataKeyValue {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type MetadataKeyValue did not recognize value type " + other)
+          case other => Left(ctx.context + "type MetadataKeyValue did not recognize value type " + other)
         }
-      case other => Left("Type MetadataKeyValue did not recognize value type " + other)
+      case other => Left(ctx.context + "type MetadataKeyValue did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataKeyValue] = {
-    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
-    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readFieldSubStruct("value", elem, "MetadataValue", io.greenbus.edge.fep.config.model.MetadataValue.read, ctx))
+    val path = MappingLibrary.getMapField("path", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val value = MappingLibrary.getMapField("value", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("value", elem, "MetadataValue", io.greenbus.edge.fep.config.model.MetadataValue.read, ctx))
 
     if (path.isRight && value.isRight) {
       Right(MetadataKeyValue(path.right.get, value.right.get))
@@ -399,13 +399,13 @@ object MetadataStringValue {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type MetadataStringValue did not recognize value type " + other)
+          case other => Left(ctx.context + "type MetadataStringValue did not recognize value type " + other)
         }
-      case other => Left("Type MetadataStringValue did not recognize value type " + other)
+      case other => Left(ctx.context + "type MetadataStringValue did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, MetadataStringValue] = {
-    val value = MappingLibrary.getMapField("value", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val value = MappingLibrary.getMapField("value", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
 
     if (value.isRight) {
       Right(MetadataStringValue(value.right.get))
@@ -433,9 +433,9 @@ object MetadataValue {
           case "MetadataIntegerValue" => io.greenbus.edge.fep.config.model.MetadataIntegerValue.read(element, ctx)
           case "MetadataBoolValue" => io.greenbus.edge.fep.config.model.MetadataBoolValue.read(element, ctx)
           case "MetadataDoubleValue" => io.greenbus.edge.fep.config.model.MetadataDoubleValue.read(element, ctx)
-          case other => throw new IllegalArgumentException("Type MetadataValue did not union type tag " + other)
+          case other => throw new IllegalArgumentException(ctx.context + " type MetadataValue did not union type tag " + other)
         }
-      case other => throw new IllegalArgumentException("Type MetadataValue did not recognize " + other)
+      case other => throw new IllegalArgumentException(ctx.context + " type MetadataValue did not recognize " + other)
     }
   }
   def write(obj: MetadataValue): TaggedValue = {
@@ -458,17 +458,17 @@ object OutputDescriptor {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type OutputDescriptor did not recognize value type " + other)
+          case other => Left(ctx.context + "type OutputDescriptor did not recognize value type " + other)
         }
-      case other => Left("Type OutputDescriptor did not recognize value type " + other)
+      case other => Left(ctx.context + "type OutputDescriptor did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputDescriptor] = {
-    val outputType = MappingLibrary.getMapField("outputType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("outputType", elem, "OutputType", io.greenbus.edge.fep.config.model.OutputType.read, ctx))
-    val requestScale = MappingLibrary.optMapField("requestScale", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val requestOffset = MappingLibrary.optMapField("requestOffset", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val requestIntegerLabels = MappingLibrary.optMapField("requestIntegerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.IntegerLabelSet.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val requestBooleanLabels = MappingLibrary.optMapField("requestBooleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.BooleanLabels.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val outputType = MappingLibrary.getMapField("outputType", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("outputType", elem, "OutputType", io.greenbus.edge.fep.config.model.OutputType.read, ctx))
+    val requestScale = MappingLibrary.optMapField("requestScale", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx.field("requestScale")).map(r => Some(r))).getOrElse(Right(None))
+    val requestOffset = MappingLibrary.optMapField("requestOffset", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readDouble(elem, ctx.field("requestOffset")).map(r => Some(r))).getOrElse(Right(None))
+    val requestIntegerLabels = MappingLibrary.optMapField("requestIntegerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.IntegerLabelSet.read(elem, ctx.field("requestIntegerLabels")).map(r => Some(r))).getOrElse(Right(None))
+    val requestBooleanLabels = MappingLibrary.optMapField("requestBooleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.BooleanLabels.read(elem, ctx.field("requestBooleanLabels")).map(r => Some(r))).getOrElse(Right(None))
 
     if (outputType.isRight && requestScale.isRight && requestOffset.isRight && requestIntegerLabels.isRight && requestBooleanLabels.isRight) {
       Right(OutputDescriptor(outputType.right.get, requestScale.right.get, requestOffset.right.get, requestIntegerLabels.right.get, requestBooleanLabels.right.get))
@@ -498,17 +498,17 @@ object OutputKeyConfig {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type OutputKeyConfig did not recognize value type " + other)
+          case other => Left(ctx.context + "type OutputKeyConfig did not recognize value type " + other)
         }
-      case other => Left("Type OutputKeyConfig did not recognize value type " + other)
+      case other => Left(ctx.context + "type OutputKeyConfig did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputKeyConfig] = {
-    val gatewayKey = MappingLibrary.getMapField("gatewayKey", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val path = MappingLibrary.getMapField("path", element).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
-    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx)).getOrElse(Right(Seq()))
-    val descriptor = MappingLibrary.getMapField("descriptor", element).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "OutputDescriptor", io.greenbus.edge.fep.config.model.OutputDescriptor.read, ctx))
-    val associatedDataKeys = MappingLibrary.optMapField("associatedDataKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.Path](elem, io.greenbus.edge.fep.config.model.Path.read, ctx)).getOrElse(Right(Seq()))
+    val gatewayKey = MappingLibrary.getMapField("gatewayKey", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val path = MappingLibrary.getMapField("path", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("path", elem, "Path", io.greenbus.edge.fep.config.model.Path.read, ctx))
+    val metadata = MappingLibrary.optMapField("metadata", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.MetadataKeyValue](elem, io.greenbus.edge.fep.config.model.MetadataKeyValue.read, ctx.field("metadata"))).getOrElse(Right(Seq()))
+    val descriptor = MappingLibrary.getMapField("descriptor", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("descriptor", elem, "OutputDescriptor", io.greenbus.edge.fep.config.model.OutputDescriptor.read, ctx))
+    val associatedDataKeys = MappingLibrary.optMapField("associatedDataKeys", element).map(elem => MappingLibrary.readList[io.greenbus.edge.fep.config.model.Path](elem, io.greenbus.edge.fep.config.model.Path.read, ctx.field("associatedDataKeys"))).getOrElse(Right(Seq()))
 
     if (gatewayKey.isRight && path.isRight && metadata.isRight && descriptor.isRight && associatedDataKeys.isRight) {
       Right(OutputKeyConfig(gatewayKey.right.get, path.right.get, metadata.right.get, descriptor.right.get, associatedDataKeys.right.get))
@@ -545,9 +545,9 @@ object OutputType {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type OutputType did not recognize value type " + other)
+          case other => Left(ctx.context + " type OutputType did not recognize value type " + other)
         }
-      case other => Left("Type OutputType did not recognize value type " + other)
+      case other => Left(ctx.context + " type OutputType did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, OutputType] = {
@@ -556,7 +556,7 @@ object OutputType {
       case 1 => Right(AnalogSetpoint)
       case 2 => Right(BooleanSetpoint)
       case 3 => Right(EnumerationSetpoint)
-      case other => Left("Enum OutputType did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum OutputType did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, OutputType] = {
@@ -565,7 +565,7 @@ object OutputType {
       case "AnalogSetpoint" => Right(AnalogSetpoint)
       case "BooleanSetpoint" => Right(BooleanSetpoint)
       case "EnumerationSetpoint" => Right(EnumerationSetpoint)
-      case other => Left("Enum OutputType did not recognize string value " + other)
+      case other => Left(ctx.context + " enum OutputType did not recognize string value " + other)
     }
   }
   def write(obj: OutputType): TaggedValue = {
@@ -582,9 +582,9 @@ object Path {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueList => readRepr(data, ctx)
-          case other => Left("Type Path did not recognize value type " + other)
+          case other => Left(ctx.context + " type Path did not recognize value type " + other)
         }
-      case other => Left("Type Path did not recognize value type " + other)
+      case other => Left(ctx.context + " type Path did not recognize value type " + other)
     }
   }
   def readRepr(element: ValueList, ctx: ReaderContext): Either[String, Path] = {
@@ -617,9 +617,9 @@ object SampleType {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type SampleType did not recognize value type " + other)
+          case other => Left(ctx.context + " type SampleType did not recognize value type " + other)
         }
-      case other => Left("Type SampleType did not recognize value type " + other)
+      case other => Left(ctx.context + " type SampleType did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, SampleType] = {
@@ -632,7 +632,7 @@ object SampleType {
       case 5 => Right(UInt64)
       case 6 => Right(Bool)
       case 7 => Right(Byte)
-      case other => Left("Enum SampleType did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum SampleType did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, SampleType] = {
@@ -645,7 +645,7 @@ object SampleType {
       case "UInt64" => Right(UInt64)
       case "Bool" => Right(Bool)
       case "Byte" => Right(Byte)
-      case other => Left("Enum SampleType did not recognize string value " + other)
+      case other => Left(ctx.context + " enum SampleType did not recognize string value " + other)
     }
   }
   def write(obj: SampleType): TaggedValue = {
@@ -662,17 +662,17 @@ object SeriesDescriptor {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type SeriesDescriptor did not recognize value type " + other)
+          case other => Left(ctx.context + "type SeriesDescriptor did not recognize value type " + other)
         }
-      case other => Left("Type SeriesDescriptor did not recognize value type " + other)
+      case other => Left(ctx.context + "type SeriesDescriptor did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, SeriesDescriptor] = {
-    val seriesType = MappingLibrary.getMapField("seriesType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("seriesType", elem, "SeriesType", io.greenbus.edge.fep.config.model.SeriesType.read, ctx))
-    val unit = MappingLibrary.optMapField("unit", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readString(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val decimalPoints = MappingLibrary.optMapField("decimalPoints", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val integerLabels = MappingLibrary.optMapField("integerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.IntegerLabelSet.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val booleanLabels = MappingLibrary.optMapField("booleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.BooleanLabels.read(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val seriesType = MappingLibrary.getMapField("seriesType", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("seriesType", elem, "SeriesType", io.greenbus.edge.fep.config.model.SeriesType.read, ctx))
+    val unit = MappingLibrary.optMapField("unit", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readString(elem, ctx.field("unit")).map(r => Some(r))).getOrElse(Right(None))
+    val decimalPoints = MappingLibrary.optMapField("decimalPoints", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx.field("decimalPoints")).map(r => Some(r))).getOrElse(Right(None))
+    val integerLabels = MappingLibrary.optMapField("integerLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.IntegerLabelSet.read(elem, ctx.field("integerLabels")).map(r => Some(r))).getOrElse(Right(None))
+    val booleanLabels = MappingLibrary.optMapField("booleanLabels", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => io.greenbus.edge.fep.config.model.BooleanLabels.read(elem, ctx.field("booleanLabels")).map(r => Some(r))).getOrElse(Right(None))
 
     if (seriesType.isRight && unit.isRight && decimalPoints.isRight && integerLabels.isRight && booleanLabels.isRight) {
       Right(SeriesDescriptor(seriesType.right.get, unit.right.get, decimalPoints.right.get, integerLabels.right.get, booleanLabels.right.get))
@@ -711,9 +711,9 @@ object SeriesType {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type SeriesType did not recognize value type " + other)
+          case other => Left(ctx.context + " type SeriesType did not recognize value type " + other)
         }
-      case other => Left("Type SeriesType did not recognize value type " + other)
+      case other => Left(ctx.context + " type SeriesType did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, SeriesType] = {
@@ -724,7 +724,7 @@ object SeriesType {
       case 3 => Right(CounterSample)
       case 4 => Right(BooleanStatus)
       case 5 => Right(IntegerEnum)
-      case other => Left("Enum SeriesType did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum SeriesType did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, SeriesType] = {
@@ -735,7 +735,7 @@ object SeriesType {
       case "CounterSample" => Right(CounterSample)
       case "BooleanStatus" => Right(BooleanStatus)
       case "IntegerEnum" => Right(IntegerEnum)
-      case other => Left("Enum SeriesType did not recognize string value " + other)
+      case other => Left(ctx.context + " enum SeriesType did not recognize string value " + other)
     }
   }
   def write(obj: SeriesType): TaggedValue = {
@@ -752,13 +752,13 @@ object SimpleTransform {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type SimpleTransform did not recognize value type " + other)
+          case other => Left(ctx.context + "type SimpleTransform did not recognize value type " + other)
         }
-      case other => Left("Type SimpleTransform did not recognize value type " + other)
+      case other => Left(ctx.context + "type SimpleTransform did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, SimpleTransform] = {
-    val transformType = MappingLibrary.getMapField("transformType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("transformType", elem, "SimpleTransformType", io.greenbus.edge.fep.config.model.SimpleTransformType.read, ctx))
+    val transformType = MappingLibrary.getMapField("transformType", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("transformType", elem, "SimpleTransformType", io.greenbus.edge.fep.config.model.SimpleTransformType.read, ctx))
 
     if (transformType.isRight) {
       Right(SimpleTransform(transformType.right.get))
@@ -788,21 +788,21 @@ object SimpleTransformType {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type SimpleTransformType did not recognize value type " + other)
+          case other => Left(ctx.context + " type SimpleTransformType did not recognize value type " + other)
         }
-      case other => Left("Type SimpleTransformType did not recognize value type " + other)
+      case other => Left(ctx.context + " type SimpleTransformType did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, SimpleTransformType] = {
     element.toInt match {
       case 0 => Right(Negate)
-      case other => Left("Enum SimpleTransformType did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum SimpleTransformType did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, SimpleTransformType] = {
     element.value match {
       case "Negate" => Right(Negate)
-      case other => Left("Enum SimpleTransformType did not recognize string value " + other)
+      case other => Left(ctx.context + " enum SimpleTransformType did not recognize string value " + other)
     }
   }
   def write(obj: SimpleTransformType): TaggedValue = {
@@ -820,9 +820,9 @@ object TransformDescriptor {
           case "TypeCast" => io.greenbus.edge.fep.config.model.TypeCast.read(element, ctx)
           case "LinearTransform" => io.greenbus.edge.fep.config.model.LinearTransform.read(element, ctx)
           case "SimpleTransform" => io.greenbus.edge.fep.config.model.SimpleTransform.read(element, ctx)
-          case other => throw new IllegalArgumentException("Type TransformDescriptor did not union type tag " + other)
+          case other => throw new IllegalArgumentException(ctx.context + " type TransformDescriptor did not union type tag " + other)
         }
-      case other => throw new IllegalArgumentException("Type TransformDescriptor did not recognize " + other)
+      case other => throw new IllegalArgumentException(ctx.context + " type TransformDescriptor did not recognize " + other)
     }
   }
   def write(obj: TransformDescriptor): TaggedValue = {
@@ -844,13 +844,13 @@ object TypeCast {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type TypeCast did not recognize value type " + other)
+          case other => Left(ctx.context + "type TypeCast did not recognize value type " + other)
         }
-      case other => Left("Type TypeCast did not recognize value type " + other)
+      case other => Left(ctx.context + "type TypeCast did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, TypeCast] = {
-    val target = MappingLibrary.getMapField("target", element).flatMap(elem => MappingLibrary.readFieldSubStruct("target", elem, "SampleType", io.greenbus.edge.fep.config.model.SampleType.read, ctx))
+    val target = MappingLibrary.getMapField("target", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("target", elem, "SampleType", io.greenbus.edge.fep.config.model.SampleType.read, ctx))
 
     if (target.isRight) {
       Right(TypeCast(target.right.get))

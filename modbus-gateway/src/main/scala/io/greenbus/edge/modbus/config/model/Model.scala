@@ -29,14 +29,14 @@ object BooleanInput {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type BooleanInput did not recognize value type " + other)
+          case other => Left(ctx.context + "type BooleanInput did not recognize value type " + other)
         }
-      case other => Left("Type BooleanInput did not recognize value type " + other)
+      case other => Left(ctx.context + "type BooleanInput did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, BooleanInput] = {
-    val index = MappingLibrary.getMapField("index", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val name = MappingLibrary.getMapField("name", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val index = MappingLibrary.getMapField("index", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val name = MappingLibrary.getMapField("name", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
 
     if (index.isRight && name.isRight) {
       Right(BooleanInput(index.right.get, name.right.get))
@@ -70,9 +70,9 @@ object CommandType {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type CommandType did not recognize value type " + other)
+          case other => Left(ctx.context + " type CommandType did not recognize value type " + other)
         }
-      case other => Left("Type CommandType did not recognize value type " + other)
+      case other => Left(ctx.context + " type CommandType did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, CommandType] = {
@@ -81,7 +81,7 @@ object CommandType {
       case 1 => Right(Register)
       case 2 => Right(MaskRegister)
       case 3 => Right(MultipleRegisters)
-      case other => Left("Enum CommandType did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum CommandType did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, CommandType] = {
@@ -90,7 +90,7 @@ object CommandType {
       case "Register" => Right(Register)
       case "MaskRegister" => Right(MaskRegister)
       case "MultipleRegisters" => Right(MultipleRegisters)
-      case other => Left("Enum CommandType did not recognize string value " + other)
+      case other => Left(ctx.context + " enum CommandType did not recognize string value " + other)
     }
   }
   def write(obj: CommandType): TaggedValue = {
@@ -120,9 +120,9 @@ object Conversion {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type Conversion did not recognize value type " + other)
+          case other => Left(ctx.context + " type Conversion did not recognize value type " + other)
         }
-      case other => Left("Type Conversion did not recognize value type " + other)
+      case other => Left(ctx.context + " type Conversion did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, Conversion] = {
@@ -137,7 +137,7 @@ object Conversion {
       case 7 => Right(Float32BE)
       case 8 => Right(Float64LE)
       case 9 => Right(Float64BE)
-      case other => Left("Enum Conversion did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum Conversion did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, Conversion] = {
@@ -152,7 +152,7 @@ object Conversion {
       case "Float32BE" => Right(Float32BE)
       case "Float64LE" => Right(Float64LE)
       case "Float64BE" => Right(Float64BE)
-      case other => Left("Enum Conversion did not recognize string value " + other)
+      case other => Left(ctx.context + " enum Conversion did not recognize string value " + other)
     }
   }
   def write(obj: Conversion): TaggedValue = {
@@ -176,9 +176,9 @@ object DataType {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type DataType did not recognize value type " + other)
+          case other => Left(ctx.context + " type DataType did not recognize value type " + other)
         }
-      case other => Left("Type DataType did not recognize value type " + other)
+      case other => Left(ctx.context + " type DataType did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, DataType] = {
@@ -187,7 +187,7 @@ object DataType {
       case 1 => Right(CoilStatus)
       case 2 => Right(InputRegister)
       case 3 => Right(HoldingRegister)
-      case other => Left("Enum DataType did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum DataType did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, DataType] = {
@@ -196,7 +196,7 @@ object DataType {
       case "CoilStatus" => Right(CoilStatus)
       case "InputRegister" => Right(InputRegister)
       case "HoldingRegister" => Right(HoldingRegister)
-      case other => Left("Enum DataType did not recognize string value " + other)
+      case other => Left(ctx.context + " enum DataType did not recognize string value " + other)
     }
   }
   def write(obj: DataType): TaggedValue = {
@@ -213,14 +213,14 @@ object ModbusGateway {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type ModbusGateway did not recognize value type " + other)
+          case other => Left(ctx.context + "type ModbusGateway did not recognize value type " + other)
         }
-      case other => Left("Type ModbusGateway did not recognize value type " + other)
+      case other => Left(ctx.context + "type ModbusGateway did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, ModbusGateway] = {
-    val modbus = MappingLibrary.getMapField("modbus", element).flatMap(elem => MappingLibrary.readFieldSubStruct("modbus", elem, "ModbusMaster", io.greenbus.edge.modbus.config.model.ModbusMaster.read, ctx))
-    val endpoint = MappingLibrary.getMapField("endpoint", element).flatMap(elem => MappingLibrary.readFieldSubStruct("endpoint", elem, "FrontendConfiguration", io.greenbus.edge.fep.config.model.FrontendConfiguration.read, ctx))
+    val modbus = MappingLibrary.getMapField("modbus", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("modbus", elem, "ModbusMaster", io.greenbus.edge.modbus.config.model.ModbusMaster.read, ctx))
+    val endpoint = MappingLibrary.getMapField("endpoint", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("endpoint", elem, "FrontendConfiguration", io.greenbus.edge.fep.config.model.FrontendConfiguration.read, ctx))
 
     if (modbus.isRight && endpoint.isRight) {
       Right(ModbusGateway(modbus.right.get, endpoint.right.get))
@@ -247,21 +247,21 @@ object ModbusMaster {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type ModbusMaster did not recognize value type " + other)
+          case other => Left(ctx.context + "type ModbusMaster did not recognize value type " + other)
         }
-      case other => Left("Type ModbusMaster did not recognize value type " + other)
+      case other => Left(ctx.context + "type ModbusMaster did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, ModbusMaster] = {
-    val tcpClient = MappingLibrary.getMapField("tcpClient", element).flatMap(elem => MappingLibrary.readFieldSubStruct("tcpClient", elem, "TCPClient", io.greenbus.edge.modbus.config.model.TCPClient.read, ctx))
-    val protocol = MappingLibrary.getMapField("protocol", element).flatMap(elem => MappingLibrary.readFieldSubStruct("protocol", elem, "ProtocolType", io.greenbus.edge.modbus.config.model.ProtocolType.read, ctx))
-    val address = MappingLibrary.getMapField("address", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val polls = MappingLibrary.optMapField("polls", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.Poll](elem, io.greenbus.edge.modbus.config.model.Poll.read, ctx)).getOrElse(Right(Seq()))
-    val discreteInputs = MappingLibrary.optMapField("discreteInputs", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.BooleanInput](elem, io.greenbus.edge.modbus.config.model.BooleanInput.read, ctx)).getOrElse(Right(Seq()))
-    val coilStatuses = MappingLibrary.optMapField("coilStatuses", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.BooleanInput](elem, io.greenbus.edge.modbus.config.model.BooleanInput.read, ctx)).getOrElse(Right(Seq()))
-    val inputRegisters = MappingLibrary.optMapField("inputRegisters", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.NumericInput](elem, io.greenbus.edge.modbus.config.model.NumericInput.read, ctx)).getOrElse(Right(Seq()))
-    val holdingRegisters = MappingLibrary.optMapField("holdingRegisters", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.NumericInput](elem, io.greenbus.edge.modbus.config.model.NumericInput.read, ctx)).getOrElse(Right(Seq()))
-    val commandMappings = MappingLibrary.optMapField("commandMappings", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.OutputMapping](elem, io.greenbus.edge.modbus.config.model.OutputMapping.read, ctx)).getOrElse(Right(Seq()))
+    val tcpClient = MappingLibrary.getMapField("tcpClient", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("tcpClient", elem, "TCPClient", io.greenbus.edge.modbus.config.model.TCPClient.read, ctx))
+    val protocol = MappingLibrary.getMapField("protocol", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("protocol", elem, "ProtocolType", io.greenbus.edge.modbus.config.model.ProtocolType.read, ctx))
+    val address = MappingLibrary.getMapField("address", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val polls = MappingLibrary.optMapField("polls", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.Poll](elem, io.greenbus.edge.modbus.config.model.Poll.read, ctx.field("polls"))).getOrElse(Right(Seq()))
+    val discreteInputs = MappingLibrary.optMapField("discreteInputs", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.BooleanInput](elem, io.greenbus.edge.modbus.config.model.BooleanInput.read, ctx.field("discreteInputs"))).getOrElse(Right(Seq()))
+    val coilStatuses = MappingLibrary.optMapField("coilStatuses", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.BooleanInput](elem, io.greenbus.edge.modbus.config.model.BooleanInput.read, ctx.field("coilStatuses"))).getOrElse(Right(Seq()))
+    val inputRegisters = MappingLibrary.optMapField("inputRegisters", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.NumericInput](elem, io.greenbus.edge.modbus.config.model.NumericInput.read, ctx.field("inputRegisters"))).getOrElse(Right(Seq()))
+    val holdingRegisters = MappingLibrary.optMapField("holdingRegisters", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.NumericInput](elem, io.greenbus.edge.modbus.config.model.NumericInput.read, ctx.field("holdingRegisters"))).getOrElse(Right(Seq()))
+    val commandMappings = MappingLibrary.optMapField("commandMappings", element).map(elem => MappingLibrary.readList[io.greenbus.edge.modbus.config.model.OutputMapping](elem, io.greenbus.edge.modbus.config.model.OutputMapping.read, ctx.field("commandMappings"))).getOrElse(Right(Seq()))
 
     if (tcpClient.isRight && protocol.isRight && address.isRight && polls.isRight && discreteInputs.isRight && coilStatuses.isRight && inputRegisters.isRight && holdingRegisters.isRight && commandMappings.isRight) {
       Right(ModbusMaster(tcpClient.right.get, protocol.right.get, address.right.get, polls.right.get, discreteInputs.right.get, coilStatuses.right.get, inputRegisters.right.get, holdingRegisters.right.get, commandMappings.right.get))
@@ -295,17 +295,17 @@ object NumericInput {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type NumericInput did not recognize value type " + other)
+          case other => Left(ctx.context + "type NumericInput did not recognize value type " + other)
         }
-      case other => Left("Type NumericInput did not recognize value type " + other)
+      case other => Left(ctx.context + "type NumericInput did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, NumericInput] = {
-    val index = MappingLibrary.getMapField("index", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val name = MappingLibrary.getMapField("name", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val conversionType = MappingLibrary.getMapField("conversionType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("conversionType", elem, "Conversion", io.greenbus.edge.modbus.config.model.Conversion.read, ctx))
-    val bitMask = MappingLibrary.optMapField("bitMask", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readString(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val shiftRight = MappingLibrary.optMapField("shiftRight", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val index = MappingLibrary.getMapField("index", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val name = MappingLibrary.getMapField("name", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val conversionType = MappingLibrary.getMapField("conversionType", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("conversionType", elem, "Conversion", io.greenbus.edge.modbus.config.model.Conversion.read, ctx))
+    val bitMask = MappingLibrary.optMapField("bitMask", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readString(elem, ctx.field("bitMask")).map(r => Some(r))).getOrElse(Right(None))
+    val shiftRight = MappingLibrary.optMapField("shiftRight", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx.field("shiftRight")).map(r => Some(r))).getOrElse(Right(None))
 
     if (index.isRight && name.isRight && conversionType.isRight && bitMask.isRight && shiftRight.isRight) {
       Right(NumericInput(index.right.get, name.right.get, conversionType.right.get, bitMask.right.get, shiftRight.right.get))
@@ -335,20 +335,20 @@ object OutputMapping {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type OutputMapping did not recognize value type " + other)
+          case other => Left(ctx.context + "type OutputMapping did not recognize value type " + other)
         }
-      case other => Left("Type OutputMapping did not recognize value type " + other)
+      case other => Left(ctx.context + "type OutputMapping did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, OutputMapping] = {
-    val index = MappingLibrary.getMapField("index", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val name = MappingLibrary.getMapField("name", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val commandType = MappingLibrary.getMapField("commandType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("commandType", elem, "CommandType", io.greenbus.edge.modbus.config.model.CommandType.read, ctx))
-    val constBooleanValue = MappingLibrary.optMapField("constBooleanValue", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readBool(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val constIntValue = MappingLibrary.optMapField("constIntValue", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readLong(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val bitMaskToUpdate = MappingLibrary.optMapField("bitMaskToUpdate", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readString(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val shiftLeft = MappingLibrary.optMapField("shiftLeft", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
-    val registerCount = MappingLibrary.optMapField("registerCount", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx).map(r => Some(r))).getOrElse(Right(None))
+    val index = MappingLibrary.getMapField("index", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val name = MappingLibrary.getMapField("name", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val commandType = MappingLibrary.getMapField("commandType", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("commandType", elem, "CommandType", io.greenbus.edge.modbus.config.model.CommandType.read, ctx))
+    val constBooleanValue = MappingLibrary.optMapField("constBooleanValue", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readBool(elem, ctx.field("constBooleanValue")).map(r => Some(r))).getOrElse(Right(None))
+    val constIntValue = MappingLibrary.optMapField("constIntValue", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readLong(elem, ctx.field("constIntValue")).map(r => Some(r))).getOrElse(Right(None))
+    val bitMaskToUpdate = MappingLibrary.optMapField("bitMaskToUpdate", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readString(elem, ctx.field("bitMaskToUpdate")).map(r => Some(r))).getOrElse(Right(None))
+    val shiftLeft = MappingLibrary.optMapField("shiftLeft", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx.field("shiftLeft")).map(r => Some(r))).getOrElse(Right(None))
+    val registerCount = MappingLibrary.optMapField("registerCount", element).flatMap(elem => MappingLibrary.asOption(elem)).map(elem => MappingLibrary.readInt(elem, ctx.field("registerCount")).map(r => Some(r))).getOrElse(Right(None))
 
     if (index.isRight && name.isRight && commandType.isRight && constBooleanValue.isRight && constIntValue.isRight && bitMaskToUpdate.isRight && shiftLeft.isRight && registerCount.isRight) {
       Right(OutputMapping(index.right.get, name.right.get, commandType.right.get, constBooleanValue.right.get, constIntValue.right.get, bitMaskToUpdate.right.get, shiftLeft.right.get, registerCount.right.get))
@@ -381,17 +381,17 @@ object Poll {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type Poll did not recognize value type " + other)
+          case other => Left(ctx.context + "type Poll did not recognize value type " + other)
         }
-      case other => Left("Type Poll did not recognize value type " + other)
+      case other => Left(ctx.context + "type Poll did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, Poll] = {
-    val dataType = MappingLibrary.getMapField("dataType", element).flatMap(elem => MappingLibrary.readFieldSubStruct("dataType", elem, "DataType", io.greenbus.edge.modbus.config.model.DataType.read, ctx))
-    val start = MappingLibrary.getMapField("start", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val count = MappingLibrary.getMapField("count", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val intervalMs = MappingLibrary.getMapField("intervalMs", element).flatMap(elem => MappingLibrary.readLong(elem, ctx))
-    val timeoutMs = MappingLibrary.getMapField("timeoutMs", element).flatMap(elem => MappingLibrary.readLong(elem, ctx))
+    val dataType = MappingLibrary.getMapField("dataType", element, ctx).flatMap(elem => MappingLibrary.readFieldSubStruct("dataType", elem, "DataType", io.greenbus.edge.modbus.config.model.DataType.read, ctx))
+    val start = MappingLibrary.getMapField("start", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val count = MappingLibrary.getMapField("count", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val intervalMs = MappingLibrary.getMapField("intervalMs", element, ctx).flatMap(elem => MappingLibrary.readLong(elem, ctx))
+    val timeoutMs = MappingLibrary.getMapField("timeoutMs", element, ctx).flatMap(elem => MappingLibrary.readLong(elem, ctx))
 
     if (dataType.isRight && start.isRight && count.isRight && intervalMs.isRight && timeoutMs.isRight) {
       Right(Poll(dataType.right.get, start.right.get, count.right.get, intervalMs.right.get, timeoutMs.right.get))
@@ -426,23 +426,23 @@ object ProtocolType {
         tagged.value match {
           case data: IntegerValue => readInteger(data, ctx)
           case data: ValueString => readString(data, ctx)
-          case other => Left("Type ProtocolType did not recognize value type " + other)
+          case other => Left(ctx.context + " type ProtocolType did not recognize value type " + other)
         }
-      case other => Left("Type ProtocolType did not recognize value type " + other)
+      case other => Left(ctx.context + " type ProtocolType did not recognize value type " + other)
     }
   }
   def readInteger(element: IntegerValue, ctx: ReaderContext): Either[String, ProtocolType] = {
     element.toInt match {
       case 0 => Right(RTU)
       case 1 => Right(TCPIP)
-      case other => Left("Enum ProtocolType did not recognize integer value " + other)
+      case other => Left(ctx.context + " enum ProtocolType did not recognize integer value " + other)
     }
   }
   def readString(element: ValueString, ctx: ReaderContext): Either[String, ProtocolType] = {
     element.value match {
       case "RTU" => Right(RTU)
       case "TCPIP" => Right(TCPIP)
-      case other => Left("Enum ProtocolType did not recognize string value " + other)
+      case other => Left(ctx.context + " enum ProtocolType did not recognize string value " + other)
     }
   }
   def write(obj: ProtocolType): TaggedValue = {
@@ -459,15 +459,15 @@ object TCPClient {
       case tagged: TaggedValue =>
         tagged.value match {
           case data: ValueMap => readMap(data, ctx)
-          case other => Left("Type TCPClient did not recognize value type " + other)
+          case other => Left(ctx.context + "type TCPClient did not recognize value type " + other)
         }
-      case other => Left("Type TCPClient did not recognize value type " + other)
+      case other => Left(ctx.context + "type TCPClient did not recognize value type " + other)
     }
   }
   def readMap(element: ValueMap, ctx: ReaderContext): Either[String, TCPClient] = {
-    val host = MappingLibrary.getMapField("host", element).flatMap(elem => MappingLibrary.readString(elem, ctx))
-    val port = MappingLibrary.getMapField("port", element).flatMap(elem => MappingLibrary.readInt(elem, ctx))
-    val retryMs = MappingLibrary.getMapField("retryMs", element).flatMap(elem => MappingLibrary.readLong(elem, ctx))
+    val host = MappingLibrary.getMapField("host", element, ctx).flatMap(elem => MappingLibrary.readString(elem, ctx))
+    val port = MappingLibrary.getMapField("port", element, ctx).flatMap(elem => MappingLibrary.readInt(elem, ctx))
+    val retryMs = MappingLibrary.getMapField("retryMs", element, ctx).flatMap(elem => MappingLibrary.readLong(elem, ctx))
 
     if (host.isRight && port.isRight && retryMs.isRight) {
       Right(TCPClient(host.right.get, port.right.get, retryMs.right.get))

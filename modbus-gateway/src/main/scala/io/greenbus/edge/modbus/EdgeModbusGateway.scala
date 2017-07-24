@@ -20,7 +20,7 @@ package io.greenbus.edge.modbus
 
 import io.greenbus.edge.api._
 import io.greenbus.edge.data.Value
-import io.greenbus.edge.data.mapping.SimpleReaderContext
+import io.greenbus.edge.data.mapping.{ RootCtx, SimpleReaderContext }
 import io.greenbus.edge.fep.{ ConfigurationSubscriber, GatewayEndpointPublisher, NodeSettings }
 import io.greenbus.edge.modbus.config.model.ModbusGateway
 import io.greenbus.edge.peer.AmqpEdgeConnectionManager
@@ -32,7 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object EdgeModbusGateway {
 
   def parseConfig(v: Value): Either[String, ModbusGateway] = {
-    val ctx = SimpleReaderContext(Vector())
+    val ctx = SimpleReaderContext(Vector(RootCtx("ModbusGateway")))
     ModbusGateway.read(v, ctx)
   }
 
