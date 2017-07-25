@@ -18,7 +18,7 @@
  */
 package io.greenbus.edge.fep
 
-case class NodeSettings(name: String)
+case class NodeSettings(name: String, endpointName: String)
 
 object NodeSettings {
   import io.greenbus.edge.util.PropertyReading._
@@ -29,6 +29,7 @@ object NodeSettings {
 
   def apply(props: Map[String, String]): NodeSettings = {
     NodeSettings(
-      get(props, "io.greenbus.edge.node.name"))
+      get(props, "io.greenbus.edge.node.name"),
+      get(props, "io.greenbus.edge.configuration.endpoint"))
   }
 }

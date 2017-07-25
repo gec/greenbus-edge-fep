@@ -18,7 +18,7 @@
  */
 package io.greenbus.edge.configure.endpoint
 
-case class ModuleConfigurerSettings(port: Int)
+case class ModuleConfigurerSettings(endpointName: String, port: Int)
 
 object ModuleConfigurerSettings {
   import io.greenbus.edge.util.PropertyReading._
@@ -29,6 +29,7 @@ object ModuleConfigurerSettings {
 
   def apply(props: Map[String, String]): ModuleConfigurerSettings = {
     ModuleConfigurerSettings(
+      get(props, "io.greenbus.edge.moduleconfig.endpoint"),
       getInt(props, "io.greenbus.edge.moduleconfig.web.port"))
   }
 }

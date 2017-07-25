@@ -54,12 +54,13 @@ object DynamicConfigurer {
       clientSettings.host,
       clientSettings.port,
       retryIntervalMs = clientSettings.retryIntervalMs,
-      connectTimeoutMs = clientSettings.connectTimeoutMs)
+      connectTimeoutMs = clientSettings.connectTimeoutMs,
+      appendLimitDefault = 1)
 
     val producerServices = services.bindProducerServices()
     val eventThread = EventThreadService.build("Configurer Event")
 
-    val mgr = ConfigurationTable.build(eventThread, EndpointId(Path(Seq("configuration_server"))), producerServices, moduleDb)
+    val mgr = ConfigurationTable.build(eventThread, EndpointId(Path(Seq(appSettings.endpointName.trim))), producerServices, moduleDb)
     services.start()
 
     val server = WebServer.build(mgr, appSettings.port)

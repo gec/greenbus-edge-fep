@@ -64,8 +64,7 @@ object EdgeDNP3Gateway extends LazyLogging {
 
     val gatewayMgr = new DNPGatewayMgr(eventThread, gatewayId, producerServices, publisher)
 
-    //val configKey = EndpointPath(EndpointId(Path("configuration_server")), Path("dnp3"))
-    val configKey = EndpointDynamicPath(EndpointId(Path("configuration_server")), DynamicPath("configuration", Path(Seq("node01", "dnpgateway"))))
+    val configKey = EndpointDynamicPath(EndpointId(Path(nodeSettings.endpointName)), DynamicPath("configuration", Path(Seq(nodeSettings.name, "dnpgateway"))))
 
     val configSubscriber = new ConfigurationSubscriber(eventThread, consumerServices, configKey, parseConfig, gatewayMgr, publisher)
 
