@@ -169,6 +169,7 @@ class FrontendPublisher(eventThread: CallMarshaller, handle: ProducerHandle, del
       handle.update(OutputKeyStatus(session, currentSeq + 1, None))
 
     } else {
+      logger.debug(s"Parameters did not match for output $name")
       respond(OutputFailure(s"Parameters did not match"))
     }
   }

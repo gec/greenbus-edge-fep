@@ -77,6 +77,7 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
       }
 
       cmdAdapter.setOps(master)
+      outputAdapter.setOps(master)
       resources += (key -> (measObserver, gatewayPub, master))
     }
   }

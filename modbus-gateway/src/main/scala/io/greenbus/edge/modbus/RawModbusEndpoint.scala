@@ -61,13 +61,33 @@ object RawModbusEndpoint {
 
       val status: OutputStatusHandle = outMap.commandType match {
         case CommandType.Coil =>
-          b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.BooleanSetpoint))))
+          outMap.constBooleanValue match {
+            case None =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.BooleanSetpoint))))
+            case Some(_) =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.SimpleIndication))))
+          }
         case CommandType.Register =>
-          b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.AnalogSetpoint))))
+          outMap.constIntValue match {
+            case None =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.AnalogSetpoint))))
+            case Some(_) =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.SimpleIndication))))
+          }
         case CommandType.MaskRegister =>
-          b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.AnalogSetpoint))))
+          outMap.constIntValue match {
+            case None =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.AnalogSetpoint))))
+            case Some(_) =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.SimpleIndication))))
+          }
         case CommandType.MultipleRegisters =>
-          b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.AnalogSetpoint))))
+          outMap.constIntValue match {
+            case None =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.AnalogSetpoint))))
+            case Some(_) =>
+              b.outputStatus(path, KeyMetadata(metadata = Map(EdgeCoreModel.outputType(EdgeCoreModel.OutputType.SimpleIndication))))
+          }
       }
 
       val rcv: Receiver[OutputParams, OutputResult] = b.registerOutput(path)
@@ -87,7 +107,7 @@ class RawModbusEndpoint(eventThread: CallMarshaller,
     handle: ProducerHandle,
     mapping: Map[String, SeriesValueHandle],
     commandAdapter: CommandAdapter,
-    outputs: Seq[ControlEntry]) extends MeasObserver with FrontendOutputDelegate with LazyLogging {
+    outputs: Seq[ControlEntry]) extends MeasObserver with LazyLogging {
 
   private val session = UUID.randomUUID()
   private val sequenceMap = mutable.Map.empty[String, Long]
@@ -113,16 +133,6 @@ class RawModbusEndpoint(eventThread: CallMarshaller,
     }
 
     outputMap = mappings.toMap
-  }
-
-  def handleOutput(name: String, params: OutputParams, respond: (OutputResult) => Unit): Unit = {
-    eventThread.marshal {
-      outputMap.get(name) match {
-        case None => respond(OutputFailure(s"No mapped output for $name"))
-        case Some(entry) =>
-          handleSelfOutput(name, params, entry.status, respond)
-      }
-    }
   }
 
   private def handleSelfOutput(name: String, params: OutputParams, handle: OutputStatusHandle, respond: OutputResult => Unit): Unit = {
