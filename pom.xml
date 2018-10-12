@@ -50,42 +50,6 @@
 
     <repositories>
         <repository>
-            <id>totalgrid-release</id>
-            <name>https://repo.totalgrid.org-releases</name>
-            <url>https://repo.totalgrid.org/artifactory/totalgrid-release</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <repository>
-            <id>totalgrid-snapshot</id>
-            <name>https://repo.totalgrid.org-snapshots</name>
-            <url>https://repo.totalgrid.org/artifactory/totalgrid-snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-
-        <repository>
-            <id>third-party-release</id>
-            <name>https://repo.totalgrid.org-releases</name>
-            <url>https://repo.totalgrid.org/artifactory/third-party-release</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <repository>
-            <id>third-party-snapshot</id>
-            <name>https://repo.totalgrid.org-snapshots</name>
-            <url>https://repo.totalgrid.org/artifactory/third-party-snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-
-        <repository>
             <id>scala-tools-releases</id>
             <name>Scala-tools Maven2 Repository</name>
             <url>http://scala-tools.org/repo-releases</url>
@@ -112,32 +76,6 @@
     </repositories>
 
     <pluginRepositories>
-        <pluginRepository>
-            <id>totalgrid-release</id>
-            <name>https://repo.totalgrid.org-releases</name>
-            <url>https://repo.totalgrid.org/artifactory/totalgrid-release</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>totalgrid-snapshot</id>
-            <name>https://repo.totalgrid.org-snapshot</name>
-            <url>https://repo.totalgrid.org/artifactory/totalgrid-snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-
-        <pluginRepository>
-            <id>third-party-release</id>
-            <name>https://repo.totalgrid.org-releases</name>
-            <url>https://repo.totalgrid.org/artifactory/third-party-release</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-
         <pluginRepository>
             <id>scala-tools-releases</id>
             <url>http://scala-tools.org/repo-releases</url>
