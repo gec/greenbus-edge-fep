@@ -39,3 +39,15 @@ class FrontendAdapter(handle: FrontendPublisher) extends MeasObserver {
 trait EventSink {
   def publishEvent(topic: Seq[String], event: String): Unit
 }
+
+class SplittingKeyedObserver(observers: Seq[KeyedDeviceObserver]) extends KeyedDeviceObserver {
+  def handleOnline(): Unit = observers.foreach(_.handleOnline())
+
+  def handleOffline(): Unit = observers.foreach(_.handleOffline())
+
+  def handleBatch(batch: Seq[(String, SampleValue)]): Unit = {
+    observers.foreach(_.handleBatch(batch))
+  }
+
+  def close(): Unit = observers.foreach(_.close())
+}

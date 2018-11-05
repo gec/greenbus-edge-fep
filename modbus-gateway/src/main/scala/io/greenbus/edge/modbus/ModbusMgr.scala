@@ -27,21 +27,20 @@ import org.totalgrid.modbus._
 
 class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, eventSink: EventSink) extends ConfigurationHandler[ModbusGateway] with LazyLogging {
   private val modbus = ModbusManager.start(8192, 6)
-  private var resources = Map.empty[String, (RawModbusEndpoint, FrontendPublisher, ModbusMaster)]
+  private var resources = Map.empty[String, (KeyedDeviceObserver, ModbusMaster)]
 
   def onConfigured(key: String, config: ModbusGateway): Unit = {
     eventThread.marshal {
       logger.info(s"Gateway configured: $key")
       remove(key)
 
-      val (measObserver, cmdAdapter) = RawModbusEndpoint.build(eventThread, localId, producerServices, config)
+      val endObs = new StatefulModbusEndpoint(eventThread, localId, producerServices, config)
+
       val outputAdapter = new CommandAdapter(config.modbus.commandMappings)
 
-      val gatewayPub = FrontendPublisher.load(eventThread, producerServices, outputAdapter, config.endpoint)
+      val gatewayPub = new FrontendPubAdapter(eventThread, producerServices, outputAdapter, config.endpoint)
 
-      val observer = new SplittingMeasObserver(Seq(
-        measObserver,
-        new FrontendAdapter(gatewayPub)))
+      val keyedObserver = new SplittingKeyedObserver(Seq(endObs, gatewayPub))
 
       val connectionTimeoutMs = 5000
       val operationTimeoutMs = 5000
@@ -49,7 +48,8 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
       val polls = PollConfigConverter.load(config)
 
       val mapper = new InputMapping(config.modbus.discreteInputs, config.modbus.coilStatuses, config.modbus.inputRegisters, config.modbus.holdingRegisters)
-      val obs = new DeviceObserver(mapper, observer)
+
+      val obs = new DeviceObserver(mapper, keyedObserver)
 
       val master = config.modbus.protocol match {
         case ProtocolType.RTU =>
@@ -76,8 +76,7 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
             operationTimeoutMs)
       }
 
-      cmdAdapter.setOps(master)
-      resources += (key -> (measObserver, gatewayPub, master))
+      resources += key -> ((keyedObserver, master))
     }
   }
 
@@ -91,10 +90,9 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
 
   private def remove(key: String): Unit = {
     resources.get(key).foreach {
-      case (handle1, handle2, master) =>
+      case (handle1, master) =>
         master.close()
         handle1.close()
-        handle2.close()
     }
   }
 
@@ -102,10 +100,9 @@ class ModbusMgr(eventThread: CallMarshaller, localId: String, producerServices: 
     logger.info(s"Gateway mgr closed")
     eventThread.marshal {
       resources.foreach {
-        case (_, (handle1, handle2, master)) =>
+        case (_, (handle1, master)) =>
           master.close()
           handle1.close()
-          handle2.close()
       }
 
       modbus.shutdown()

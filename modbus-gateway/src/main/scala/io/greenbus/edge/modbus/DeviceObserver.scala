@@ -19,13 +19,13 @@
 package io.greenbus.edge.modbus
 
 import io.greenbus.edge.data.SampleValue
-import io.greenbus.edge.fep.MeasObserver
+import io.greenbus.edge.fep.{ KeyedDeviceObserver, MeasObserver }
 import org.totalgrid.modbus.{ ChannelObserver, ModbusBit, ModbusDeviceObserver, ModbusRegister }
 
-class DeviceObserver(map: InputMapping, observer: MeasObserver) extends ModbusDeviceObserver with ChannelObserver {
+class DeviceObserver(map: InputMapping, observer: KeyedDeviceObserver) extends ModbusDeviceObserver with ChannelObserver {
 
   private def publish(results: Traversable[(String, SampleValue)]): Unit = {
-    if (results.nonEmpty) observer.flush(results.toSeq)
+    if (results.nonEmpty) observer.handleBatch(results.toSeq)
   }
 
   override def onReadDiscreteInput(list: Traversable[ModbusBit]): Unit = {
@@ -53,10 +53,10 @@ class DeviceObserver(map: InputMapping, observer: MeasObserver) extends ModbusDe
   }
 
   def onChannelOnline(): Unit = {
-    //statusUpdate(StackStatusUpdated(FrontEndConnectionStatus.Status.COMMS_UP))
+    observer.handleOnline()
   }
 
   def onChannelOffline(): Unit = {
-    //statusUpdate(StackStatusUpdated(FrontEndConnectionStatus.Status.COMMS_DOWN))
+    observer.handleOffline()
   }
 }

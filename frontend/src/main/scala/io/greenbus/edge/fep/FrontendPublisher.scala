@@ -131,7 +131,6 @@ object FrontendPublisher {
 
     new FrontendPublisher(eventThread, handle, delegate, dataKeyMap, outputEntries)
   }
-
 }
 class FrontendPublisher(eventThread: CallMarshaller, handle: ProducerHandle, delegate: FrontendOutputDelegate, map: Map[String, KeyRecord], outputEntries: Seq[ControlEntry]) extends LazyLogging {
 
@@ -197,5 +196,42 @@ class FrontendPublisher(eventThread: CallMarshaller, handle: ProducerHandle, del
 
   def close(): Unit = {
     handle.close()
+  }
+}
+
+trait KeyedDeviceObserver {
+  def handleOnline(): Unit
+  def handleOffline(): Unit
+  def handleBatch(batch: Seq[(String, SampleValue)]): Unit
+  def close(): Unit
+}
+
+class FrontendPubAdapter(eventThread: CallMarshaller, services: ProducerService, delegate: FrontendOutputDelegate, config: FrontendConfiguration) extends KeyedDeviceObserver {
+
+  private var pubOpt = Option.empty[FrontendPublisher]
+
+  def handleOnline(): Unit = {
+    eventThread.marshal {
+      pubOpt.foreach(_.close())
+      pubOpt = Some(FrontendPublisher.load(eventThread, services, delegate, config))
+    }
+  }
+
+  def handleOffline(): Unit = {
+    eventThread.marshal {
+      pubOpt.foreach(_.close())
+    }
+  }
+
+  def handleBatch(batch: Seq[(String, SampleValue)]): Unit = {
+    eventThread.marshal {
+      pubOpt.foreach(pub => pub.batch(batch))
+    }
+  }
+
+  def close(): Unit = {
+    eventThread.marshal {
+      pubOpt.foreach(_.close())
+    }
   }
 }

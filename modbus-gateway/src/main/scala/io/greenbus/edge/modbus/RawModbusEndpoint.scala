@@ -24,13 +24,61 @@ import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api._
 import io.greenbus.edge.data.{ FloatingPointValue, IntegerValue, SampleValue }
 import io.greenbus.edge.edm.core.EdgeCoreModel
-import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate, MeasObserver }
+import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate, KeyedDeviceObserver, MeasObserver }
 import io.greenbus.edge.flow
 import io.greenbus.edge.flow.Receiver
 import io.greenbus.edge.modbus.config.model.{ BooleanInput, CommandType, ModbusGateway, NumericInput }
 import io.greenbus.edge.thread.CallMarshaller
+import org.totalgrid.modbus.ModbusOperations
 
 import scala.collection.mutable
+
+class StatefulModbusEndpoint(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, config: ModbusGateway) extends KeyedDeviceObserver {
+
+  private var opsOpt = Option.empty[ModbusOperations]
+  private var endpointOpt = Option.empty[(RawModbusEndpoint, CommandAdapter)]
+
+  def setOperations(ops: ModbusOperations): Unit = {
+    eventThread.marshal { opsOpt = Some(ops) }
+  }
+
+  def handleOnline(): Unit = {
+    eventThread.marshal {
+      val (end, cmdAdapter) = RawModbusEndpoint.build(eventThread, localId, producerServices, config)
+      opsOpt.foreach(ops => cmdAdapter.setOps(ops))
+      endpointOpt = Some((end, cmdAdapter))
+    }
+
+  }
+
+  def handleOffline(): Unit = {
+    eventThread.marshal {
+      endpointOpt.foreach {
+        case (end, cmd) =>
+          end.close()
+      }
+      endpointOpt = None
+    }
+  }
+
+  def handleBatch(batch: Seq[(String, SampleValue)]): Unit = {
+    eventThread.marshal {
+      endpointOpt.foreach {
+        case (end, cmd) => end.flush(batch)
+      }
+    }
+  }
+
+  def close(): Unit = {
+    eventThread.marshal {
+      endpointOpt.foreach {
+        case (end, cmd) =>
+          end.close()
+      }
+      endpointOpt = None
+    }
+  }
+}
 
 object RawModbusEndpoint {
   def build(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, config: ModbusGateway): (RawModbusEndpoint, CommandAdapter) = {
