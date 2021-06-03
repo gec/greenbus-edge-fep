@@ -25,7 +25,7 @@ import io.greenbus.edge.api._
 import io.greenbus.edge.data._
 import io.greenbus.edge.dnp3.config.model._
 import io.greenbus.edge.edm.core.EdgeCoreModel
-import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate, MeasObserver }
+import io.greenbus.edge.fep.{ ControlEntry, FrontendOutputDelegate, KeyedDeviceObserver, MeasObserver }
 import io.greenbus.edge.flow
 import io.greenbus.edge.flow.Receiver
 import io.greenbus.edge.thread.CallMarshaller
@@ -182,3 +182,66 @@ class RawDnpEndpoint(eventThread: CallMarshaller,
   }
 }
 
+class DnpPubAdapter(
+    eventThread: CallMarshaller,
+    localId: String,
+    services: ProducerService,
+    config: DNP3Gateway) extends KeyedDeviceObserver with FrontendOutputDelegate {
+
+  private var cmdOpt = Option.empty[DNP3ControlHandle]
+  private var endpointOpt = Option.empty[(RawDnpEndpoint, DNPKeyedControlAdapter)]
+
+  def handleOutput(name: String, params: OutputParams, respond: OutputResult => Unit): Unit = {
+    eventThread.marshal {
+      endpointOpt match {
+        case None =>
+          respond(OutputFailure("unavailable"))
+        case Some((end, cmd)) =>
+          end.handleOutput(name, params, respond)
+      }
+    }
+  }
+
+  def setControlHandler(ops: DNP3ControlHandle): Unit = {
+    eventThread.marshal { cmdOpt = Some(ops) }
+  }
+
+  private def doClose(): Unit = {
+    endpointOpt.foreach {
+      case (end, cmd) =>
+        end.close()
+    }
+  }
+
+  def handleOnline(): Unit = {
+    eventThread.marshal {
+      doClose()
+
+      val (end, cmdAdapter) = RawDnpEndpoint.build(eventThread, localId, services, config)
+      cmdOpt.foreach(cmd => cmdAdapter.setHandle(cmd))
+
+      endpointOpt = Some((end, cmdAdapter))
+    }
+  }
+
+  def handleOffline(): Unit = {
+    eventThread.marshal {
+      doClose()
+      endpointOpt = None
+    }
+  }
+
+  def handleBatch(batch: Seq[(String, SampleValue)]): Unit = {
+    eventThread.marshal {
+      endpointOpt.foreach {
+        case (end, cmd) => end.flush(batch)
+      }
+    }
+  }
+
+  def close(): Unit = {
+    eventThread.marshal {
+      doClose()
+    }
+  }
+}

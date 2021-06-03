@@ -20,6 +20,7 @@ package io.greenbus.edge.dnp3
 
 import com.typesafe.scalalogging.LazyLogging
 import io.greenbus.edge.api.ProducerService
+import io.greenbus.edge.data.SampleValue
 import io.greenbus.edge.dnp3.config.model.DNP3Gateway
 import io.greenbus.edge.fep._
 import io.greenbus.edge.thread.CallMarshaller
@@ -32,7 +33,7 @@ trait DNPGatewayHandler {
 class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServices: ProducerService, eventSink: EventSink) extends ConfigurationHandler[DNP3Gateway] with LazyLogging {
 
   private val mgr = new Dnp3Mgr
-  private var resources = Map.empty[String, (RawDnpEndpoint, FrontendPublisher)]
+  private var resources = Map.empty[String, (DnpPubAdapter, KeyedDeviceObserver)]
 
   // TODO: close producers
   def onConfigured(key: String, config: DNP3Gateway): Unit = {
@@ -44,22 +45,18 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
 
       val stackConfig = Dnp3MasterConfig.load(config)
 
-      val (rawDnpEndpoint, controlAdapter) = RawDnpEndpoint.build(eventThread, localId, producerServices, config)
-      def commsObs(value: Boolean): Unit = {
-        val commsStr = if (value) "COMMS_UP" else "COMMS_DOWN"
-        eventSink.publishEvent(Seq("comms", "status"), s"Stack $key communications status: $commsStr")
-      }
+      val rawDnpEndpoint = new DnpPubAdapter(eventThread, localId, producerServices, config)
 
-      val gatewayPub = FrontendPublisher.load(eventThread, producerServices, rawDnpEndpoint, config.endpoint)
+      val gatewayPub = new FrontendPubAdapter(eventThread, producerServices, rawDnpEndpoint, config.endpoint)
 
-      val observer = new SplittingMeasObserver(Seq(
-        rawDnpEndpoint,
-        new FrontendAdapter(gatewayPub)))
+      val keyedObserver = new SplittingKeyedObserver(Seq(rawDnpEndpoint, gatewayPub))
 
-      val cmdAcceptor = mgr.add(key, stackConfig, observer, commsObs)
+      val adapter = new KeyedObserverAdapter(keyedObserver)
+
+      val cmdAcceptor = mgr.add(key, stackConfig, adapter, adapter.commsObs)
 
       val stackCmdMgr = new DNP3ControlHandleImpl(eventThread, cmdAcceptor)
-      controlAdapter.setHandle(stackCmdMgr)
+      rawDnpEndpoint.setControlHandler(stackCmdMgr)
 
       resources += ((key, (rawDnpEndpoint, gatewayPub)))
     }
@@ -87,5 +84,20 @@ class DNPGatewayMgr(eventThread: CallMarshaller, localId: String, producerServic
     eventThread.marshal {
       mgr.shutdown()
     }
+  }
+}
+
+class KeyedObserverAdapter(obs: KeyedDeviceObserver) extends MeasObserver {
+
+  def commsObs(value: Boolean): Unit = {
+    if (value) {
+      obs.handleOnline()
+    } else {
+      obs.handleOffline()
+    }
+  }
+
+  def flush(batch: Seq[(String, SampleValue)]): Unit = {
+    obs.handleBatch(batch)
   }
 }
