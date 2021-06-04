@@ -18,9 +18,10 @@
  */
 package io.greenbus.edge.configure.sql
 
+import org.jooq.exception.DataAccessException
+
 import java.util.concurrent.Executor
 import javax.sql.DataSource
-
 import org.jooq.{ Configuration, DSLContext, TransactionalRunnable }
 import org.jooq.impl.DSL
 
@@ -36,6 +37,74 @@ trait JooqTransactable {
   def transaction[A](f: DSLContext => A): Future[A]
 }
 
+class JooqTransactableImpl(ds: DataSource, exe: Executor) extends JooqTransactable {
+
+  private def inTransaction[A](f: DSLContext => A): Try[A] = {
+    var result = Option.empty[Try[A]]
+    try {
+
+      val connection = ds.getConnection
+      try {
+        val jooq = DSL.using(connection)
+        jooq.transaction(new TransactionalRunnable {
+          def run(configuration: Configuration): Unit = {
+            val inTrans: DSLContext = DSL.using(configuration)
+            try {
+              result = Some(Success(f(inTrans)))
+            } catch {
+              case ex: Throwable =>
+                result = Some(Failure(ex))
+                throw ex
+            }
+          }
+        })
+      } catch {
+        case ex: DataAccessException =>
+          // Jooq wraps the original exception
+          Option(ex.getCause()) match {
+            case None =>
+              result = Some(Failure(ex))
+            case Some(cause) =>
+              result = Some(Failure(cause))
+          }
+        case ex: Throwable =>
+          result = Some(Failure(ex))
+      } finally {
+        connection.close()
+      }
+
+    } catch {
+      case ex: Throwable =>
+        result = Some(Failure(ex))
+    }
+
+    result.getOrElse(Failure(new IllegalStateException("no transaction result")))
+  }
+
+  def blockingTransaction[A](f: DSLContext => A): A = {
+    val result = inTransaction(f)
+    result match {
+      case Success(r) => r
+      case Failure(ex) => throw ex
+    }
+  }
+
+  def transaction[A](f: DSLContext => A): Future[A] = {
+
+    val prom = Promise[A]
+
+    exe.execute(new Runnable {
+      def run(): Unit = {
+
+        prom.complete(inTransaction(f))
+      }
+    })
+
+    prom.future
+  }
+}
+
+/*
 class JooqTransactableImpl(ds: DataSource, exe: Executor) extends JooqTransactable {
   def transaction[A](f: DSLContext => A): Future[A] = {
 
@@ -59,7 +128,9 @@ class JooqTransactableImpl(ds: DataSource, exe: Executor) extends JooqTransactab
             }
           })
         } catch {
-          case ex: Throwable => prom.failure(ex)
+          case ex: Throwable =>
+            println(ex)
+            prom.failure(ex)
         } finally {
           connection.close()
         }
@@ -70,4 +141,4 @@ class JooqTransactableImpl(ds: DataSource, exe: Executor) extends JooqTransactab
 
     prom.future
   }
-}
+}*/
